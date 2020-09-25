@@ -1,6 +1,6 @@
 #include <windows.h> // include for version info constants
 
-107 ICON "darkplaces.ico"
+A ICON MOVEABLE PURE LOADONCALL DISCARDABLE "darkplaces.ico"
 
 1 VERSIONINFO
 FILEVERSION 1,0,0,0
@@ -11,14 +11,14 @@ FILETYPE VFT_APP
 	 {
 		 BLOCK "040904E4"
 		 {
-			 VALUE "CompanyName", "DarkPlaces Contributors"
+			 VALUE "CompanyName", "Forest Hale Digital Services"
 			 VALUE "FileVersion", "1.0"
 			 VALUE "FileDescription", "DarkPlaces Game Engine"
-			 VALUE "InternalName", "darkplaces.exe"
+			 VALUE "InternalName", "battleMETAL.exe"
 			 VALUE "LegalCopyright", "id Software, Forest Hale, and contributors"
 			 VALUE "LegalTrademarks", ""
-			 VALUE "OriginalFilename", "darkplaces.exe"
-			 VALUE "ProductName", "DarkPlaces"
+			 VALUE "OriginalFilename", "battleMETAL.exe"
+			 VALUE "ProductName", "Darkmetal"
 			 VALUE "ProductVersion", "1.0"
 		 }
 	 }
