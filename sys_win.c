@@ -42,7 +42,6 @@ static HANDLE	heventParent;
 static HANDLE	heventChild;
 #endif
 
-sys_t sys;
 
 /*
 ===============================================================================
@@ -65,7 +64,7 @@ void Sys_Error (const char *error, ...)
 	dpvsnprintf (text, sizeof (text), error, argptr);
 	va_end (argptr);
 
-	Con_Printf(CON_ERROR "Engine Error: %s\n", text);
+	Con_Printf ("Quake Error: %s\n", text);
 
 	// close video so the message box is visible, unless we already tried that
 	if (!in_sys_error0 && cls.state != ca_dedicated)
@@ -77,7 +76,7 @@ void Sys_Error (const char *error, ...)
 	if (!in_sys_error3 && cls.state != ca_dedicated)
 	{
 		in_sys_error3 = true;
-		MessageBox(NULL, text, "Engine Error", MB_OK | MB_SETFOREGROUND | MB_ICONSTOP);
+		MessageBox(NULL, text, "Quake Error", MB_OK | MB_SETFOREGROUND | MB_ICONSTOP);
 	}
 
 	if (!in_sys_error1)
@@ -241,11 +240,11 @@ void Sys_InitConsole (void)
 	houtput = GetStdHandle (STD_OUTPUT_HANDLE);
 	hinput = GetStdHandle (STD_INPUT_HANDLE);
 
-	// LadyHavoc: can't check cls.state because it hasn't been initialized yet
+	// LordHavoc: can't check cls.state because it hasn't been initialized yet
 	// if (cls.state == ca_dedicated)
-	if (Sys_CheckParm("-dedicated"))
+	if (COM_CheckParm("-dedicated"))
 	{
-		//if ((houtput == 0) || (houtput == INVALID_HANDLE_VALUE)) // LadyHavoc: on Windows XP this is never 0 or invalid, but hinput is invalid
+		//if ((houtput == 0) || (houtput == INVALID_HANDLE_VALUE)) // LordHavoc: on Windows XP this is never 0 or invalid, but hinput is invalid
 		{
 			if (!AllocConsole ())
 				Sys_Error ("Couldn't create dedicated server console (error code %x)", (unsigned int)GetLastError());
@@ -261,22 +260,22 @@ void Sys_InitConsole (void)
 #define atoi _atoi64
 #endif
 	// give QHOST a chance to hook into the console
-		if ((t = Sys_CheckParm ("-HFILE")) > 0)
+		if ((t = COM_CheckParm ("-HFILE")) > 0)
 		{
-			if (t < sys.argc)
-				hFile = (HANDLE)atoi (sys.argv[t+1]);
+			if (t < com_argc)
+				hFile = (HANDLE)atoi (com_argv[t+1]);
 		}
 
-		if ((t = Sys_CheckParm ("-HPARENT")) > 0)
+		if ((t = COM_CheckParm ("-HPARENT")) > 0)
 		{
-			if (t < sys.argc)
-				heventParent = (HANDLE)atoi (sys.argv[t+1]);
+			if (t < com_argc)
+				heventParent = (HANDLE)atoi (com_argv[t+1]);
 		}
 
-		if ((t = Sys_CheckParm ("-HCHILD")) > 0)
+		if ((t = COM_CheckParm ("-HCHILD")) > 0)
 		{
-			if (t < sys.argc)
-				heventChild = (HANDLE)atoi (sys.argv[t+1]);
+			if (t < com_argc)
+				heventChild = (HANDLE)atoi (com_argv[t+1]);
 		}
 
 		InitConProc (hFile, heventParent, heventChild);
@@ -321,12 +320,12 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	program_name[sizeof(program_name)-1] = 0;
 	GetModuleFileNameA(NULL, program_name, sizeof(program_name) - 1);
 
-	sys.argc = 1;
-	sys.argv = argv;
+	com_argc = 1;
+	com_argv = argv;
 	argv[0] = program_name;
 
 	// FIXME: this tokenizer is rather redundent, call a more general one
-	while (*lpCmdLine && (sys.argc < MAX_NUM_ARGVS))
+	while (*lpCmdLine && (com_argc < MAX_NUM_ARGVS))
 	{
 		while (*lpCmdLine && ISWHITESPACE(*lpCmdLine))
 			lpCmdLine++;
@@ -338,16 +337,16 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 		{
 			// quoted string
 			lpCmdLine++;
-			argv[sys.argc] = lpCmdLine;
-			sys.argc++;
+			argv[com_argc] = lpCmdLine;
+			com_argc++;
 			while (*lpCmdLine && (*lpCmdLine != '\"'))
 				lpCmdLine++;
 		}
 		else
 		{
 			// unquoted word
-			argv[sys.argc] = lpCmdLine;
-			sys.argc++;
+			argv[com_argc] = lpCmdLine;
+			com_argc++;
 			while (*lpCmdLine && !ISWHITESPACE(*lpCmdLine))
 				lpCmdLine++;
 		}
@@ -361,12 +360,7 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 
 	Sys_ProvideSelfFD();
 
-	// used by everything
-	Memory_Init();
-
 	Host_Main();
-
-	Sys_Quit(0);
 
 	/* return success of application */
 	return true;
@@ -386,8 +380,8 @@ int main (int argc, const char* argv[])
 	program_name[sizeof(program_name)-1] = 0;
 	GetModuleFileNameA(NULL, program_name, sizeof(program_name) - 1);
 
-	sys.argc = argc;
-	sys.argv = argv;
+	com_argc = argc;
+	com_argv = argv;
 
 	Host_Main();
 
@@ -395,7 +389,7 @@ int main (int argc, const char* argv[])
 }
 #endif
 
-qbool sys_supportsdlgetticks = false;
+qboolean sys_supportsdlgetticks = false;
 unsigned int Sys_SDL_GetTicks (void)
 {
 	Sys_Error("Called Sys_SDL_GetTicks on non-SDL target");

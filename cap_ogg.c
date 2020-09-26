@@ -1,3 +1,6 @@
+#ifndef _MSC_VER
+#include <stdint.h>
+#endif
 #include <sys/types.h>
 
 #include "quakedef.h"
@@ -5,23 +8,31 @@
 #include "cap_ogg.h"
 
 // video capture cvars
-static cvar_t cl_capturevideo_ogg_theora_vp3compat = {CF_CLIENT | CF_ARCHIVE, "cl_capturevideo_ogg_theora_vp3compat", "1", "make VP3 compatible theora streams"};
-static cvar_t cl_capturevideo_ogg_theora_quality = {CF_CLIENT | CF_ARCHIVE, "cl_capturevideo_ogg_theora_quality", "48", "video quality factor (0 to 63), or -1 to use bitrate only; higher is better; setting both to -1 achieves unlimited quality"};
-static cvar_t cl_capturevideo_ogg_theora_bitrate = {CF_CLIENT | CF_ARCHIVE, "cl_capturevideo_ogg_theora_bitrate", "-1", "video bitrate (45 to 2000 kbps), or -1 to use quality only; higher is better; setting both to -1 achieves unlimited quality"};
-static cvar_t cl_capturevideo_ogg_theora_keyframe_bitrate_multiplier = {CF_CLIENT | CF_ARCHIVE, "cl_capturevideo_ogg_theora_keyframe_bitrate_multiplier", "1.5", "how much more bit rate to use for keyframes, specified as a factor of at least 1"};
-static cvar_t cl_capturevideo_ogg_theora_keyframe_maxinterval = {CF_CLIENT | CF_ARCHIVE, "cl_capturevideo_ogg_theora_keyframe_maxinterval", "64", "maximum keyframe interval (1 to 1000)"};
-static cvar_t cl_capturevideo_ogg_theora_keyframe_mininterval = {CF_CLIENT | CF_ARCHIVE, "cl_capturevideo_ogg_theora_keyframe_mininterval", "8", "minimum keyframe interval (1 to 1000)"};
-static cvar_t cl_capturevideo_ogg_theora_keyframe_auto_threshold = {CF_CLIENT | CF_ARCHIVE, "cl_capturevideo_ogg_theora_keyframe_auto_threshold", "80", "threshold for key frame decision (0 to 100)"};
-static cvar_t cl_capturevideo_ogg_theora_noise_sensitivity = {CF_CLIENT | CF_ARCHIVE, "cl_capturevideo_ogg_theora_noise_sensitivity", "1", "video noise sensitivity (0 to 6); lower is better"};
-static cvar_t cl_capturevideo_ogg_theora_sharpness = {CF_CLIENT | CF_ARCHIVE, "cl_capturevideo_ogg_theora_sharpness", "0", "sharpness (0 to 2); lower is sharper"};
-static cvar_t cl_capturevideo_ogg_vorbis_quality = {CF_CLIENT | CF_ARCHIVE, "cl_capturevideo_ogg_vorbis_quality", "3", "audio quality (-1 to 10); higher is better"};
+static cvar_t cl_capturevideo_ogg_theora_vp3compat = {CVAR_SAVE, "cl_capturevideo_ogg_theora_vp3compat", "1", "make VP3 compatible theora streams"};
+static cvar_t cl_capturevideo_ogg_theora_quality = {CVAR_SAVE, "cl_capturevideo_ogg_theora_quality", "48", "video quality factor (0 to 63), or -1 to use bitrate only; higher is better; setting both to -1 achieves unlimited quality"};
+static cvar_t cl_capturevideo_ogg_theora_bitrate = {CVAR_SAVE, "cl_capturevideo_ogg_theora_bitrate", "-1", "video bitrate (45 to 2000 kbps), or -1 to use quality only; higher is better; setting both to -1 achieves unlimited quality"};
+static cvar_t cl_capturevideo_ogg_theora_keyframe_bitrate_multiplier = {CVAR_SAVE, "cl_capturevideo_ogg_theora_keyframe_bitrate_multiplier", "1.5", "how much more bit rate to use for keyframes, specified as a factor of at least 1"};
+static cvar_t cl_capturevideo_ogg_theora_keyframe_maxinterval = {CVAR_SAVE, "cl_capturevideo_ogg_theora_keyframe_maxinterval", "64", "maximum keyframe interval (1 to 1000)"};
+static cvar_t cl_capturevideo_ogg_theora_keyframe_mininterval = {CVAR_SAVE, "cl_capturevideo_ogg_theora_keyframe_mininterval", "8", "minimum keyframe interval (1 to 1000)"};
+static cvar_t cl_capturevideo_ogg_theora_keyframe_auto_threshold = {CVAR_SAVE, "cl_capturevideo_ogg_theora_keyframe_auto_threshold", "80", "threshold for key frame decision (0 to 100)"};
+static cvar_t cl_capturevideo_ogg_theora_noise_sensitivity = {CVAR_SAVE, "cl_capturevideo_ogg_theora_noise_sensitivity", "1", "video noise sensitivity (0 to 6); lower is better"};
+static cvar_t cl_capturevideo_ogg_theora_sharpness = {CVAR_SAVE, "cl_capturevideo_ogg_theora_sharpness", "0", "sharpness (0 to 2); lower is sharper"};
+static cvar_t cl_capturevideo_ogg_vorbis_quality = {CVAR_SAVE, "cl_capturevideo_ogg_vorbis_quality", "3", "audio quality (-1 to 10); higher is better"};
 
 // ogg.h stuff
+#ifdef _MSC_VER
+typedef __int16 ogg_int16_t;
+typedef unsigned __int16 ogg_uint16_t;
+typedef __int32 ogg_int32_t;
+typedef unsigned __int32 ogg_uint32_t;
+typedef __int64 ogg_int64_t;
+#else
 typedef int16_t ogg_int16_t;
 typedef uint16_t ogg_uint16_t;
 typedef int32_t ogg_int32_t;
 typedef uint32_t ogg_uint32_t;
 typedef int64_t ogg_int64_t;
+#endif
 
 typedef struct {
   long endbyte;
@@ -512,7 +523,7 @@ static dllfunction_t theorafuncs[] =
 
 static dllhandle_t og_dll = NULL, vo_dll = NULL, ve_dll = NULL, th_dll = NULL;
 
-static qbool SCR_CaptureVideo_Ogg_OpenLibrary(void)
+static qboolean SCR_CaptureVideo_Ogg_OpenLibrary(void)
 {
 	const char* dllnames_og [] =
 	{
@@ -596,7 +607,7 @@ void SCR_CaptureVideo_Ogg_Init(void)
 	Cvar_RegisterVariable(&cl_capturevideo_ogg_vorbis_quality);
 }
 
-qbool SCR_CaptureVideo_Ogg_Available(void)
+qboolean SCR_CaptureVideo_Ogg_Available(void)
 {
 	return og_dll && th_dll && vo_dll && ve_dll;
 }
@@ -903,14 +914,14 @@ static void SCR_CaptureVideo_Ogg_SoundFrame(const portable_sampleframe_t *paintb
 	ogg_packet pt;
 	int *map = mapping[bound(1, cls.capturevideo.soundchannels, 8) - 1];
 
-	vorbis_buffer = qvorbis_analysis_buffer(&format->vd, (int)length);
+	vorbis_buffer = qvorbis_analysis_buffer(&format->vd, length);
 	for(j = 0; j < cls.capturevideo.soundchannels; ++j)
 	{
 		float *b = vorbis_buffer[map[j]];
 		for(i = 0; i < length; ++i)
 			b[i] = paintbuffer[i].sample[j];
 	}
-	qvorbis_analysis_wrote(&format->vd, (int)length);
+	qvorbis_analysis_wrote(&format->vd, length);
 
 	while(qvorbis_analysis_blockout(&format->vd, &format->vb) == 1)
 	{

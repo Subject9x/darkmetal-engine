@@ -41,7 +41,7 @@
 #define qov_read ov_read
 #define qvorbis_comment_query vorbis_comment_query
 
-qbool OGG_OpenLibrary (void) {return true;}
+qboolean OGG_OpenLibrary (void) {return true;}
 void OGG_CloseLibrary (void) {}
 #else
 
@@ -269,7 +269,7 @@ OGG_OpenLibrary
 Try to load the VorbisFile DLL
 ====================
 */
-qbool OGG_OpenLibrary (void)
+qboolean OGG_OpenLibrary (void)
 {
 	const char* dllnames_vo [] =
 	{
@@ -305,7 +305,7 @@ qbool OGG_OpenLibrary (void)
 		return true;
 
 // COMMANDLINEOPTION: Sound: -novorbis disables ogg vorbis sound support
-	if (Sys_CheckParm("-novorbis"))
+	if (COM_CheckParm("-novorbis"))
 		return false;
 
 	// Load the DLLs
@@ -472,7 +472,7 @@ static void OGG_GetSamplesFloat (channel_t *ch, sfx_t *sfx, int firstsampleframe
 		ret = qov_pcm_seek(&per_ch->vf, (ogg_int64_t)firstsampleframe);
 		if (ret != 0)
 		{
-			// LadyHavoc: we can't Con_Printf here, not thread safe...
+			// LordHavoc: we can't Con_Printf here, not thread safe...
 			//Con_Printf("OGG_FetchSound: qov_pcm_seek(..., %d) returned %d\n", firstsampleframe, ret);
 			return;
 		}
@@ -600,7 +600,7 @@ OGG_LoadVorbisFile
 Load an Ogg Vorbis file into memory
 ====================
 */
-qbool OGG_LoadVorbisFile(const char *filename, sfx_t *sfx)
+qboolean OGG_LoadVorbisFile(const char *filename, sfx_t *sfx)
 {
 	unsigned char *data;
 	fs_offset_t filesize;

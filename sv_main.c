@@ -25,192 +25,181 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "csprogs.h"
 #include "thread.h"
 
-// current client
-client_t *host_client;
-
-static void SV_SaveEntFile_f(cmd_state_t *cmd);
-static void SV_StartDownload_f(cmd_state_t *cmd);
-static void SV_Download_f(cmd_state_t *cmd);
+static void SV_SaveEntFile_f(void);
+static void SV_StartDownload_f(void);
+static void SV_Download_f(void);
 static void SV_VM_Setup(void);
 extern cvar_t net_connecttimeout;
 
-cvar_t sv_worldmessage = {CF_SERVER | CF_READONLY, "sv_worldmessage", "", "title of current level"};
-cvar_t sv_worldname = {CF_SERVER | CF_READONLY, "sv_worldname", "", "name of current worldmodel"};
-cvar_t sv_worldnamenoextension = {CF_SERVER | CF_READONLY, "sv_worldnamenoextension", "", "name of current worldmodel without extension"};
-cvar_t sv_worldbasename = {CF_SERVER | CF_READONLY, "sv_worldbasename", "", "name of current worldmodel without maps/ prefix or extension"};
+cvar_t sv_worldmessage = {CVAR_READONLY, "sv_worldmessage", "", "title of current level"};
+cvar_t sv_worldname = {CVAR_READONLY, "sv_worldname", "", "name of current worldmodel"};
+cvar_t sv_worldnamenoextension = {CVAR_READONLY, "sv_worldnamenoextension", "", "name of current worldmodel without extension"};
+cvar_t sv_worldbasename = {CVAR_READONLY, "sv_worldbasename", "", "name of current worldmodel without maps/ prefix or extension"};
 
-cvar_t sv_disablenotify = {CF_SERVER, "sv_disablenotify", "0", "suppress broadcast prints when certain cvars are changed (CF_NOTIFY flag in engine code)"};
-cvar_t coop = {CF_SERVER, "coop","0", "coop mode, 0 = no coop, 1 = coop mode, multiple players playing through the singleplayer game (coop mode also shuts off deathmatch)"};
-cvar_t deathmatch = {CF_SERVER, "deathmatch","0", "deathmatch mode, values depend on mod but typically 0 = no deathmatch, 1 = normal deathmatch with respawning weapons, 2 = weapons stay (players can only pick up new weapons)"};
-cvar_t fraglimit = {CF_SERVER | CF_NOTIFY, "fraglimit","0", "ends level if this many frags is reached by any player"};
-cvar_t gamecfg = {CF_SERVER, "gamecfg", "0", "unused cvar in quake, can be used by mods"};
-cvar_t noexit = {CF_SERVER | CF_NOTIFY, "noexit","0", "kills anyone attempting to use an exit"};
-cvar_t nomonsters = {CF_SERVER, "nomonsters", "0", "unused cvar in quake, can be used by mods"};
-cvar_t pausable = {CF_SERVER, "pausable","1", "allow players to pause or not (otherwise, only the server admin can)"};
-cvar_t pr_checkextension = {CF_SERVER | CF_READONLY, "pr_checkextension", "1", "indicates to QuakeC that the standard quakec extensions system is available (if 0, quakec should not attempt to use extensions)"};
-cvar_t samelevel = {CF_SERVER | CF_NOTIFY, "samelevel","0", "repeats same level if level ends (due to timelimit or someone hitting an exit)"};
-cvar_t skill = {CF_SERVER, "skill","1", "difficulty level of game, affects monster layouts in levels, 0 = easy, 1 = normal, 2 = hard, 3 = nightmare (same layout as hard but monsters fire twice)"};
-cvar_t host_timescale = {CF_CLIENT | CF_SERVER, "host_timescale", "1.0", "controls game speed, 0.5 is half speed, 2 is double speed"};
+cvar_t sv_disablenotify = {0, "sv_disablenotify", "1", "suppress broadcast prints when certain cvars are changed (CVAR_NOTIFY flag in engine code)"};
+cvar_t coop = {0, "coop","0", "coop mode, 0 = no coop, 1 = coop mode, multiple players playing through the singleplayer game (coop mode also shuts off deathmatch)"};
+cvar_t deathmatch = {0, "deathmatch","0", "deathmatch mode, values depend on mod but typically 0 = no deathmatch, 1 = normal deathmatch with respawning weapons, 2 = weapons stay (players can only pick up new weapons)"};
+cvar_t fraglimit = {CVAR_NOTIFY, "fraglimit","0", "ends level if this many frags is reached by any player"};
+cvar_t gamecfg = {0, "gamecfg", "0", "unused cvar in quake, can be used by mods"};
+cvar_t noexit = {CVAR_NOTIFY, "noexit","0", "kills anyone attempting to use an exit"};
+cvar_t nomonsters = {0, "nomonsters", "0", "unused cvar in quake, can be used by mods"};
+cvar_t pausable = {0, "pausable","1", "allow players to pause or not (otherwise, only the server admin can)"};
+cvar_t pr_checkextension = {CVAR_READONLY, "pr_checkextension", "1", "indicates to QuakeC that the standard quakec extensions system is available (if 0, quakec should not attempt to use extensions)"};
+cvar_t samelevel = {CVAR_NOTIFY, "samelevel","0", "repeats same level if level ends (due to timelimit or someone hitting an exit)"};
+cvar_t skill = {0, "skill","1", "difficulty level of game, affects monster layouts in levels, 0 = easy, 1 = normal, 2 = hard, 3 = nightmare (same layout as hard but monsters fire twice)"};
+cvar_t slowmo = {0, "slowmo", "1.0", "controls game speed, 0.5 is half speed, 2 is double speed"};
 
-cvar_t sv_accelerate = {CF_SERVER, "sv_accelerate", "10", "rate at which a player accelerates to sv_maxspeed"};
-cvar_t sv_aim = {CF_SERVER | CF_ARCHIVE, "sv_aim", "2", "maximum cosine angle for quake's vertical autoaim, a value above 1 completely disables the autoaim, quake used 0.93"};
-cvar_t sv_airaccel_qw = {CF_SERVER, "sv_airaccel_qw", "1", "ratio of QW-style air control as opposed to simple acceleration; when < 0, the speed is clamped against the maximum allowed forward speed after the move"};
-cvar_t sv_airaccel_qw_stretchfactor = {CF_SERVER, "sv_airaccel_qw_stretchfactor", "0", "when set, the maximum acceleration increase the player may get compared to forward-acceleration when strafejumping"};
-cvar_t sv_airaccel_sideways_friction = {CF_SERVER, "sv_airaccel_sideways_friction", "", "anti-sideways movement stabilization (reduces speed gain when zigzagging); when < 0, only so much friction is applied that braking (by accelerating backwards) cannot be stronger"};
-cvar_t sv_airaccelerate = {CF_SERVER, "sv_airaccelerate", "-1", "rate at which a player accelerates to sv_maxairspeed while in the air, if less than 0 the sv_accelerate variable is used instead"};
-cvar_t sv_airstopaccelerate = {CF_SERVER, "sv_airstopaccelerate", "0", "when set, replacement for sv_airaccelerate when moving backwards"};
-cvar_t sv_airspeedlimit_nonqw = {CF_SERVER, "sv_airspeedlimit_nonqw", "0", "when set, this is a soft speed limit while in air when using airaccel_qw not equal to 1"};
-cvar_t sv_airstrafeaccelerate = {CF_SERVER, "sv_airstrafeaccelerate", "0", "when set, replacement for sv_airaccelerate when just strafing"};
-cvar_t sv_maxairstrafespeed = {CF_SERVER, "sv_maxairstrafespeed", "0", "when set, replacement for sv_maxairspeed when just strafing"};
-cvar_t sv_airstrafeaccel_qw = {CF_SERVER, "sv_airstrafeaccel_qw", "0", "when set, replacement for sv_airaccel_qw when just strafing"};
-cvar_t sv_aircontrol = {CF_SERVER, "sv_aircontrol", "0", "CPMA-style air control"};
-cvar_t sv_aircontrol_power = {CF_SERVER, "sv_aircontrol_power", "2", "CPMA-style air control exponent"};
-cvar_t sv_aircontrol_penalty = {CF_SERVER, "sv_aircontrol_penalty", "0", "deceleration while using CPMA-style air control"};
-cvar_t sv_allowdownloads = {CF_SERVER, "sv_allowdownloads", "1", "whether to allow clients to download files from the server (does not affect http downloads)"};
-cvar_t sv_allowdownloads_archive = {CF_SERVER, "sv_allowdownloads_archive", "0", "whether to allow downloads of archives (pak/pk3)"};
-cvar_t sv_allowdownloads_config = {CF_SERVER, "sv_allowdownloads_config", "0", "whether to allow downloads of config files (cfg)"};
-cvar_t sv_allowdownloads_dlcache = {CF_SERVER, "sv_allowdownloads_dlcache", "0", "whether to allow downloads of dlcache files (dlcache/)"};
-cvar_t sv_allowdownloads_inarchive = {CF_SERVER, "sv_allowdownloads_inarchive", "0", "whether to allow downloads from archives (pak/pk3)"};
-cvar_t sv_areagrid_mingridsize = {CF_SERVER | CF_NOTIFY, "sv_areagrid_mingridsize", "128", "minimum areagrid cell size, smaller values work better for lots of small objects, higher values for large objects"};
-cvar_t sv_checkforpacketsduringsleep = {CF_SERVER, "sv_checkforpacketsduringsleep", "0", "uses select() function to wait between frames which can be interrupted by packets being received, instead of Sleep()/usleep()/SDL_Sleep() functions which do not check for packets"};
-cvar_t sv_clmovement_enable = {CF_SERVER, "sv_clmovement_enable", "1", "whether to allow clients to use cl_movement prediction, which can cause choppy movement on the server which may annoy other players"};
-cvar_t sv_clmovement_minping = {CF_SERVER, "sv_clmovement_minping", "0", "if client ping is below this time in milliseconds, then their ability to use cl_movement prediction is disabled for a while (as they don't need it)"};
-cvar_t sv_clmovement_minping_disabletime = {CF_SERVER, "sv_clmovement_minping_disabletime", "1000", "when client falls below minping, disable their prediction for this many milliseconds (should be at least 1000 or else their prediction may turn on/off frequently)"};
-cvar_t sv_clmovement_inputtimeout = {CF_SERVER, "sv_clmovement_inputtimeout", "0.2", "when a client does not send input for this many seconds, force them to move anyway (unlike QuakeWorld)"};
-cvar_t sv_cullentities_nevercullbmodels = {CF_SERVER, "sv_cullentities_nevercullbmodels", "0", "if enabled the clients are always notified of moving doors and lifts and other submodels of world (warning: eats a lot of network bandwidth on some levels!)"};
-cvar_t sv_cullentities_pvs = {CF_SERVER, "sv_cullentities_pvs", "1", "fast but loose culling of hidden entities"};
-cvar_t sv_cullentities_stats = {CF_SERVER, "sv_cullentities_stats", "0", "displays stats on network entities culled by various methods for each client"};
-cvar_t sv_cullentities_trace = {CF_SERVER, "sv_cullentities_trace", "0", "somewhat slow but very tight culling of hidden entities, minimizes network traffic and makes wallhack cheats useless"};
-cvar_t sv_cullentities_trace_delay = {CF_SERVER, "sv_cullentities_trace_delay", "1", "number of seconds until the entity gets actually culled"};
-cvar_t sv_cullentities_trace_delay_players = {CF_SERVER, "sv_cullentities_trace_delay_players", "0.2", "number of seconds until the entity gets actually culled if it is a player entity"};
-cvar_t sv_cullentities_trace_enlarge = {CF_SERVER, "sv_cullentities_trace_enlarge", "0", "box enlargement for entity culling"};
-cvar_t sv_cullentities_trace_expand = {CF_SERVER, "sv_cullentities_trace_expand", "0", "box is expanded by this many units for entity culling"};
-cvar_t sv_cullentities_trace_eyejitter = {CF_SERVER, "sv_cullentities_trace_eyejitter", "16", "jitter the eye by this much for each trace"};
-cvar_t sv_cullentities_trace_prediction = {CF_SERVER, "sv_cullentities_trace_prediction", "1", "also trace from the predicted player position"};
-cvar_t sv_cullentities_trace_prediction_time = {CF_SERVER, "sv_cullentities_trace_prediction_time", "0.2", "how many seconds of prediction to use"};
-cvar_t sv_cullentities_trace_entityocclusion = {CF_SERVER, "sv_cullentities_trace_entityocclusion", "0", "also check if doors and other bsp models are in the way"};
-cvar_t sv_cullentities_trace_samples = {CF_SERVER, "sv_cullentities_trace_samples", "2", "number of samples to test for entity culling"};
-cvar_t sv_cullentities_trace_samples_extra = {CF_SERVER, "sv_cullentities_trace_samples_extra", "2", "number of samples to test for entity culling when the entity affects its surroundings by e.g. dlight"};
-cvar_t sv_cullentities_trace_samples_players = {CF_SERVER, "sv_cullentities_trace_samples_players", "8", "number of samples to test for entity culling when the entity is a player entity"};
-cvar_t sv_debugmove = {CF_SERVER | CF_NOTIFY, "sv_debugmove", "0", "disables collision detection optimizations for debugging purposes"};
-cvar_t sv_echobprint = {CF_SERVER | CF_ARCHIVE, "sv_echobprint", "1", "prints gamecode bprint() calls to server console"};
-cvar_t sv_edgefriction = {CF_SERVER, "edgefriction", "1", "how much you slow down when nearing a ledge you might fall off, multiplier of sv_friction (Quake used 2, QuakeWorld used 1 due to a bug in physics code)"};
-cvar_t sv_entpatch = {CF_SERVER, "sv_entpatch", "1", "enables loading of .ent files to override entities in the bsp (for example Threewave CTF server pack contains .ent patch files enabling play of CTF on id1 maps)"};
-cvar_t sv_freezenonclients = {CF_SERVER | CF_NOTIFY, "sv_freezenonclients", "0", "freezes time, except for players, allowing you to walk around and take screenshots of explosions"};
-cvar_t sv_friction = {CF_SERVER | CF_NOTIFY, "sv_friction","4", "how fast you slow down"};
-cvar_t sv_gameplayfix_blowupfallenzombies = {CF_SERVER, "sv_gameplayfix_blowupfallenzombies", "1", "causes findradius to detect SOLID_NOT entities such as zombies and corpses on the floor, allowing splash damage to apply to them"};
-cvar_t sv_gameplayfix_consistentplayerprethink = {CF_SERVER, "sv_gameplayfix_consistentplayerprethink", "0", "improves fairness in multiplayer by running all PlayerPreThink functions (which fire weapons) before performing physics, then running all PlayerPostThink functions"};
-cvar_t sv_gameplayfix_delayprojectiles = {CF_SERVER, "sv_gameplayfix_delayprojectiles", "1", "causes entities to not move on the same frame they are spawned, meaning that projectiles wait until the next frame to perform their first move, giving proper interpolation and rocket trails, but making weapons harder to use at low framerates"};
-cvar_t sv_gameplayfix_droptofloorstartsolid = {CF_SERVER, "sv_gameplayfix_droptofloorstartsolid", "1", "prevents items and monsters that start in a solid area from falling out of the level (makes droptofloor treat trace_startsolid as an acceptable outcome)"};
-cvar_t sv_gameplayfix_droptofloorstartsolid_nudgetocorrect = {CF_SERVER, "sv_gameplayfix_droptofloorstartsolid_nudgetocorrect", "1", "tries to nudge stuck items and monsters out of walls before droptofloor is performed"};
-cvar_t sv_gameplayfix_easierwaterjump = {CF_SERVER, "sv_gameplayfix_easierwaterjump", "1", "changes water jumping to make it easier to get out of water (exactly like in QuakeWorld)"};
-cvar_t sv_gameplayfix_findradiusdistancetobox = {CF_SERVER, "sv_gameplayfix_findradiusdistancetobox", "1", "causes findradius to check the distance to the corner of a box rather than the center of the box, makes findradius detect bmodels such as very large doors that would otherwise be unaffected by splash damage"};
-cvar_t sv_gameplayfix_gravityunaffectedbyticrate = {CF_SERVER, "sv_gameplayfix_gravityunaffectedbyticrate", "0", "fix some ticrate issues in physics."};
-cvar_t sv_gameplayfix_grenadebouncedownslopes = {CF_SERVER, "sv_gameplayfix_grenadebouncedownslopes", "1", "prevents MOVETYPE_BOUNCE (grenades) from getting stuck when fired down a downward sloping surface"};
-cvar_t sv_gameplayfix_multiplethinksperframe = {CF_SERVER, "sv_gameplayfix_multiplethinksperframe", "1", "allows entities to think more often than the server framerate, primarily useful for very high fire rate weapons"};
-cvar_t sv_gameplayfix_noairborncorpse = {CF_SERVER, "sv_gameplayfix_noairborncorpse", "1", "causes entities (corpses, items, etc) sitting ontop of moving entities (players) to fall when the moving entity (player) is no longer supporting them"};
-cvar_t sv_gameplayfix_noairborncorpse_allowsuspendeditems = {CF_SERVER, "sv_gameplayfix_noairborncorpse_allowsuspendeditems", "1", "causes entities sitting ontop of objects that are instantaneously remove to float in midair (special hack to allow a common level design trick for floating items)"};
-cvar_t sv_gameplayfix_nudgeoutofsolid = {CF_SERVER, "sv_gameplayfix_nudgeoutofsolid", "0", "attempts to fix physics errors (where an object ended up in solid for some reason)"};
-cvar_t sv_gameplayfix_nudgeoutofsolid_separation = {CF_SERVER, "sv_gameplayfix_nudgeoutofsolid_separation", "0.03125", "keep objects this distance apart to prevent collision issues on seams"};
-cvar_t sv_gameplayfix_q2airaccelerate = {CF_SERVER, "sv_gameplayfix_q2airaccelerate", "0", "Quake2-style air acceleration"};
-cvar_t sv_gameplayfix_nogravityonground = {CF_SERVER, "sv_gameplayfix_nogravityonground", "0", "turn off gravity when on ground (to get rid of sliding)"};
-cvar_t sv_gameplayfix_setmodelrealbox = {CF_SERVER, "sv_gameplayfix_setmodelrealbox", "1", "fixes a bug in Quake that made setmodel always set the entity box to ('-16 -16 -16', '16 16 16') rather than properly checking the model box, breaks some poorly coded mods"};
-cvar_t sv_gameplayfix_slidemoveprojectiles = {CF_SERVER, "sv_gameplayfix_slidemoveprojectiles", "1", "allows MOVETYPE_FLY/FLYMISSILE/TOSS/BOUNCE/BOUNCEMISSILE entities to finish their move in a frame even if they hit something, fixes 'gravity accumulation' bug for grenades on steep slopes"};
-cvar_t sv_gameplayfix_stepdown = {CF_SERVER, "sv_gameplayfix_stepdown", "0", "attempts to step down stairs, not just up them (prevents the familiar thud..thud..thud.. when running down stairs and slopes)"};
-cvar_t sv_gameplayfix_stepmultipletimes = {CF_SERVER, "sv_gameplayfix_stepmultipletimes", "0", "applies step-up onto a ledge more than once in a single frame, when running quickly up stairs"};
-cvar_t sv_gameplayfix_nostepmoveonsteepslopes = {CF_SERVER, "sv_gameplayfix_nostepmoveonsteepslopes", "0", "crude fix which prevents MOVETYPE_STEP (not swimming or flying) to move on slopes whose angle is bigger than 45 degree"};
-cvar_t sv_gameplayfix_swiminbmodels = {CF_SERVER, "sv_gameplayfix_swiminbmodels", "1", "causes pointcontents (used to determine if you are in a liquid) to check bmodel entities as well as the world model, so you can swim around in (possibly moving) water bmodel entities"};
-cvar_t sv_gameplayfix_upwardvelocityclearsongroundflag = {CF_SERVER, "sv_gameplayfix_upwardvelocityclearsongroundflag", "1", "prevents monsters, items, and most other objects from being stuck to the floor when pushed around by damage, and other situations in mods"};
-cvar_t sv_gameplayfix_downtracesupportsongroundflag = {CF_SERVER, "sv_gameplayfix_downtracesupportsongroundflag", "1", "prevents very short moves from clearing onground (which may make the player stick to the floor at high netfps)"};
-cvar_t sv_gameplayfix_q1bsptracelinereportstexture = {CF_SERVER, "sv_gameplayfix_q1bsptracelinereportstexture", "1", "enables mods to get accurate trace_texture results on q1bsp by using a surface-hitting traceline implementation rather than the standard solidbsp method, q3bsp always reports texture accurately"};
-cvar_t sv_gameplayfix_unstickplayers = {CF_SERVER, "sv_gameplayfix_unstickplayers", "1", "big hack to try and fix the rare case of MOVETYPE_WALK entities getting stuck in the world clipping hull."};
-cvar_t sv_gameplayfix_unstickentities = {CF_SERVER, "sv_gameplayfix_unstickentities", "1", "hack to check if entities are crossing world collision hull and try to move them to the right position"};
-cvar_t sv_gameplayfix_fixedcheckwatertransition = {CF_SERVER, "sv_gameplayfix_fixedcheckwatertransition", "1", "fix two very stupid bugs in SV_CheckWaterTransition when watertype is CONTENTS_EMPTY (the bugs causes waterlevel to be 1 on first frame, -1 on second frame - the fix makes it 0 on both frames)"};
-cvar_t sv_gameplayfix_customstats = {CF_SERVER, "sv_gameplayfix_customstats", "0", "Disable stats higher than 220, for use by certain games such as Xonotic"};
-cvar_t sv_gravity = {CF_SERVER | CF_NOTIFY, "sv_gravity","800", "how fast you fall (512 = roughly earth gravity)"};
-cvar_t sv_init_frame_count = {CF_SERVER, "sv_init_frame_count", "2", "number of frames to run to allow everything to settle before letting clients connect"};
-cvar_t sv_idealpitchscale = {CF_SERVER, "sv_idealpitchscale","0.8", "how much to look up/down slopes and stairs when not using freelook"};
-cvar_t sv_jumpstep = {CF_SERVER | CF_NOTIFY, "sv_jumpstep", "0", "whether you can step up while jumping"};
-cvar_t sv_jumpvelocity = {CF_SERVER, "sv_jumpvelocity", "270", "cvar that can be used by QuakeC code for jump velocity"};
-cvar_t sv_maxairspeed = {CF_SERVER, "sv_maxairspeed", "30", "maximum speed a player can accelerate to when airborn (note that it is possible to completely stop by moving the opposite direction)"};
-cvar_t sv_maxrate = {CF_SERVER | CF_ARCHIVE | CF_NOTIFY, "sv_maxrate", "1000000", "upper limit on client rate cvar, should reflect your network connection quality"};
-cvar_t sv_maxspeed = {CF_SERVER | CF_NOTIFY, "sv_maxspeed", "320", "maximum speed a player can accelerate to when on ground (can be exceeded by tricks)"};
-cvar_t sv_maxvelocity = {CF_SERVER | CF_NOTIFY, "sv_maxvelocity","2000", "universal speed limit on all entities"};
-cvar_t sv_nostep = {CF_SERVER | CF_NOTIFY, "sv_nostep","0", "prevents MOVETYPE_STEP entities (monsters) from moving"};
-cvar_t sv_playerphysicsqc = {CF_SERVER | CF_NOTIFY, "sv_playerphysicsqc", "1", "enables QuakeC function to override player physics"};
-cvar_t sv_progs = {CF_SERVER, "sv_progs", "progs.dat", "selects which quakec progs.dat file to run" };
-cvar_t sv_protocolname = {CF_SERVER, "sv_protocolname", "DP7", "selects network protocol to host for (values include QUAKE, QUAKEDP, NEHAHRAMOVIE, DP1 and up)"};
-cvar_t sv_random_seed = {CF_SERVER, "sv_random_seed", "", "random seed; when set, on every map start this random seed is used to initialize the random number generator. Don't touch it unless for benchmarking or debugging"};
-cvar_t host_limitlocal = {CF_SERVER, "host_limitlocal", "0", "whether to apply rate limiting to the local player in a listen server (only useful for testing)"};
-cvar_t sv_sound_land = {CF_SERVER, "sv_sound_land", "demon/dland2.wav", "sound to play when MOVETYPE_STEP entity hits the ground at high speed (empty cvar disables the sound)"};
-cvar_t sv_sound_watersplash = {CF_SERVER, "sv_sound_watersplash", "misc/h2ohit1.wav", "sound to play when MOVETYPE_FLY/TOSS/BOUNCE/STEP entity enters or leaves water (empty cvar disables the sound)"};
-cvar_t sv_stepheight = {CF_SERVER | CF_NOTIFY, "sv_stepheight", "18", "how high you can step up (TW_SV_STEPCONTROL extension)"};
-cvar_t sv_stopspeed = {CF_SERVER | CF_NOTIFY, "sv_stopspeed","100", "how fast you come to a complete stop"};
-cvar_t sv_wallfriction = {CF_SERVER | CF_NOTIFY, "sv_wallfriction", "1", "how much you slow down when sliding along a wall"};
-cvar_t sv_wateraccelerate = {CF_SERVER, "sv_wateraccelerate", "-1", "rate at which a player accelerates to sv_maxspeed while in the air, if less than 0 the sv_accelerate variable is used instead"};
-cvar_t sv_waterfriction = {CF_SERVER | CF_NOTIFY, "sv_waterfriction","-1", "how fast you slow down, if less than 0 the sv_friction variable is used instead"};
-cvar_t sv_warsowbunny_airforwardaccel = {CF_SERVER, "sv_warsowbunny_airforwardaccel", "1.00001", "how fast you accelerate until you reach sv_maxspeed"};
-cvar_t sv_warsowbunny_accel = {CF_SERVER, "sv_warsowbunny_accel", "0.1585", "how fast you accelerate until after reaching sv_maxspeed (it gets harder as you near sv_warsowbunny_topspeed)"};
-cvar_t sv_warsowbunny_topspeed = {CF_SERVER, "sv_warsowbunny_topspeed", "925", "soft speed limit (can get faster with rjs and on ramps)"};
-cvar_t sv_warsowbunny_turnaccel = {CF_SERVER, "sv_warsowbunny_turnaccel", "0", "max sharpness of turns (also master switch for the sv_warsowbunny_* mode; set this to 9 to enable)"};
-cvar_t sv_warsowbunny_backtosideratio = {CF_SERVER, "sv_warsowbunny_backtosideratio", "0.8", "lower values make it easier to change direction without losing speed; the drawback is \"understeering\" in sharp turns"};
-cvar_t sv_onlycsqcnetworking = {CF_SERVER, "sv_onlycsqcnetworking", "0", "disables legacy entity networking code for higher performance (except on clients, which can still be legacy)"};
-cvar_t sv_areadebug = {CF_SERVER, "sv_areadebug", "0", "disables physics culling for debugging purposes (only for development)"};
-cvar_t sys_ticrate = {CF_SERVER | CF_ARCHIVE, "sys_ticrate","0.0138889", "how long a server frame is in seconds, 0.05 is 20fps server rate, 0.1 is 10fps (can not be set higher than 0.1), 0 runs as many server frames as possible (makes games against bots a little smoother, overwhelms network players), 0.0138889 matches QuakeWorld physics"};
-cvar_t teamplay = {CF_SERVER | CF_NOTIFY, "teamplay","0", "teamplay mode, values depend on mod but typically 0 = no teams, 1 = no team damage no self damage, 2 = team damage and self damage, some mods support 3 = no team damage but can damage self"};
-cvar_t timelimit = {CF_SERVER | CF_NOTIFY, "timelimit","0", "ends level at this time (in minutes)"};
-cvar_t sv_threaded = {CF_SERVER, "sv_threaded", "0", "enables a separate thread for server code, improving performance, especially when hosting a game while playing, EXPERIMENTAL, may be crashy"};
+cvar_t sv_accelerate = {0, "sv_accelerate", "10", "rate at which a player accelerates to sv_maxspeed"};
+cvar_t sv_aim = {CVAR_SAVE, "sv_aim", "2", "maximum cosine angle for quake's vertical autoaim, a value above 1 completely disables the autoaim, quake used 0.93"};
+cvar_t sv_airaccel_qw = {0, "sv_airaccel_qw", "1", "ratio of QW-style air control as opposed to simple acceleration; when < 0, the speed is clamped against the maximum allowed forward speed after the move"};
+cvar_t sv_airaccel_qw_stretchfactor = {0, "sv_airaccel_qw_stretchfactor", "0", "when set, the maximum acceleration increase the player may get compared to forward-acceleration when strafejumping"};
+cvar_t sv_airaccel_sideways_friction = {0, "sv_airaccel_sideways_friction", "", "anti-sideways movement stabilization (reduces speed gain when zigzagging); when < 0, only so much friction is applied that braking (by accelerating backwards) cannot be stronger"};
+cvar_t sv_airaccelerate = {0, "sv_airaccelerate", "-1", "rate at which a player accelerates to sv_maxairspeed while in the air, if less than 0 the sv_accelerate variable is used instead"};
+cvar_t sv_airstopaccelerate = {0, "sv_airstopaccelerate", "0", "when set, replacement for sv_airaccelerate when moving backwards"};
+cvar_t sv_airspeedlimit_nonqw = {0, "sv_airspeedlimit_nonqw", "0", "when set, this is a soft speed limit while in air when using airaccel_qw not equal to 1"};
+cvar_t sv_airstrafeaccelerate = {0, "sv_airstrafeaccelerate", "0", "when set, replacement for sv_airaccelerate when just strafing"};
+cvar_t sv_maxairstrafespeed = {0, "sv_maxairstrafespeed", "0", "when set, replacement for sv_maxairspeed when just strafing"};
+cvar_t sv_airstrafeaccel_qw = {0, "sv_airstrafeaccel_qw", "0", "when set, replacement for sv_airaccel_qw when just strafing"};
+cvar_t sv_aircontrol = {0, "sv_aircontrol", "0", "CPMA-style air control"};
+cvar_t sv_aircontrol_power = {0, "sv_aircontrol_power", "2", "CPMA-style air control exponent"};
+cvar_t sv_aircontrol_penalty = {0, "sv_aircontrol_penalty", "0", "deceleration while using CPMA-style air control"};
+cvar_t sv_allowdownloads = {0, "sv_allowdownloads", "1", "whether to allow clients to download files from the server (does not affect http downloads)"};
+cvar_t sv_allowdownloads_archive = {0, "sv_allowdownloads_archive", "0", "whether to allow downloads of archives (pak/pk3)"};
+cvar_t sv_allowdownloads_config = {0, "sv_allowdownloads_config", "0", "whether to allow downloads of config files (cfg)"};
+cvar_t sv_allowdownloads_dlcache = {0, "sv_allowdownloads_dlcache", "0", "whether to allow downloads of dlcache files (dlcache/)"};
+cvar_t sv_allowdownloads_inarchive = {0, "sv_allowdownloads_inarchive", "0", "whether to allow downloads from archives (pak/pk3)"};
+cvar_t sv_areagrid_mingridsize = {CVAR_NOTIFY, "sv_areagrid_mingridsize", "128", "minimum areagrid cell size, smaller values work better for lots of small objects, higher values for large objects"};
+cvar_t sv_checkforpacketsduringsleep = {0, "sv_checkforpacketsduringsleep", "0", "uses select() function to wait between frames which can be interrupted by packets being received, instead of Sleep()/usleep()/SDL_Sleep() functions which do not check for packets"};
+cvar_t sv_clmovement_enable = {0, "sv_clmovement_enable", "1", "whether to allow clients to use cl_movement prediction, which can cause choppy movement on the server which may annoy other players"};
+cvar_t sv_clmovement_minping = {0, "sv_clmovement_minping", "0", "if client ping is below this time in milliseconds, then their ability to use cl_movement prediction is disabled for a while (as they don't need it)"};
+cvar_t sv_clmovement_minping_disabletime = {0, "sv_clmovement_minping_disabletime", "1000", "when client falls below minping, disable their prediction for this many milliseconds (should be at least 1000 or else their prediction may turn on/off frequently)"};
+cvar_t sv_clmovement_inputtimeout = {0, "sv_clmovement_inputtimeout", "0.2", "when a client does not send input for this many seconds, force them to move anyway (unlike QuakeWorld)"};
+cvar_t sv_cullentities_nevercullbmodels = {0, "sv_cullentities_nevercullbmodels", "0", "if enabled the clients are always notified of moving doors and lifts and other submodels of world (warning: eats a lot of network bandwidth on some levels!)"};
+cvar_t sv_cullentities_pvs = {0, "sv_cullentities_pvs", "1", "fast but loose culling of hidden entities"};
+cvar_t sv_cullentities_stats = {0, "sv_cullentities_stats", "0", "displays stats on network entities culled by various methods for each client"};
+cvar_t sv_cullentities_trace = {0, "sv_cullentities_trace", "0", "somewhat slow but very tight culling of hidden entities, minimizes network traffic and makes wallhack cheats useless"};
+cvar_t sv_cullentities_trace_delay = {0, "sv_cullentities_trace_delay", "1", "number of seconds until the entity gets actually culled"};
+cvar_t sv_cullentities_trace_delay_players = {0, "sv_cullentities_trace_delay_players", "0.2", "number of seconds until the entity gets actually culled if it is a player entity"};
+cvar_t sv_cullentities_trace_enlarge = {0, "sv_cullentities_trace_enlarge", "0", "box enlargement for entity culling"};
+cvar_t sv_cullentities_trace_prediction = {0, "sv_cullentities_trace_prediction", "1", "also trace from the predicted player position"};
+cvar_t sv_cullentities_trace_prediction_time = {0, "sv_cullentities_trace_prediction_time", "0.2", "how many seconds of prediction to use"};
+cvar_t sv_cullentities_trace_entityocclusion = {0, "sv_cullentities_trace_entityocclusion", "0", "also check if doors and other bsp models are in the way"};
+cvar_t sv_cullentities_trace_samples = {0, "sv_cullentities_trace_samples", "2", "number of samples to test for entity culling"};
+cvar_t sv_cullentities_trace_samples_extra = {0, "sv_cullentities_trace_samples_extra", "2", "number of samples to test for entity culling when the entity affects its surroundings by e.g. dlight"};
+cvar_t sv_cullentities_trace_samples_players = {0, "sv_cullentities_trace_samples_players", "8", "number of samples to test for entity culling when the entity is a player entity"};
+cvar_t sv_debugmove = {CVAR_NOTIFY, "sv_debugmove", "0", "disables collision detection optimizations for debugging purposes"};
+cvar_t sv_echobprint = {CVAR_SAVE, "sv_echobprint", "1", "prints gamecode bprint() calls to server console"};
+cvar_t sv_edgefriction = {0, "edgefriction", "1", "how much you slow down when nearing a ledge you might fall off, multiplier of sv_friction (Quake used 2, QuakeWorld used 1 due to a bug in physics code)"};
+cvar_t sv_entpatch = {0, "sv_entpatch", "1", "enables loading of .ent files to override entities in the bsp (for example Threewave CTF server pack contains .ent patch files enabling play of CTF on id1 maps)"};
+cvar_t sv_fixedframeratesingleplayer = {0, "sv_fixedframeratesingleplayer", "1", "allows you to use server-style timing system in singleplayer (don't run faster than sys_ticrate)"};
+cvar_t sv_freezenonclients = {CVAR_NOTIFY, "sv_freezenonclients", "0", "freezes time, except for players, allowing you to walk around and take screenshots of explosions"};
+cvar_t sv_friction = {CVAR_NOTIFY, "sv_friction","4", "how fast you slow down"};
+cvar_t sv_gameplayfix_blowupfallenzombies = {0, "sv_gameplayfix_blowupfallenzombies", "1", "causes findradius to detect SOLID_NOT entities such as zombies and corpses on the floor, allowing splash damage to apply to them"};
+cvar_t sv_gameplayfix_consistentplayerprethink = {0, "sv_gameplayfix_consistentplayerprethink", "0", "improves fairness in multiplayer by running all PlayerPreThink functions (which fire weapons) before performing physics, then running all PlayerPostThink functions"};
+cvar_t sv_gameplayfix_delayprojectiles = {0, "sv_gameplayfix_delayprojectiles", "1", "causes entities to not move on the same frame they are spawned, meaning that projectiles wait until the next frame to perform their first move, giving proper interpolation and rocket trails, but making weapons harder to use at low framerates"};
+cvar_t sv_gameplayfix_droptofloorstartsolid = {0, "sv_gameplayfix_droptofloorstartsolid", "1", "prevents items and monsters that start in a solid area from falling out of the level (makes droptofloor treat trace_startsolid as an acceptable outcome)"};
+cvar_t sv_gameplayfix_droptofloorstartsolid_nudgetocorrect = {0, "sv_gameplayfix_droptofloorstartsolid_nudgetocorrect", "1", "tries to nudge stuck items and monsters out of walls before droptofloor is performed"};
+cvar_t sv_gameplayfix_easierwaterjump = {0, "sv_gameplayfix_easierwaterjump", "1", "changes water jumping to make it easier to get out of water (exactly like in QuakeWorld)"};
+cvar_t sv_gameplayfix_findradiusdistancetobox = {0, "sv_gameplayfix_findradiusdistancetobox", "1", "causes findradius to check the distance to the corner of a box rather than the center of the box, makes findradius detect bmodels such as very large doors that would otherwise be unaffected by splash damage"};
+cvar_t sv_gameplayfix_gravityunaffectedbyticrate = {0, "sv_gameplayfix_gravityunaffectedbyticrate", "0", "fix some ticrate issues in physics."};
+cvar_t sv_gameplayfix_grenadebouncedownslopes = {0, "sv_gameplayfix_grenadebouncedownslopes", "1", "prevents MOVETYPE_BOUNCE (grenades) from getting stuck when fired down a downward sloping surface"};
+cvar_t sv_gameplayfix_multiplethinksperframe = {0, "sv_gameplayfix_multiplethinksperframe", "1", "allows entities to think more often than the server framerate, primarily useful for very high fire rate weapons"};
+cvar_t sv_gameplayfix_noairborncorpse = {0, "sv_gameplayfix_noairborncorpse", "1", "causes entities (corpses, items, etc) sitting ontop of moving entities (players) to fall when the moving entity (player) is no longer supporting them"};
+cvar_t sv_gameplayfix_noairborncorpse_allowsuspendeditems = {0, "sv_gameplayfix_noairborncorpse_allowsuspendeditems", "1", "causes entities sitting ontop of objects that are instantaneously remove to float in midair (special hack to allow a common level design trick for floating items)"};
+cvar_t sv_gameplayfix_nudgeoutofsolid = {0, "sv_gameplayfix_nudgeoutofsolid", "0", "attempts to fix physics errors (where an object ended up in solid for some reason)"};
+cvar_t sv_gameplayfix_nudgeoutofsolid_separation = {0, "sv_gameplayfix_nudgeoutofsolid_separation", "0.03125", "keep objects this distance apart to prevent collision issues on seams"};
+cvar_t sv_gameplayfix_q2airaccelerate = {0, "sv_gameplayfix_q2airaccelerate", "0", "Quake2-style air acceleration"};
+cvar_t sv_gameplayfix_nogravityonground = {0, "sv_gameplayfix_nogravityonground", "0", "turn off gravity when on ground (to get rid of sliding)"};
+cvar_t sv_gameplayfix_setmodelrealbox = {0, "sv_gameplayfix_setmodelrealbox", "1", "fixes a bug in Quake that made setmodel always set the entity box to ('-16 -16 -16', '16 16 16') rather than properly checking the model box, breaks some poorly coded mods"};
+cvar_t sv_gameplayfix_slidemoveprojectiles = {0, "sv_gameplayfix_slidemoveprojectiles", "1", "allows MOVETYPE_FLY/FLYMISSILE/TOSS/BOUNCE/BOUNCEMISSILE entities to finish their move in a frame even if they hit something, fixes 'gravity accumulation' bug for grenades on steep slopes"};
+cvar_t sv_gameplayfix_stepdown = {0, "sv_gameplayfix_stepdown", "0", "attempts to step down stairs, not just up them (prevents the familiar thud..thud..thud.. when running down stairs and slopes)"};
+cvar_t sv_gameplayfix_stepmultipletimes = {0, "sv_gameplayfix_stepmultipletimes", "0", "applies step-up onto a ledge more than once in a single frame, when running quickly up stairs"};
+cvar_t sv_gameplayfix_nostepmoveonsteepslopes = {0, "sv_gameplayfix_nostepmoveonsteepslopes", "0", "crude fix which prevents MOVETYPE_STEP (not swimming or flying) to move on slopes whose angle is bigger than 45 degree"};
+cvar_t sv_gameplayfix_swiminbmodels = {0, "sv_gameplayfix_swiminbmodels", "1", "causes pointcontents (used to determine if you are in a liquid) to check bmodel entities as well as the world model, so you can swim around in (possibly moving) water bmodel entities"};
+cvar_t sv_gameplayfix_upwardvelocityclearsongroundflag = {0, "sv_gameplayfix_upwardvelocityclearsongroundflag", "1", "prevents monsters, items, and most other objects from being stuck to the floor when pushed around by damage, and other situations in mods"};
+cvar_t sv_gameplayfix_downtracesupportsongroundflag = {0, "sv_gameplayfix_downtracesupportsongroundflag", "1", "prevents very short moves from clearing onground (which may make the player stick to the floor at high netfps)"};
+cvar_t sv_gameplayfix_q1bsptracelinereportstexture = {0, "sv_gameplayfix_q1bsptracelinereportstexture", "1", "enables mods to get accurate trace_texture results on q1bsp by using a surface-hitting traceline implementation rather than the standard solidbsp method, q3bsp always reports texture accurately"};
+cvar_t sv_gameplayfix_unstickplayers = {0, "sv_gameplayfix_unstickplayers", "1", "big hack to try and fix the rare case of MOVETYPE_WALK entities getting stuck in the world clipping hull."};
+cvar_t sv_gameplayfix_unstickentities = {0, "sv_gameplayfix_unstickentities", "1", "hack to check if entities are crossing world collision hull and try to move them to the right position"};
+cvar_t sv_gameplayfix_fixedcheckwatertransition = {0, "sv_gameplayfix_fixedcheckwatertransition", "1", "fix two very stupid bugs in SV_CheckWaterTransition when watertype is CONTENTS_EMPTY (the bugs causes waterlevel to be 1 on first frame, -1 on second frame - the fix makes it 0 on both frames)"};
+cvar_t sv_gravity = {CVAR_NOTIFY, "sv_gravity","800", "how fast you fall (512 = roughly earth gravity)"};
+cvar_t sv_idealpitchscale = {0, "sv_idealpitchscale","0.8", "how much to look up/down slopes and stairs when not using freelook"};
+cvar_t sv_jumpstep = {CVAR_NOTIFY, "sv_jumpstep", "0", "whether you can step up while jumping"};
+cvar_t sv_jumpvelocity = {0, "sv_jumpvelocity", "270", "cvar that can be used by QuakeC code for jump velocity"};
+cvar_t sv_maxairspeed = {0, "sv_maxairspeed", "30", "maximum speed a player can accelerate to when airborn (note that it is possible to completely stop by moving the opposite direction)"};
+cvar_t sv_maxrate = {CVAR_SAVE | CVAR_NOTIFY, "sv_maxrate", "1000000", "upper limit on client rate cvar, should reflect your network connection quality"};
+cvar_t sv_maxspeed = {CVAR_NOTIFY, "sv_maxspeed", "320", "maximum speed a player can accelerate to when on ground (can be exceeded by tricks)"};
+cvar_t sv_maxvelocity = {CVAR_NOTIFY, "sv_maxvelocity","2000", "universal speed limit on all entities"};
+cvar_t sv_nostep = {CVAR_NOTIFY, "sv_nostep","0", "prevents MOVETYPE_STEP entities (monsters) from moving"};
+cvar_t sv_playerphysicsqc = {CVAR_NOTIFY, "sv_playerphysicsqc", "1", "enables QuakeC function to override player physics"};
+cvar_t sv_progs = {0, "sv_progs", "progs.dat", "selects which quakec progs.dat file to run" };
+cvar_t sv_protocolname = {0, "sv_protocolname", "DP7", "selects network protocol to host for (values include QUAKE, QUAKEDP, NEHAHRAMOVIE, DP1 and up)"};
+cvar_t sv_random_seed = {0, "sv_random_seed", "", "random seed; when set, on every map start this random seed is used to initialize the random number generator. Don't touch it unless for benchmarking or debugging"};
+cvar_t sv_ratelimitlocalplayer = {0, "sv_ratelimitlocalplayer", "0", "whether to apply rate limiting to the local player in a listen server (only useful for testing)"};
+cvar_t sv_sound_land = {0, "sv_sound_land", "demon/dland2.wav", "sound to play when MOVETYPE_STEP entity hits the ground at high speed (empty cvar disables the sound)"};
+cvar_t sv_sound_watersplash = {0, "sv_sound_watersplash", "misc/h2ohit1.wav", "sound to play when MOVETYPE_FLY/TOSS/BOUNCE/STEP entity enters or leaves water (empty cvar disables the sound)"};
+cvar_t sv_stepheight = {CVAR_NOTIFY, "sv_stepheight", "18", "how high you can step up (TW_SV_STEPCONTROL extension)"};
+cvar_t sv_stopspeed = {CVAR_NOTIFY, "sv_stopspeed","100", "how fast you come to a complete stop"};
+cvar_t sv_wallfriction = {CVAR_NOTIFY, "sv_wallfriction", "1", "how much you slow down when sliding along a wall"};
+cvar_t sv_wateraccelerate = {0, "sv_wateraccelerate", "-1", "rate at which a player accelerates to sv_maxspeed while in the air, if less than 0 the sv_accelerate variable is used instead"};
+cvar_t sv_waterfriction = {CVAR_NOTIFY, "sv_waterfriction","-1", "how fast you slow down, if less than 0 the sv_friction variable is used instead"};
+cvar_t sv_warsowbunny_airforwardaccel = {0, "sv_warsowbunny_airforwardaccel", "1.00001", "how fast you accelerate until you reach sv_maxspeed"};
+cvar_t sv_warsowbunny_accel = {0, "sv_warsowbunny_accel", "0.1585", "how fast you accelerate until after reaching sv_maxspeed (it gets harder as you near sv_warsowbunny_topspeed)"};
+cvar_t sv_warsowbunny_topspeed = {0, "sv_warsowbunny_topspeed", "925", "soft speed limit (can get faster with rjs and on ramps)"};
+cvar_t sv_warsowbunny_turnaccel = {0, "sv_warsowbunny_turnaccel", "0", "max sharpness of turns (also master switch for the sv_warsowbunny_* mode; set this to 9 to enable)"};
+cvar_t sv_warsowbunny_backtosideratio = {0, "sv_warsowbunny_backtosideratio", "0.8", "lower values make it easier to change direction without losing speed; the drawback is \"understeering\" in sharp turns"};
+cvar_t sv_onlycsqcnetworking = {0, "sv_onlycsqcnetworking", "0", "disables legacy entity networking code for higher performance (except on clients, which can still be legacy)"};
+cvar_t sv_areadebug = {0, "sv_areadebug", "0", "disables physics culling for debugging purposes (only for development)"};
+cvar_t sys_ticrate = {CVAR_SAVE, "sys_ticrate","0.0138889", "how long a server frame is in seconds, 0.05 is 20fps server rate, 0.1 is 10fps (can not be set higher than 0.1), 0 runs as many server frames as possible (makes games against bots a little smoother, overwhelms network players), 0.0138889 matches QuakeWorld physics"};
+cvar_t teamplay = {CVAR_NOTIFY, "teamplay","0", "teamplay mode, values depend on mod but typically 0 = no teams, 1 = no team damage no self damage, 2 = team damage and self damage, some mods support 3 = no team damage but can damage self"};
+cvar_t timelimit = {CVAR_NOTIFY, "timelimit","0", "ends level at this time (in minutes)"};
+cvar_t sv_threaded = {0, "sv_threaded", "0", "enables a separate thread for server code, improving performance, especially when hosting a game while playing, EXPERIMENTAL, may be crashy"};
 
-cvar_t sv_rollspeed = {CF_CLIENT, "sv_rollspeed", "200", "how much strafing is necessary to tilt the view"};
-cvar_t sv_rollangle = {CF_CLIENT, "sv_rollangle", "2.0", "how much to tilt the view when strafing"};
+cvar_t saved1 = {CVAR_SAVE, "saved1", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
+cvar_t saved2 = {CVAR_SAVE, "saved2", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
+cvar_t saved3 = {CVAR_SAVE, "saved3", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
+cvar_t saved4 = {CVAR_SAVE, "saved4", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
+cvar_t savedgamecfg = {CVAR_SAVE, "savedgamecfg", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
+cvar_t scratch1 = {0, "scratch1", "0", "unused cvar in quake, can be used by mods"};
+cvar_t scratch2 = {0,"scratch2", "0", "unused cvar in quake, can be used by mods"};
+cvar_t scratch3 = {0, "scratch3", "0", "unused cvar in quake, can be used by mods"};
+cvar_t scratch4 = {0, "scratch4", "0", "unused cvar in quake, can be used by mods"};
+cvar_t temp1 = {0, "temp1","0", "general cvar for mods to use, in stock id1 this selects which death animation to use on players (0 = random death, other values select specific death scenes)"};
 
-cvar_t saved1 = {CF_SERVER | CF_ARCHIVE, "saved1", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
-cvar_t saved2 = {CF_SERVER | CF_ARCHIVE, "saved2", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
-cvar_t saved3 = {CF_SERVER | CF_ARCHIVE, "saved3", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
-cvar_t saved4 = {CF_SERVER | CF_ARCHIVE, "saved4", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
-cvar_t savedgamecfg = {CF_SERVER | CF_ARCHIVE, "savedgamecfg", "0", "unused cvar in quake that is saved to config.cfg on exit, can be used by mods"};
-cvar_t scratch1 = {CF_SERVER, "scratch1", "0", "unused cvar in quake, can be used by mods"};
-cvar_t scratch2 = {CF_SERVER,"scratch2", "0", "unused cvar in quake, can be used by mods"};
-cvar_t scratch3 = {CF_SERVER, "scratch3", "0", "unused cvar in quake, can be used by mods"};
-cvar_t scratch4 = {CF_SERVER, "scratch4", "0", "unused cvar in quake, can be used by mods"};
-cvar_t temp1 = {CF_SERVER, "temp1","0", "general cvar for mods to use, in stock id1 this selects which death animation to use on players (0 = random death, other values select specific death scenes)"};
+cvar_t nehx00 = {0, "nehx00", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx01 = {0, "nehx01", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx02 = {0, "nehx02", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx03 = {0, "nehx03", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx04 = {0, "nehx04", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx05 = {0, "nehx05", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx06 = {0, "nehx06", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx07 = {0, "nehx07", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx08 = {0, "nehx08", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx09 = {0, "nehx09", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx10 = {0, "nehx10", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx11 = {0, "nehx11", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx12 = {0, "nehx12", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx13 = {0, "nehx13", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx14 = {0, "nehx14", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx15 = {0, "nehx15", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx16 = {0, "nehx16", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx17 = {0, "nehx17", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx18 = {0, "nehx18", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t nehx19 = {0, "nehx19", "0", "nehahra data storage cvar (used in singleplayer)"};
+cvar_t cutscene = {0, "cutscene", "1", "enables cutscenes in nehahra, can be used by other mods"};
 
-cvar_t nehx00 = {CF_SERVER, "nehx00", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx01 = {CF_SERVER, "nehx01", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx02 = {CF_SERVER, "nehx02", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx03 = {CF_SERVER, "nehx03", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx04 = {CF_SERVER, "nehx04", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx05 = {CF_SERVER, "nehx05", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx06 = {CF_SERVER, "nehx06", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx07 = {CF_SERVER, "nehx07", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx08 = {CF_SERVER, "nehx08", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx09 = {CF_SERVER, "nehx09", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx10 = {CF_SERVER, "nehx10", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx11 = {CF_SERVER, "nehx11", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx12 = {CF_SERVER, "nehx12", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx13 = {CF_SERVER, "nehx13", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx14 = {CF_SERVER, "nehx14", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx15 = {CF_SERVER, "nehx15", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx16 = {CF_SERVER, "nehx16", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx17 = {CF_SERVER, "nehx17", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx18 = {CF_SERVER, "nehx18", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t nehx19 = {CF_SERVER, "nehx19", "0", "nehahra data storage cvar (used in singleplayer)"};
-cvar_t cutscene = {CF_SERVER, "cutscene", "1", "enables cutscenes in nehahra, can be used by other mods"};
+cvar_t sv_autodemo_perclient = {CVAR_SAVE, "sv_autodemo_perclient", "0", "set to 1 to enable autorecorded per-client demos (they'll start to record at the beginning of a match); set it to 2 to also record client->server packets (for debugging)"};
+cvar_t sv_autodemo_perclient_nameformat = {CVAR_SAVE, "sv_autodemo_perclient_nameformat", "sv_autodemos/%Y-%m-%d_%H-%M", "The format of the sv_autodemo_perclient filename, followed by the map name, the client number and the IP address + port number, separated by underscores (the date is encoded using strftime escapes)" };
+cvar_t sv_autodemo_perclient_discardable = {CVAR_SAVE, "sv_autodemo_perclient_discardable", "0", "Allow game code to decide whether a demo should be kept or discarded."};
 
-cvar_t sv_autodemo_perclient = {CF_SERVER | CF_ARCHIVE, "sv_autodemo_perclient", "0", "set to 1 to enable autorecorded per-client demos (they'll start to record at the beginning of a match); set it to 2 to also record client->server packets (for debugging)"};
-cvar_t sv_autodemo_perclient_nameformat = {CF_SERVER | CF_ARCHIVE, "sv_autodemo_perclient_nameformat", "sv_autodemos/%Y-%m-%d_%H-%M", "The format of the sv_autodemo_perclient filename, followed by the map name, the client number and the IP address + port number, separated by underscores (the date is encoded using strftime escapes)" };
-cvar_t sv_autodemo_perclient_discardable = {CF_SERVER | CF_ARCHIVE, "sv_autodemo_perclient_discardable", "0", "Allow game code to decide whether a demo should be kept or discarded."};
-
-cvar_t halflifebsp = {CF_SERVER, "halflifebsp", "0", "indicates the current map is hlbsp format (useful to know because of different bounding box sizes)"};
-cvar_t sv_mapformat_is_quake2 = {CF_SERVER, "sv_mapformat_is_quake2", "0", "indicates the current map is q2bsp format (useful to know because of different entity behaviors, .frame on submodels and other things)"};
-cvar_t sv_mapformat_is_quake3 = {CF_SERVER, "sv_mapformat_is_quake3", "0", "indicates the current map is q2bsp format (useful to know because of different entity behaviors)"};
+cvar_t halflifebsp = {0, "halflifebsp", "0", "indicates the current map is hlbsp format (useful to know because of different bounding box sizes)"};
 
 server_t sv;
 server_static_t svs;
 
 mempool_t *sv_mempool = NULL;
 
-extern cvar_t host_timescale;
+extern cvar_t slowmo;
 extern float		scr_centertime_off;
 
 // MUST match effectnameindex_t in client.h
@@ -419,15 +408,11 @@ prvm_required_field_t sv_reqglobals[] =
 #undef PRVM_DECLARE_function
 };
 
-static void Host_Timescale_c(cvar_t *var)
-{
-	if(var->value < 0.00001 && var->value != 0)
-		Cvar_SetValueQuick(var, 0);
-}
+
 
 //============================================================================
 
-static void SV_AreaStats_f(cmd_state_t *cmd)
+static void SV_AreaStats_f(void)
 {
 	World_PrintAreaStats(&sv.world, "server");
 }
@@ -456,10 +441,10 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&csqc_progsize);
 	Cvar_RegisterVariable (&csqc_usedemoprogs);
 
-	Cmd_AddCommand(CF_SHARED, "sv_saveentfile", SV_SaveEntFile_f, "save map entities to .ent file (to allow external editing)");
-	Cmd_AddCommand(CF_SHARED, "sv_areastats", SV_AreaStats_f, "prints statistics on entity culling during collision traces");
-	Cmd_AddCommand(CF_CLIENT | CF_SERVER_FROM_CLIENT, "sv_startdownload", SV_StartDownload_f, "begins sending a file to the client (network protocol use only)");
-	Cmd_AddCommand(CF_CLIENT | CF_SERVER_FROM_CLIENT, "download", SV_Download_f, "downloads a specified file from the server");
+	Cmd_AddCommand("sv_saveentfile", SV_SaveEntFile_f, "save map entities to .ent file (to allow external editing)");
+	Cmd_AddCommand("sv_areastats", SV_AreaStats_f, "prints statistics on entity culling during collision traces");
+	Cmd_AddCommand_WithClientCommand("sv_startdownload", NULL, SV_StartDownload_f, "begins sending a file to the client (network protocol use only)");
+	Cmd_AddCommand_WithClientCommand("download", NULL, SV_Download_f, "downloads a specified file from the server");
 
 	Cvar_RegisterVariable (&sv_disablenotify);
 	Cvar_RegisterVariable (&coop);
@@ -472,10 +457,7 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&pr_checkextension);
 	Cvar_RegisterVariable (&samelevel);
 	Cvar_RegisterVariable (&skill);
-	Cvar_RegisterVariable (&host_timescale);
-	Cvar_RegisterCallback (&host_timescale, Host_Timescale_c);
-	Cvar_RegisterAlias (&host_timescale, "slowmo");
-	Cvar_RegisterAlias (&host_timescale, "timescale");
+	Cvar_RegisterVariable (&slowmo);
 	Cvar_RegisterVariable (&sv_accelerate);
 	Cvar_RegisterVariable (&sv_aim);
 	Cvar_RegisterVariable (&sv_airaccel_qw);
@@ -508,8 +490,6 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&sv_cullentities_trace_delay);
 	Cvar_RegisterVariable (&sv_cullentities_trace_delay_players);
 	Cvar_RegisterVariable (&sv_cullentities_trace_enlarge);
-	Cvar_RegisterVariable (&sv_cullentities_trace_expand);
-	Cvar_RegisterVariable (&sv_cullentities_trace_eyejitter);
 	Cvar_RegisterVariable (&sv_cullentities_trace_entityocclusion);
 	Cvar_RegisterVariable (&sv_cullentities_trace_prediction);
 	Cvar_RegisterVariable (&sv_cullentities_trace_prediction_time);
@@ -520,6 +500,7 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&sv_echobprint);
 	Cvar_RegisterVariable (&sv_edgefriction);
 	Cvar_RegisterVariable (&sv_entpatch);
+	Cvar_RegisterVariable (&sv_fixedframeratesingleplayer);
 	Cvar_RegisterVariable (&sv_freezenonclients);
 	Cvar_RegisterVariable (&sv_friction);
 	Cvar_RegisterVariable (&sv_gameplayfix_blowupfallenzombies);
@@ -550,9 +531,7 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&sv_gameplayfix_unstickplayers);
 	Cvar_RegisterVariable (&sv_gameplayfix_unstickentities);
 	Cvar_RegisterVariable (&sv_gameplayfix_fixedcheckwatertransition);
-	Cvar_RegisterVariable (&sv_gameplayfix_customstats);
 	Cvar_RegisterVariable (&sv_gravity);
-	Cvar_RegisterVariable (&sv_init_frame_count);
 	Cvar_RegisterVariable (&sv_idealpitchscale);
 	Cvar_RegisterVariable (&sv_jumpstep);
 	Cvar_RegisterVariable (&sv_jumpvelocity);
@@ -565,8 +544,7 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&sv_progs);
 	Cvar_RegisterVariable (&sv_protocolname);
 	Cvar_RegisterVariable (&sv_random_seed);
-	Cvar_RegisterVariable (&host_limitlocal);
-	Cvar_RegisterAlias(&host_limitlocal, "sv_ratelimitlocalplayer");
+	Cvar_RegisterVariable (&sv_ratelimitlocalplayer);
 	Cvar_RegisterVariable (&sv_sound_land);
 	Cvar_RegisterVariable (&sv_sound_watersplash);
 	Cvar_RegisterVariable (&sv_stepheight);
@@ -586,9 +564,6 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&timelimit);
 	Cvar_RegisterVariable (&sv_threaded);
 
-	Cvar_RegisterVariable (&sv_rollangle);
-	Cvar_RegisterVariable (&sv_rollspeed);
-
 	Cvar_RegisterVariable (&saved1);
 	Cvar_RegisterVariable (&saved2);
 	Cvar_RegisterVariable (&saved3);
@@ -600,7 +575,7 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&scratch4);
 	Cvar_RegisterVariable (&temp1);
 
-	// LadyHavoc: Nehahra uses these to pass data around cutscene demos
+	// LordHavoc: Nehahra uses these to pass data around cutscene demos
 	Cvar_RegisterVariable (&nehx00);
 	Cvar_RegisterVariable (&nehx01);
 	Cvar_RegisterVariable (&nehx02);
@@ -628,15 +603,11 @@ void SV_Init (void)
 	Cvar_RegisterVariable (&sv_autodemo_perclient_discardable);
 
 	Cvar_RegisterVariable (&halflifebsp);
-	Cvar_RegisterVariable (&sv_mapformat_is_quake2);
-	Cvar_RegisterVariable (&sv_mapformat_is_quake3);
-
-	SV_InitOperatorCommands();
 
 	sv_mempool = Mem_AllocPool("server", 0, NULL);
 }
 
-static void SV_SaveEntFile_f(cmd_state_t *cmd)
+static void SV_SaveEntFile_f(void)
 {
 	char vabuf[1024];
 	if (!sv.active || !sv.worldmodel)
@@ -733,7 +704,7 @@ Larger attenuations will drop off.  (max 4 attenuation)
 
 ==================
 */
-void SV_StartSound (prvm_edict_t *entity, int channel, const char *sample, int nvolume, float attenuation, qbool reliable, float speed)
+void SV_StartSound (prvm_edict_t *entity, int channel, const char *sample, int volume, float attenuation, qboolean reliable, float speed)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	sizebuf_t *dest;
@@ -741,9 +712,9 @@ void SV_StartSound (prvm_edict_t *entity, int channel, const char *sample, int n
 
 	dest = (reliable ? &sv.reliable_datagram : &sv.datagram);
 
-	if (nvolume < 0 || nvolume > 255)
+	if (volume < 0 || volume > 255)
 	{
-		Con_Printf ("SV_StartSound: volume = %i\n", nvolume);
+		Con_Printf ("SV_StartSound: volume = %i\n", volume);
 		return;
 	}
 
@@ -773,7 +744,7 @@ void SV_StartSound (prvm_edict_t *entity, int channel, const char *sample, int n
 
 	speed4000 = (int)floor(speed * 4000.0f + 0.5f);
 	field_mask = 0;
-	if (nvolume != DEFAULT_SOUND_PACKET_VOLUME)
+	if (volume != DEFAULT_SOUND_PACKET_VOLUME)
 		field_mask |= SND_VOLUME;
 	if (attenuation != DEFAULT_SOUND_PACKET_ATTENUATION)
 		field_mask |= SND_ATTENUATION;
@@ -788,7 +759,7 @@ void SV_StartSound (prvm_edict_t *entity, int channel, const char *sample, int n
 	MSG_WriteByte (dest, svc_sound);
 	MSG_WriteByte (dest, field_mask);
 	if (field_mask & SND_VOLUME)
-		MSG_WriteByte (dest, nvolume);
+		MSG_WriteByte (dest, volume);
 	if (field_mask & SND_ATTENUATION)
 		MSG_WriteByte (dest, (int)(attenuation*64));
 	if (field_mask & SND_SPEEDUSHORT4000)
@@ -825,13 +796,13 @@ function, therefore the check for it is omitted.
 
 ==================
 */
-void SV_StartPointSound (vec3_t origin, const char *sample, int nvolume, float attenuation, float speed)
+void SV_StartPointSound (vec3_t origin, const char *sample, int volume, float attenuation, float speed)
 {
 	int sound_num, field_mask, i, speed4000;
 
-	if (nvolume < 0 || nvolume > 255)
+	if (volume < 0 || volume > 255)
 	{
-		Con_Printf ("SV_StartPointSound: volume = %i\n", nvolume);
+		Con_Printf ("SV_StartPointSound: volume = %i\n", volume);
 		return;
 	}
 
@@ -851,7 +822,7 @@ void SV_StartPointSound (vec3_t origin, const char *sample, int nvolume, float a
 
 	speed4000 = (int)(speed * 40.0f);
 	field_mask = 0;
-	if (nvolume != DEFAULT_SOUND_PACKET_VOLUME)
+	if (volume != DEFAULT_SOUND_PACKET_VOLUME)
 		field_mask |= SND_VOLUME;
 	if (attenuation != DEFAULT_SOUND_PACKET_ATTENUATION)
 		field_mask |= SND_ATTENUATION;
@@ -864,7 +835,7 @@ void SV_StartPointSound (vec3_t origin, const char *sample, int nvolume, float a
 	MSG_WriteByte (&sv.datagram, svc_sound);
 	MSG_WriteByte (&sv.datagram, field_mask);
 	if (field_mask & SND_VOLUME)
-		MSG_WriteByte (&sv.datagram, nvolume);
+		MSG_WriteByte (&sv.datagram, volume);
 	if (field_mask & SND_ATTENUATION)
 		MSG_WriteByte (&sv.datagram, (int)(attenuation*64));
 	if (field_mask & SND_SPEEDUSHORT4000)
@@ -912,7 +883,7 @@ void SV_SendServerinfo (client_t *client)
 	client->weaponmodel[0] = 0;
 	client->weaponmodelindex = 0;
 
-	// LadyHavoc: clear entityframe tracking
+	// LordHavoc: clear entityframe tracking
 	client->latestframenum = 0;
 
 	// initialize the movetime, so a speedhack can't make use of the time before this client joined
@@ -958,17 +929,17 @@ void SV_SendServerinfo (client_t *client)
 	MSG_WriteString (&client->netconnection->message,message);
 
 	SV_StopDemoRecording(client); // to split up demos into different files
-	if(sv_autodemo_perclient.integer)
+	if(sv_autodemo_perclient.integer && client->netconnection)
 	{
 		char demofile[MAX_OSPATH];
 		char ipaddress[MAX_QPATH];
-		size_t j;
+		size_t i;
 
 		// start a new demo file
 		LHNETADDRESS_ToString(&(client->netconnection->peeraddress), ipaddress, sizeof(ipaddress), true);
-		for(j = 0; ipaddress[j]; ++j)
-			if(!isalnum(ipaddress[j]))
-				ipaddress[j] = '-';
+		for(i = 0; ipaddress[i]; ++i)
+			if(!isalnum(ipaddress[i]))
+				ipaddress[i] = '-';
 		dpsnprintf (demofile, sizeof(demofile), "%s_%s_%d_%s.dem", Sys_TimeString (sv_autodemo_perclient_nameformat.string), sv.worldbasename, PRVM_NUM_FOR_EDICT(client->edict), ipaddress);
 
 		SV_StartDemoRecording(client, demofile, -1);
@@ -987,14 +958,14 @@ void SV_SendServerinfo (client_t *client)
 
 		if(client->sv_demo_file != NULL)
 		{
-			int k;
+			int i;
 			static char buf[NET_MAXMESSAGE];
 			sizebuf_t sb;
 
 			sb.data = (unsigned char *) buf;
 			sb.maxsize = sizeof(buf);
-			k = 0;
-			while(MakeDownloadPacket(sv.csqc_progname, svs.csqc_progdata, sv.csqc_progsize, sv.csqc_progcrc, k++, &sb, sv.protocol))
+			i = 0;
+			while(MakeDownloadPacket(sv.csqc_progname, svs.csqc_progdata, sv.csqc_progsize, sv.csqc_progcrc, i++, &sb, sv.protocol))
 				SV_WriteDemoMessage(client, &sb, false);
 		}
 
@@ -1074,7 +1045,7 @@ void SV_SendServerinfo (client_t *client)
 	client->ping = 0;
 
 	// allow the client some time to send his keepalives, even if map loading took ages
-	client->netconnection->timeout = host.realtime + net_connecttimeout.value;
+	client->netconnection->timeout = realtime + net_connecttimeout.value;
 }
 
 /*
@@ -1110,14 +1081,12 @@ void SV_ConnectClient (int clientnum, netconn_t *netconnection)
 
 	if(client->netconnection && client->netconnection->crypto.authenticated)
 	{
-		Con_Printf("%s connection to %s has been established: client is %s@%s%.*s, I am %.*s@%s%.*s\n",
+		Con_Printf("%s connection to %s has been established: client is %s@%.*s, I am %.*s@%.*s\n",
 				client->netconnection->crypto.use_aes ? "Encrypted" : "Authenticated",
 				client->netconnection->address,
 				client->netconnection->crypto.client_idfp[0] ? client->netconnection->crypto.client_idfp : "-",
-				(client->netconnection->crypto.client_issigned || !client->netconnection->crypto.client_keyfp[0]) ? "" : "~",
 				crypto_keyfp_recommended_length, client->netconnection->crypto.client_keyfp[0] ? client->netconnection->crypto.client_keyfp : "-",
 				crypto_keyfp_recommended_length, client->netconnection->crypto.server_idfp[0] ? client->netconnection->crypto.server_idfp : "-",
-				(client->netconnection->crypto.server_issigned || !client->netconnection->crypto.server_keyfp[0]) ? "" : "~",
 				crypto_keyfp_recommended_length, client->netconnection->crypto.server_keyfp[0] ? client->netconnection->crypto.server_keyfp : "-"
 				);
 	}
@@ -1135,7 +1104,7 @@ void SV_ConnectClient (int clientnum, netconn_t *netconnection)
 	client->unreliablemsg.maxsize = sizeof(client->unreliablemsg_data);
 	// updated by receiving "rate" command from client, this is also the default if not using a DP client
 	client->rate = 1000000000;
-	client->connecttime = host.realtime;
+	client->connecttime = realtime;
 
 	if (!sv.loadgame)
 	{
@@ -1159,126 +1128,6 @@ void SV_ConnectClient (int clientnum, netconn_t *netconnection)
 		client->prespawned = client->spawned = client->begun = true;
 }
 
-/*
-=====================
-SV_DropClient
-
-Called when the player is getting totally kicked off the host
-if (crash = true), don't bother sending signofs
-=====================
-*/
-void SV_DropClient(qbool crash)
-{
-	prvm_prog_t *prog = SVVM_prog;
-	int i;
-	Con_Printf("Client \"%s\" dropped\n", host_client->name);
-
-	SV_StopDemoRecording(host_client);
-
-	// make sure edict is not corrupt (from a level change for example)
-	host_client->edict = PRVM_EDICT_NUM(host_client - svs.clients + 1);
-
-	if (host_client->netconnection)
-	{
-		// tell the client to be gone
-		if (!crash)
-		{
-			// LadyHavoc: no opportunity for resending, so use unreliable 3 times
-			unsigned char bufdata[8];
-			sizebuf_t buf;
-			memset(&buf, 0, sizeof(buf));
-			buf.data = bufdata;
-			buf.maxsize = sizeof(bufdata);
-			MSG_WriteByte(&buf, svc_disconnect);
-			NetConn_SendUnreliableMessage(host_client->netconnection, &buf, sv.protocol, 10000, 0, false);
-			NetConn_SendUnreliableMessage(host_client->netconnection, &buf, sv.protocol, 10000, 0, false);
-			NetConn_SendUnreliableMessage(host_client->netconnection, &buf, sv.protocol, 10000, 0, false);
-		}
-	}
-
-	// call qc ClientDisconnect function
-	// LadyHavoc: don't call QC if server is dead (avoids recursive
-	// Host_Error in some mods when they run out of edicts)
-	if (host_client->clientconnectcalled && sv.active && host_client->edict)
-	{
-		// call the prog function for removing a client
-		// this will set the body to a dead frame, among other things
-		int saveSelf = PRVM_serverglobaledict(self);
-		host_client->clientconnectcalled = false;
-		PRVM_serverglobalfloat(time) = sv.time;
-		PRVM_serverglobaledict(self) = PRVM_EDICT_TO_PROG(host_client->edict);
-		prog->ExecuteProgram(prog, PRVM_serverfunction(ClientDisconnect), "QC function ClientDisconnect is missing");
-		PRVM_serverglobaledict(self) = saveSelf;
-	}
-
-	if (host_client->netconnection)
-	{
-		// break the net connection
-		NetConn_Close(host_client->netconnection);
-		host_client->netconnection = NULL;
-	}
-
-	// if a download is active, close it
-	if (host_client->download_file)
-	{
-		Con_DPrintf("Download of %s aborted when %s dropped\n", host_client->download_name, host_client->name);
-		FS_Close(host_client->download_file);
-		host_client->download_file = NULL;
-		host_client->download_name[0] = 0;
-		host_client->download_expectedposition = 0;
-		host_client->download_started = false;
-	}
-
-	// remove leaving player from scoreboard
-	host_client->name[0] = 0;
-	host_client->colors = 0;
-	host_client->frags = 0;
-	// send notification to all clients
-	// get number of client manually just to make sure we get it right...
-	i = host_client - svs.clients;
-	MSG_WriteByte (&sv.reliable_datagram, svc_updatename);
-	MSG_WriteByte (&sv.reliable_datagram, i);
-	MSG_WriteString (&sv.reliable_datagram, host_client->name);
-	MSG_WriteByte (&sv.reliable_datagram, svc_updatecolors);
-	MSG_WriteByte (&sv.reliable_datagram, i);
-	MSG_WriteByte (&sv.reliable_datagram, host_client->colors);
-	MSG_WriteByte (&sv.reliable_datagram, svc_updatefrags);
-	MSG_WriteByte (&sv.reliable_datagram, i);
-	MSG_WriteShort (&sv.reliable_datagram, host_client->frags);
-
-	// free the client now
-	if (host_client->entitydatabase)
-		EntityFrame_FreeDatabase(host_client->entitydatabase);
-	if (host_client->entitydatabase4)
-		EntityFrame4_FreeDatabase(host_client->entitydatabase4);
-	if (host_client->entitydatabase5)
-		EntityFrame5_FreeDatabase(host_client->entitydatabase5);
-
-	if (sv.active)
-	{
-		// clear a fields that matter to DP_SV_CLIENTNAME and DP_SV_CLIENTCOLORS, and also frags
-		PRVM_ED_ClearEdict(prog, host_client->edict);
-	}
-
-	// clear the client struct (this sets active to false)
-	memset(host_client, 0, sizeof(*host_client));
-
-	// update server listing on the master because player count changed
-	// (which the master uses for filtering empty/full servers)
-	NetConn_Heartbeat(1);
-
-	if (sv.loadgame)
-	{
-		for (i = 0;i < svs.maxclients;i++)
-			if (svs.clients[i].active && !svs.clients[i].spawned)
-				break;
-		if (i == svs.maxclients)
-		{
-			Con_Printf("Loaded game, everyone rejoined - unpausing\n");
-			sv.paused = sv.loadgame = false; // we're basically done with loading now
-		}
-	}
-}
 
 /*
 ===============================================================================
@@ -1299,7 +1148,7 @@ crosses a waterline.
 =============================================================================
 */
 
-static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, int enumber)
+static qboolean SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, int enumber)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int i;
@@ -1329,7 +1178,7 @@ static qbool SV_PrepareEntityForSending (prvm_edict_t *ent, entity_state_t *cs, 
 	effects = (unsigned)PRVM_serveredictfloat(ent, effects);
 
 	// we can omit invisible entities with no effects that are not clients
-	// LadyHavoc: this could kill tags attached to an invisible entity, I
+	// LordHavoc: this could kill tags attached to an invisible entity, I
 	// just hope we never have to support that case
 	i = (int)PRVM_serveredictfloat(ent, modelindex);
 	modelindex = (i >= 1 && i < MAX_MODELS && PRVM_serveredictstring(ent, model) && *PRVM_GetString(prog, PRVM_serveredictstring(ent, model)) && sv.models[i]) ? i : 0;
@@ -1628,14 +1477,12 @@ static void SV_PrepareEntitiesForSending(void)
 
 #define MAX_LINEOFSIGHTTRACES 64
 
-qbool SV_CanSeeBox(int numtraces, vec_t eyejitter, vec_t enlarge, vec_t entboxexpand, vec3_t eye, vec3_t entboxmins, vec3_t entboxmaxs)
+qboolean SV_CanSeeBox(int numtraces, vec_t enlarge, vec3_t eye, vec3_t entboxmins, vec3_t entboxmaxs)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	float pitchsign;
 	float alpha;
 	float starttransformed[3], endtransformed[3];
-	float boxminstransformed[3], boxmaxstransformed[3];
-	float localboxcenter[3], localboxextents[3], localboxmins[3], localboxmaxs[3];
 	int blocked = 0;
 	int traceindex;
 	int originalnumtouchedicts;
@@ -1645,35 +1492,27 @@ qbool SV_CanSeeBox(int numtraces, vec_t eyejitter, vec_t enlarge, vec_t entboxex
 	dp_model_t *model;
 	prvm_edict_t *touch;
 	static prvm_edict_t *touchedicts[MAX_EDICTS];
-	vec3_t eyemins, eyemaxs, start;
 	vec3_t boxmins, boxmaxs;
 	vec3_t clipboxmins, clipboxmaxs;
 	vec3_t endpoints[MAX_LINEOFSIGHTTRACES];
 
 	numtraces = min(numtraces, MAX_LINEOFSIGHTTRACES);
 
-	// jitter the eye location within this box
-	eyemins[0] = eye[0] - eyejitter;
-	eyemaxs[0] = eye[0] + eyejitter;
-	eyemins[1] = eye[1] - eyejitter;
-	eyemaxs[1] = eye[1] + eyejitter;
-	eyemins[2] = eye[2] - eyejitter;
-	eyemaxs[2] = eye[2] + eyejitter;
 	// expand the box a little
-	boxmins[0] = (enlarge+1) * entboxmins[0] - enlarge * entboxmaxs[0] - entboxexpand;
-	boxmaxs[0] = (enlarge+1) * entboxmaxs[0] - enlarge * entboxmins[0] + entboxexpand;
-	boxmins[1] = (enlarge+1) * entboxmins[1] - enlarge * entboxmaxs[1] - entboxexpand;
-	boxmaxs[1] = (enlarge+1) * entboxmaxs[1] - enlarge * entboxmins[1] + entboxexpand;
-	boxmins[2] = (enlarge+1) * entboxmins[2] - enlarge * entboxmaxs[2] - entboxexpand;
-	boxmaxs[2] = (enlarge+1) * entboxmaxs[2] - enlarge * entboxmins[2] + entboxexpand;
+	boxmins[0] = (enlarge+1) * entboxmins[0] - enlarge * entboxmaxs[0];
+	boxmaxs[0] = (enlarge+1) * entboxmaxs[0] - enlarge * entboxmins[0];
+	boxmins[1] = (enlarge+1) * entboxmins[1] - enlarge * entboxmaxs[1];
+	boxmaxs[1] = (enlarge+1) * entboxmaxs[1] - enlarge * entboxmins[1];
+	boxmins[2] = (enlarge+1) * entboxmins[2] - enlarge * entboxmaxs[2];
+	boxmaxs[2] = (enlarge+1) * entboxmaxs[2] - enlarge * entboxmins[2];
 
 	VectorMAM(0.5f, boxmins, 0.5f, boxmaxs, endpoints[0]);
 	for (traceindex = 1;traceindex < numtraces;traceindex++)
 		VectorSet(endpoints[traceindex], lhrandom(boxmins[0], boxmaxs[0]), lhrandom(boxmins[1], boxmaxs[1]), lhrandom(boxmins[2], boxmaxs[2]));
 
 	// calculate sweep box for the entire swarm of traces
-	VectorCopy(eyemins, clipboxmins);
-	VectorCopy(eyemaxs, clipboxmaxs);
+	VectorCopy(eye, clipboxmins);
+	VectorCopy(eye, clipboxmaxs);
 	for (traceindex = 0;traceindex < numtraces;traceindex++)
 	{
 		clipboxmins[0] = min(clipboxmins[0], endpoints[traceindex][0]);
@@ -1719,10 +1558,9 @@ qbool SV_CanSeeBox(int numtraces, vec_t eyejitter, vec_t enlarge, vec_t entboxex
 
 	for (traceindex = 0;traceindex < numtraces;traceindex++)
 	{
-		VectorSet(start, lhrandom(eyemins[0], eyemaxs[0]), lhrandom(eyemins[1], eyemaxs[1]), lhrandom(eyemins[2], eyemaxs[2]));
 		// check world occlusion
 		if (sv.worldmodel && sv.worldmodel->brush.TraceLineOfSight)
-			if (!sv.worldmodel->brush.TraceLineOfSight(sv.worldmodel, start, endpoints[traceindex], boxmins, boxmaxs))
+			if (!sv.worldmodel->brush.TraceLineOfSight(sv.worldmodel, eye, endpoints[traceindex]))
 				continue;
 		for (touchindex = 0;touchindex < numtouchedicts;touchindex++)
 		{
@@ -1735,22 +1573,9 @@ qbool SV_CanSeeBox(int numtraces, vec_t eyejitter, vec_t enlarge, vec_t entboxex
 				Matrix4x4_CreateFromQuakeEntity(&matrix, PRVM_serveredictvector(touch, origin)[0], PRVM_serveredictvector(touch, origin)[1], PRVM_serveredictvector(touch, origin)[2], pitchsign * PRVM_serveredictvector(touch, angles)[0], PRVM_serveredictvector(touch, angles)[1], PRVM_serveredictvector(touch, angles)[2], 1);
 				Matrix4x4_Invert_Simple(&imatrix, &matrix);
 				// see if the ray hits this entity
-				Matrix4x4_Transform(&imatrix, start, starttransformed);
+				Matrix4x4_Transform(&imatrix, eye, starttransformed);
 				Matrix4x4_Transform(&imatrix, endpoints[traceindex], endtransformed);
-				Matrix4x4_Transform(&imatrix, boxmins, boxminstransformed);
-				Matrix4x4_Transform(&imatrix, boxmaxs, boxmaxstransformed);
-				// transform the AABB to local space
-				VectorMAM(0.5f, boxminstransformed, 0.5f, boxmaxstransformed, localboxcenter);
-				localboxextents[0] = fabs(boxmaxstransformed[0] - localboxcenter[0]);
-				localboxextents[1] = fabs(boxmaxstransformed[1] - localboxcenter[1]);
-				localboxextents[2] = fabs(boxmaxstransformed[2] - localboxcenter[2]);
-				localboxmins[0] = localboxcenter[0] - localboxextents[0];
-				localboxmins[1] = localboxcenter[1] - localboxextents[1];
-				localboxmins[2] = localboxcenter[2] - localboxextents[2];
-				localboxmaxs[0] = localboxcenter[0] + localboxextents[0];
-				localboxmaxs[1] = localboxcenter[1] + localboxextents[1];
-				localboxmaxs[2] = localboxcenter[2] + localboxextents[2];
-				if (!model->brush.TraceLineOfSight(model, starttransformed, endtransformed, localboxmins, localboxmaxs))
+				if (!model->brush.TraceLineOfSight(model, starttransformed, endtransformed))
 				{
 					blocked++;
 					break;
@@ -1799,7 +1624,7 @@ static void SV_MarkWriteEntityStateToClient(entity_state_t *s)
 			return;
 		if (s->effects & EF_NODRAW)
 			return;
-		// LadyHavoc: only send entities with a model or important effects
+		// LordHavoc: only send entities with a model or important effects
 		if (!s->modelindex && s->specialvisibilityradius == 0)
 			return;
 
@@ -1855,7 +1680,7 @@ static void SV_MarkWriteEntityStateToClient(entity_state_t *s)
 			}
 
 			// or not seen by random tracelines
-			if (sv_cullentities_trace.integer && !isbmodel && sv.worldmodel && sv.worldmodel->brush.TraceLineOfSight && !r_trippy.integer)
+			if (sv_cullentities_trace.integer && !isbmodel && sv.worldmodel->brush.TraceLineOfSight && !r_trippy.integer)
 			{
 				int samples =
 					s->number <= svs.maxclients
@@ -1870,16 +1695,16 @@ static void SV_MarkWriteEntityStateToClient(entity_state_t *s)
 				{
 					int eyeindex;
 					for (eyeindex = 0;eyeindex < sv.writeentitiestoclient_numeyes;eyeindex++)
-						if(SV_CanSeeBox(samples, sv_cullentities_trace_eyejitter.value, enlarge, sv_cullentities_trace_expand.value, sv.writeentitiestoclient_eyes[eyeindex], ed->priv.server->cullmins, ed->priv.server->cullmaxs))
+						if(SV_CanSeeBox(samples, enlarge, sv.writeentitiestoclient_eyes[eyeindex], ed->priv.server->cullmins, ed->priv.server->cullmaxs))
 							break;
 					if(eyeindex < sv.writeentitiestoclient_numeyes)
 						svs.clients[sv.writeentitiestoclient_clientnumber].visibletime[s->number] =
-							host.realtime + (
+							realtime + (
 								s->number <= svs.maxclients
 									? sv_cullentities_trace_delay_players.value
 									: sv_cullentities_trace_delay.value
 							);
-					else if (host.realtime > svs.clients[sv.writeentitiestoclient_clientnumber].visibletime[s->number])
+					else if (realtime > svs.clients[sv.writeentitiestoclient_clientnumber].visibletime[s->number])
 					{
 						sv.writeentitiestoclient_stats_culled_trace++;
 						return;
@@ -1953,7 +1778,7 @@ static void SV_AddCameraEyes(void)
 		for(k = 0; k < sv.writeentitiestoclient_numeyes; ++k)
 		if(eye_levels[k] <= MAX_EYE_RECURSION)
 		{
-			if(SV_CanSeeBox(sv_cullentities_trace_samples.integer, sv_cullentities_trace_eyejitter.value, sv_cullentities_trace_enlarge.value, sv_cullentities_trace_expand.value, sv.writeentitiestoclient_eyes[k], mi, ma))
+			if(SV_CanSeeBox(sv_cullentities_trace_samples.integer, sv_cullentities_trace_enlarge.value, sv.writeentitiestoclient_eyes[k], mi, ma))
 			{
 				eye_levels[sv.writeentitiestoclient_numeyes] = eye_levels[k] + 1;
 				VectorCopy(camera_origins[j], sv.writeentitiestoclient_eyes[sv.writeentitiestoclient_numeyes]);
@@ -1975,11 +1800,11 @@ void SV_AddCameraEyes(void)
 static void SV_WriteEntitiesToClient(client_t *client, prvm_edict_t *clent, sizebuf_t *msg, int maxsize)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	qbool need_empty = false;
+	qboolean need_empty = false;
 	int i, numsendstates, numcsqcsendstates;
 	entity_state_t *s;
 	prvm_edict_t *camera;
-	qbool success;
+	qboolean success;
 	vec3_t eye;
 
 	// if there isn't enough space to accomplish anything, skip it
@@ -1996,7 +1821,7 @@ static void SV_WriteEntitiesToClient(client_t *client, prvm_edict_t *clent, size
 	sv.writeentitiestoclient_numeyes = 0;
 
 	// get eye location
-	sv.writeentitiestoclient_cliententitynumber = PRVM_EDICT_TO_PROG(clent); // LadyHavoc: for comparison purposes
+	sv.writeentitiestoclient_cliententitynumber = PRVM_EDICT_TO_PROG(clent); // LordHavoc: for comparison purposes
 	camera = PRVM_EDICT_NUM( client->clientcamera );
 	VectorAdd(PRVM_serveredictvector(camera, origin), PRVM_serveredictvector(clent, view_ofs), eye);
 	sv.writeentitiestoclient_pvsbytes = 0;
@@ -2014,7 +1839,7 @@ static void SV_WriteEntitiesToClient(client_t *client, prvm_edict_t *clent, size
 		vec_t predtime = bound(0, host_client->ping, sv_cullentities_trace_prediction_time.value);
 		vec3_t predeye;
 		VectorMA(eye, predtime, PRVM_serveredictvector(camera, velocity), predeye);
-		if (SV_CanSeeBox(1, 0, 0, 0, eye, predeye, predeye))
+		if (SV_CanSeeBox(1, 0, eye, predeye, predeye))
 		{
 			VectorCopy(predeye, sv.writeentitiestoclient_eyes[sv.writeentitiestoclient_numeyes]);
 			sv.writeentitiestoclient_numeyes++;
@@ -2167,7 +1992,7 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 		// angle fixing was requested by global thinking code...
 		// so store the current angles for later use
 		VectorCopy(PRVM_serveredictvector(ent, angles), host_client->fixangle_angles);
-		host_client->fixangle_angles_set = true;
+		host_client->fixangle_angles_set = TRUE;
 
 		// and clear fixangle for the next frame
 		PRVM_serveredictfloat(ent, fixangle) = 0;
@@ -2178,7 +2003,7 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 		MSG_WriteByte (msg, svc_setangle);
 		for (i=0 ; i < 3 ; i++)
 			MSG_WriteAngle (msg, host_client->fixangle_angles[i], sv.protocol);
-		host_client->fixangle_angles_set = false;
+		host_client->fixangle_angles_set = FALSE;
 	}
 
 	// the runes are in serverflags, pack them into the items value, also pack
@@ -2244,50 +2069,47 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	//stats[STAT_SECRETS] = PRVM_serverglobalfloat(found_secrets);
 	//stats[STAT_MONSTERS] = PRVM_serverglobalfloat(killed_monsters);
 
-	if(!sv_gameplayfix_customstats.integer)
-	{
-		statsf[STAT_MOVEVARS_AIRACCEL_QW_STRETCHFACTOR] = sv_airaccel_qw_stretchfactor.value;
-		statsf[STAT_MOVEVARS_AIRCONTROL_PENALTY] = sv_aircontrol_penalty.value;
-		statsf[STAT_MOVEVARS_AIRSPEEDLIMIT_NONQW] = sv_airspeedlimit_nonqw.value;		
-		statsf[STAT_MOVEVARS_AIRSTRAFEACCEL_QW] = sv_airstrafeaccel_qw.value;
-		statsf[STAT_MOVEVARS_AIRCONTROL_POWER] = sv_aircontrol_power.value;
-		// movement settings for prediction
-		// note: these are not sent in protocols with lower MAX_CL_STATS limits
-		stats[STAT_MOVEFLAGS] = MOVEFLAG_VALID
-			| (sv_gameplayfix_q2airaccelerate.integer ? MOVEFLAG_Q2AIRACCELERATE : 0)
-			| (sv_gameplayfix_nogravityonground.integer ? MOVEFLAG_NOGRAVITYONGROUND : 0)
-			| (sv_gameplayfix_gravityunaffectedbyticrate.integer ? MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE : 0)
-		;
-		statsf[STAT_MOVEVARS_WARSOWBUNNY_AIRFORWARDACCEL] = sv_warsowbunny_airforwardaccel.value;
-		statsf[STAT_MOVEVARS_WARSOWBUNNY_ACCEL] = sv_warsowbunny_accel.value;
-		statsf[STAT_MOVEVARS_WARSOWBUNNY_TOPSPEED] = sv_warsowbunny_topspeed.value;
-		statsf[STAT_MOVEVARS_WARSOWBUNNY_TURNACCEL] = sv_warsowbunny_turnaccel.value;
-		statsf[STAT_MOVEVARS_WARSOWBUNNY_BACKTOSIDERATIO] = sv_warsowbunny_backtosideratio.value;
-		statsf[STAT_MOVEVARS_AIRSTOPACCELERATE] = sv_airstopaccelerate.value;
-		statsf[STAT_MOVEVARS_AIRSTRAFEACCELERATE] = sv_airstrafeaccelerate.value;
-		statsf[STAT_MOVEVARS_MAXAIRSTRAFESPEED] = sv_maxairstrafespeed.value;
-		statsf[STAT_MOVEVARS_AIRCONTROL] = sv_aircontrol.value;
-		statsf[STAT_FRAGLIMIT] = fraglimit.value;
-		statsf[STAT_TIMELIMIT] = timelimit.value;
-		statsf[STAT_MOVEVARS_FRICTION] = sv_friction.value;	
-		statsf[STAT_MOVEVARS_WATERFRICTION] = sv_waterfriction.value >= 0 ? sv_waterfriction.value : sv_friction.value;
-		statsf[STAT_MOVEVARS_TICRATE] = sys_ticrate.value;
-		statsf[STAT_MOVEVARS_TIMESCALE] = host_timescale.value;
-		statsf[STAT_MOVEVARS_GRAVITY] = sv_gravity.value;
-		statsf[STAT_MOVEVARS_STOPSPEED] = sv_stopspeed.value;
-		statsf[STAT_MOVEVARS_MAXSPEED] = sv_maxspeed.value;
-		statsf[STAT_MOVEVARS_SPECTATORMAXSPEED] = sv_maxspeed.value; // FIXME: QW has a separate cvar for this
-		statsf[STAT_MOVEVARS_ACCELERATE] = sv_accelerate.value;
-		statsf[STAT_MOVEVARS_AIRACCELERATE] = sv_airaccelerate.value >= 0 ? sv_airaccelerate.value : sv_accelerate.value;
-		statsf[STAT_MOVEVARS_WATERACCELERATE] = sv_wateraccelerate.value >= 0 ? sv_wateraccelerate.value : sv_accelerate.value;
-		statsf[STAT_MOVEVARS_ENTGRAVITY] = gravity;
-		statsf[STAT_MOVEVARS_JUMPVELOCITY] = sv_jumpvelocity.value;
-		statsf[STAT_MOVEVARS_EDGEFRICTION] = sv_edgefriction.value;
-		statsf[STAT_MOVEVARS_MAXAIRSPEED] = sv_maxairspeed.value;
-		statsf[STAT_MOVEVARS_STEPHEIGHT] = sv_stepheight.value;
-		statsf[STAT_MOVEVARS_AIRACCEL_QW] = sv_airaccel_qw.value;
-		statsf[STAT_MOVEVARS_AIRACCEL_SIDEWAYS_FRICTION] = sv_airaccel_sideways_friction.value;
-	}
+	// movement settings for prediction
+	// note: these are not sent in protocols with lower MAX_CL_STATS limits
+	stats[STAT_MOVEFLAGS] = MOVEFLAG_VALID
+		| (sv_gameplayfix_q2airaccelerate.integer ? MOVEFLAG_Q2AIRACCELERATE : 0)
+		| (sv_gameplayfix_nogravityonground.integer ? MOVEFLAG_NOGRAVITYONGROUND : 0)
+		| (sv_gameplayfix_gravityunaffectedbyticrate.integer ? MOVEFLAG_GRAVITYUNAFFECTEDBYTICRATE : 0)
+	;
+	statsf[STAT_MOVEVARS_TICRATE] = sys_ticrate.value;
+	statsf[STAT_MOVEVARS_TIMESCALE] = slowmo.value;
+	statsf[STAT_MOVEVARS_GRAVITY] = sv_gravity.value;
+	statsf[STAT_MOVEVARS_STOPSPEED] = sv_stopspeed.value;
+	statsf[STAT_MOVEVARS_MAXSPEED] = sv_maxspeed.value;
+	statsf[STAT_MOVEVARS_SPECTATORMAXSPEED] = sv_maxspeed.value; // FIXME: QW has a separate cvar for this
+	statsf[STAT_MOVEVARS_ACCELERATE] = sv_accelerate.value;
+	statsf[STAT_MOVEVARS_AIRACCELERATE] = sv_airaccelerate.value >= 0 ? sv_airaccelerate.value : sv_accelerate.value;
+	statsf[STAT_MOVEVARS_WATERACCELERATE] = sv_wateraccelerate.value >= 0 ? sv_wateraccelerate.value : sv_accelerate.value;
+	statsf[STAT_MOVEVARS_ENTGRAVITY] = gravity;
+	statsf[STAT_MOVEVARS_JUMPVELOCITY] = sv_jumpvelocity.value;
+	statsf[STAT_MOVEVARS_EDGEFRICTION] = sv_edgefriction.value;
+	statsf[STAT_MOVEVARS_MAXAIRSPEED] = sv_maxairspeed.value;
+	statsf[STAT_MOVEVARS_STEPHEIGHT] = sv_stepheight.value;
+	statsf[STAT_MOVEVARS_AIRACCEL_QW] = sv_airaccel_qw.value;
+	statsf[STAT_MOVEVARS_AIRACCEL_QW_STRETCHFACTOR] = sv_airaccel_qw_stretchfactor.value;
+	statsf[STAT_MOVEVARS_AIRACCEL_SIDEWAYS_FRICTION] = sv_airaccel_sideways_friction.value;
+	statsf[STAT_MOVEVARS_FRICTION] = sv_friction.value;
+	statsf[STAT_MOVEVARS_WATERFRICTION] = sv_waterfriction.value >= 0 ? sv_waterfriction.value : sv_friction.value;
+	statsf[STAT_MOVEVARS_AIRSTOPACCELERATE] = sv_airstopaccelerate.value;
+	statsf[STAT_MOVEVARS_AIRSTRAFEACCELERATE] = sv_airstrafeaccelerate.value;
+	statsf[STAT_MOVEVARS_MAXAIRSTRAFESPEED] = sv_maxairstrafespeed.value;
+	statsf[STAT_MOVEVARS_AIRSTRAFEACCEL_QW] = sv_airstrafeaccel_qw.value;
+	statsf[STAT_MOVEVARS_AIRCONTROL] = sv_aircontrol.value;
+	statsf[STAT_MOVEVARS_AIRCONTROL_POWER] = sv_aircontrol_power.value;
+	statsf[STAT_MOVEVARS_AIRCONTROL_PENALTY] = sv_aircontrol_penalty.value;
+	statsf[STAT_MOVEVARS_WARSOWBUNNY_AIRFORWARDACCEL] = sv_warsowbunny_airforwardaccel.value;
+	statsf[STAT_MOVEVARS_WARSOWBUNNY_ACCEL] = sv_warsowbunny_accel.value;
+	statsf[STAT_MOVEVARS_WARSOWBUNNY_TOPSPEED] = sv_warsowbunny_topspeed.value;
+	statsf[STAT_MOVEVARS_WARSOWBUNNY_TURNACCEL] = sv_warsowbunny_turnaccel.value;
+	statsf[STAT_MOVEVARS_WARSOWBUNNY_BACKTOSIDERATIO] = sv_warsowbunny_backtosideratio.value;
+	statsf[STAT_MOVEVARS_AIRSPEEDLIMIT_NONQW] = sv_airspeedlimit_nonqw.value;
+	statsf[STAT_FRAGLIMIT] = fraglimit.value;
+	statsf[STAT_TIMELIMIT] = timelimit.value;
 
 	if (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3 || sv.protocol == PROTOCOL_DARKPLACES1 || sv.protocol == PROTOCOL_DARKPLACES2 || sv.protocol == PROTOCOL_DARKPLACES3 || sv.protocol == PROTOCOL_DARKPLACES4 || sv.protocol == PROTOCOL_DARKPLACES5)
 	{
@@ -2521,7 +2343,7 @@ static void SV_SendClientDatagram (client_t *client)
 		timedelta *= 1 - net_burstreserve.value;
 
 		// only try to use excess time
-		timedelta = bound(0, host.realtime - host_client->netconnection->cleartime, timedelta);
+		timedelta = bound(0, realtime - host_client->netconnection->cleartime, timedelta);
 
 		// but we know next packet will be in sys_ticrate, so we can use up THAT bandwidth
 		timedelta += sys_ticrate.value;
@@ -2541,7 +2363,7 @@ static void SV_SendClientDatagram (client_t *client)
 		break;
 	}
 
-	if (LHNETADDRESS_GetAddressType(&host_client->netconnection->peeraddress) == LHNETADDRESSTYPE_LOOP && !host_limitlocal.integer)
+	if (LHNETADDRESS_GetAddressType(&host_client->netconnection->peeraddress) == LHNETADDRESSTYPE_LOOP && !sv_ratelimitlocalplayer.integer)
 	{
 		// for good singleplayer, send huge packets
 		maxsize = sizeof(sv_sendclientdatagram_buf);
@@ -2581,12 +2403,12 @@ static void SV_SendClientDatagram (client_t *client)
 		// now write as many entities as we can fit, and also sends stats
 		SV_WriteEntitiesToClient (client, client->edict, &msg, maxsize);
 	}
-	else if (host.realtime > client->keepalivetime)
+	else if (realtime > client->keepalivetime)
 	{
 		// the player isn't totally in the game yet
 		// send small keepalive messages if too much time has passed
 		// (may also be sending downloads)
-		client->keepalivetime = host.realtime + 5;
+		client->keepalivetime = realtime + 5;
 		MSG_WriteChar (&msg, svc_nop);
 	}
 
@@ -2651,10 +2473,19 @@ static void SV_UpdateToReliableMessages (void)
 		if (name == NULL)
 			name = "";
 		// always point the string back at host_client->name to keep it safe
-		//strlcpy (host_client->name, name, sizeof (host_client->name));
-		if (name != host_client->name) // prevent buffer overlap SIGABRT on Mac OSX
-			strlcpy (host_client->name, name, sizeof (host_client->name));
-		SV_Name(i);
+		strlcpy (host_client->name, name, sizeof (host_client->name));
+		PRVM_serveredictstring(host_client->edict, netname) = PRVM_SetEngineString(prog, host_client->name);
+		if (strcmp(host_client->old_name, host_client->name))
+		{
+			if (host_client->begun)
+				SV_BroadcastPrintf("%s ^7changed name to %s\n", host_client->old_name, host_client->name);
+			strlcpy(host_client->old_name, host_client->name, sizeof(host_client->old_name));
+			// send notification to all clients
+			MSG_WriteByte (&sv.reliable_datagram, svc_updatename);
+			MSG_WriteByte (&sv.reliable_datagram, i);
+			MSG_WriteString (&sv.reliable_datagram, host_client->name);
+			SV_WriteNetnameIntoDemo(host_client);
+		}
 
 		// DP_SV_CLIENTCOLORS
 		host_client->colors = (int)PRVM_serveredictfloat(host_client->edict, clientcolors);
@@ -2672,9 +2503,7 @@ static void SV_UpdateToReliableMessages (void)
 		if (model == NULL)
 			model = "";
 		// always point the string back at host_client->name to keep it safe
-		//strlcpy (host_client->playermodel, model, sizeof (host_client->playermodel));
-		if (model != host_client->playermodel) // prevent buffer overlap SIGABRT on Mac OSX
-			strlcpy (host_client->playermodel, model, sizeof (host_client->playermodel));
+		strlcpy (host_client->playermodel, model, sizeof (host_client->playermodel));
 		PRVM_serveredictstring(host_client->edict, playermodel) = PRVM_SetEngineString(prog, host_client->playermodel);
 
 		// NEXUIZ_PLAYERSKIN
@@ -2682,9 +2511,7 @@ static void SV_UpdateToReliableMessages (void)
 		if (skin == NULL)
 			skin = "";
 		// always point the string back at host_client->name to keep it safe
-		//strlcpy (host_client->playerskin, skin, sizeof (host_client->playerskin));
-		if (skin != host_client->playerskin) // prevent buffer overlap SIGABRT on Mac OSX
-			strlcpy (host_client->playerskin, skin, sizeof (host_client->playerskin));
+		strlcpy (host_client->playerskin, skin, sizeof (host_client->playerskin));
 		PRVM_serveredictstring(host_client->edict, playerskin) = PRVM_SetEngineString(prog, host_client->playerskin);
 
 		// TODO: add an extension name for this [1/17/2008 Black]
@@ -2770,7 +2597,7 @@ void SV_SendClientMessages(void)
 	SV_CleanupEnts();
 }
 
-static void SV_StartDownload_f(cmd_state_t *cmd)
+static void SV_StartDownload_f(void)
 {
 	if (host_client->download_file)
 		host_client->download_started = true;
@@ -2801,17 +2628,17 @@ static void SV_StartDownload_f(cmd_state_t *cmd)
  *       assume this extension is not supported!
  */
 
-static void Download_CheckExtensions(cmd_state_t *cmd)
+static void Download_CheckExtensions(void)
 {
 	int i;
-	int argc = Cmd_Argc(cmd);
+	int argc = Cmd_Argc();
 
 	// first reset them all
 	host_client->download_deflate = false;
 	
 	for(i = 2; i < argc; ++i)
 	{
-		if(!strcmp(Cmd_Argv(cmd, i), "deflate"))
+		if(!strcmp(Cmd_Argv(i), "deflate"))
 		{
 			host_client->download_deflate = true;
 			break;
@@ -2819,21 +2646,21 @@ static void Download_CheckExtensions(cmd_state_t *cmd)
 	}
 }
 
-static void SV_Download_f(cmd_state_t *cmd)
+static void SV_Download_f(void)
 {
 	const char *whichpack, *whichpack2, *extension;
-	qbool is_csqc; // so we need to check only once
+	qboolean is_csqc; // so we need to check only once
 
-	if (Cmd_Argc(cmd) < 2)
+	if (Cmd_Argc() < 2)
 	{
 		SV_ClientPrintf("usage: download <filename> {<extensions>}*\n");
 		SV_ClientPrintf("       supported extensions: deflate\n");
 		return;
 	}
 
-	if (FS_CheckNastyPath(Cmd_Argv(cmd, 1), false))
+	if (FS_CheckNastyPath(Cmd_Argv(1), false))
 	{
-		SV_ClientPrintf("Download rejected: nasty filename \"%s\"\n", Cmd_Argv(cmd, 1));
+		SV_ClientPrintf("Download rejected: nasty filename \"%s\"\n", Cmd_Argv(1));
 		return;
 	}
 
@@ -2841,7 +2668,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 	{
 		// at this point we'll assume the previous download should be aborted
 		Con_DPrintf("Download of %s aborted by %s starting a new download\n", host_client->download_name, host_client->name);
-		SV_ClientCommands("\nstopdownload\n");
+		Host_ClientCommands("\nstopdownload\n");
 
 		// close the file and reset variables
 		FS_Close(host_client->download_file);
@@ -2851,18 +2678,18 @@ static void SV_Download_f(cmd_state_t *cmd)
 		host_client->download_started = false;
 	}
 
-	is_csqc = (sv.csqc_progname[0] && strcmp(Cmd_Argv(cmd, 1), sv.csqc_progname) == 0);
+	is_csqc = (sv.csqc_progname[0] && strcmp(Cmd_Argv(1), sv.csqc_progname) == 0);
 	
 	if (!sv_allowdownloads.integer && !is_csqc)
 	{
 		SV_ClientPrintf("Downloads are disabled on this server\n");
-		SV_ClientCommands("\nstopdownload\n");
+		Host_ClientCommands("\nstopdownload\n");
 		return;
 	}
 
-	Download_CheckExtensions(cmd);
+	Download_CheckExtensions();
 
-	strlcpy(host_client->download_name, Cmd_Argv(cmd, 1), sizeof(host_client->download_name));
+	strlcpy(host_client->download_name, Cmd_Argv(1), sizeof(host_client->download_name));
 	extension = FS_FileExtension(host_client->download_name);
 
 	// host_client is asking to download a specified file
@@ -2885,7 +2712,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 			host_client->download_file = FS_FileFromData(svs.csqc_progdata, sv.csqc_progsize, true);
 		
 		// no, no space is needed between %s and %s :P
-		SV_ClientCommands("\ncl_downloadbegin %i %s%s\n", (int)FS_FileSize(host_client->download_file), host_client->download_name, extensions);
+		Host_ClientCommands("\ncl_downloadbegin %i %s%s\n", (int)FS_FileSize(host_client->download_file), host_client->download_name, extensions);
 
 		host_client->download_expectedposition = 0;
 		host_client->download_started = false;
@@ -2896,7 +2723,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 	if (!FS_FileExists(host_client->download_name))
 	{
 		SV_ClientPrintf("Download rejected: server does not have the file \"%s\"\nYou may need to separately download or purchase the data archives for this game/mod to get this file\n", host_client->download_name);
-		SV_ClientCommands("\nstopdownload\n");
+		Host_ClientCommands("\nstopdownload\n");
 		return;
 	}
 
@@ -2906,7 +2733,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 	if ((whichpack && whichpack2 && !strcasecmp(whichpack, whichpack2)) || FS_IsRegisteredQuakePack(host_client->download_name))
 	{
 		SV_ClientPrintf("Download rejected: file \"%s\" is part of registered Quake(r)\nYou must purchase Quake(r) from id Software or a retailer to get this file\nPlease go to http://www.idsoftware.com/games/quake/quake/index.php?game_section=buy\n", host_client->download_name);
-		SV_ClientCommands("\nstopdownload\n");
+		Host_ClientCommands("\nstopdownload\n");
 		return;
 	}
 
@@ -2917,7 +2744,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 		if (whichpack)
 		{
 			SV_ClientPrintf("Download rejected: file \"%s\" is in an archive (\"%s\")\nYou must separately download or purchase the data archives for this game/mod to get this file\n", host_client->download_name, whichpack);
-			SV_ClientCommands("\nstopdownload\n");
+			Host_ClientCommands("\nstopdownload\n");
 			return;
 		}
 	}
@@ -2927,7 +2754,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 		if (!strcasecmp(extension, "cfg"))
 		{
 			SV_ClientPrintf("Download rejected: file \"%s\" is a .cfg file which is forbidden for security reasons\nYou must separately download or purchase the data archives for this game/mod to get this file\n", host_client->download_name);
-			SV_ClientCommands("\nstopdownload\n");
+			Host_ClientCommands("\nstopdownload\n");
 			return;
 		}
 	}
@@ -2937,7 +2764,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 		if (!strncasecmp(host_client->download_name, "dlcache/", 8))
 		{
 			SV_ClientPrintf("Download rejected: file \"%s\" is in the dlcache/ directory which is forbidden for security reasons\nYou must separately download or purchase the data archives for this game/mod to get this file\n", host_client->download_name);
-			SV_ClientCommands("\nstopdownload\n");
+			Host_ClientCommands("\nstopdownload\n");
 			return;
 		}
 	}
@@ -2947,7 +2774,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 		if (!strcasecmp(extension, "pak") || !strcasecmp(extension, "pk3"))
 		{
 			SV_ClientPrintf("Download rejected: file \"%s\" is an archive\nYou must separately download or purchase the data archives for this game/mod to get this file\n", host_client->download_name);
-			SV_ClientCommands("\nstopdownload\n");
+			Host_ClientCommands("\nstopdownload\n");
 			return;
 		}
 	}
@@ -2956,14 +2783,14 @@ static void SV_Download_f(cmd_state_t *cmd)
 	if (!host_client->download_file)
 	{
 		SV_ClientPrintf("Download rejected: server could not open the file \"%s\"\n", host_client->download_name);
-		SV_ClientCommands("\nstopdownload\n");
+		Host_ClientCommands("\nstopdownload\n");
 		return;
 	}
 
 	if (FS_FileSize(host_client->download_file) > 1<<30)
 	{
 		SV_ClientPrintf("Download rejected: file \"%s\" is very large\n", host_client->download_name);
-		SV_ClientCommands("\nstopdownload\n");
+		Host_ClientCommands("\nstopdownload\n");
 		FS_Close(host_client->download_file);
 		host_client->download_file = NULL;
 		return;
@@ -2972,7 +2799,7 @@ static void SV_Download_f(cmd_state_t *cmd)
 	if (FS_FileSize(host_client->download_file) < 0)
 	{
 		SV_ClientPrintf("Download rejected: file \"%s\" is not a regular file\n", host_client->download_name);
-		SV_ClientCommands("\nstopdownload\n");
+		Host_ClientCommands("\nstopdownload\n");
 		FS_Close(host_client->download_file);
 		host_client->download_file = NULL;
 		return;
@@ -2991,10 +2818,10 @@ static void SV_Download_f(cmd_state_t *cmd)
 			strlcat(extensions, " deflate", sizeof(extensions));
 
 		// no, no space is needed between %s and %s :P
-		SV_ClientCommands("\ncl_downloadbegin %i %s%s\n", (int)FS_FileSize(host_client->download_file), host_client->download_name, extensions);
+		Host_ClientCommands("\ncl_downloadbegin %i %s%s\n", (int)FS_FileSize(host_client->download_file), host_client->download_name, extensions);
 	}
 	*/
-	SV_ClientCommands("\ncl_downloadbegin %i %s\n", (int)FS_FileSize(host_client->download_file), host_client->download_name);
+	Host_ClientCommands("\ncl_downloadbegin %i %s\n", (int)FS_FileSize(host_client->download_file), host_client->download_name);
 
 	host_client->download_expectedposition = 0;
 	host_client->download_started = false;
@@ -3244,13 +3071,13 @@ static void SV_CreateBaseline (void)
 	int i, entnum, large;
 	prvm_edict_t *svent;
 
-	// LadyHavoc: clear *all* baselines (not just active ones)
+	// LordHavoc: clear *all* baselines (not just active ones)
 	for (entnum = 0;entnum < prog->max_edicts;entnum++)
 	{
 		// get the current server version
 		svent = PRVM_EDICT_NUM(entnum);
 
-		// LadyHavoc: always clear state values, whether the entity is in use or not
+		// LordHavoc: always clear state values, whether the entity is in use or not
 		svent->priv.server->baseline = defaultstate;
 
 		if (svent->priv.server->free)
@@ -3400,7 +3227,7 @@ This is called at the start of each level
 ================
 */
 
-void SV_SpawnServer (const char *map)
+void SV_SpawnServer (const char *server)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	prvm_edict_t *ent;
@@ -3410,16 +3237,16 @@ void SV_SpawnServer (const char *map)
 	char modelname[sizeof(sv.worldname)];
 	char vabuf[1024];
 
-	Con_Printf("SpawnServer: %s\n", map);
+	Con_DPrintf("SpawnServer: %s\n", server);
 
-	dpsnprintf (modelname, sizeof(modelname), "maps/%s.bsp", map);
+	dpsnprintf (modelname, sizeof(modelname), "maps/%s.bsp", server);
 
 	if (!FS_FileExists(modelname))
 	{
-		dpsnprintf (modelname, sizeof(modelname), "maps/%s", map);
+		dpsnprintf (modelname, sizeof(modelname), "maps/%s", server);
 		if (!FS_FileExists(modelname))
 		{
-			Con_Printf("SpawnServer: no map file named %s\n", modelname);
+			Con_Printf("SpawnServer: no map file named maps/%s.bsp\n", server);
 			return;
 		}
 	}
@@ -3437,15 +3264,6 @@ void SV_SpawnServer (const char *map)
 
 	if(sv.active)
 	{
-		client_t *client;
-		for (i = 0, client = svs.clients;i < svs.maxclients;i++, client++)
-		{
-			if (client->netconnection)
-			{
-				MSG_WriteByte(&client->netconnection->message, svc_stufftext);
-				MSG_WriteString(&client->netconnection->message, "reconnect\n");
-			}
-		}
 		World_End(&sv.world);
 		if(PRVM_serverfunction(SV_Shutdown))
 		{
@@ -3476,7 +3294,7 @@ void SV_SpawnServer (const char *map)
 
 	// let's not have any servers with no name
 	if (hostname.string[0] == 0)
-		Cvar_SetQuick(&hostname, "UNNAMED");
+		Cvar_Set ("hostname", "UNNAMED");
 	scr_centertime_off = 0;
 
 	svs.changelevel_issued = false;		// now safe to issue another
@@ -3488,15 +3306,30 @@ void SV_SpawnServer (const char *map)
 //
 // tell all connected clients that we are going to a new level
 //
-	if (!sv.active)
+	if (sv.active)
+	{
+		client_t *client;
+		for (i = 0, client = svs.clients;i < svs.maxclients;i++, client++)
+		{
+			if (client->netconnection)
+			{
+				MSG_WriteByte(&client->netconnection->message, svc_stufftext);
+				MSG_WriteString(&client->netconnection->message, "reconnect\n");
+			}
+		}
+	}
+	else
+	{
+		// open server port
 		NetConn_OpenServerPorts(true);
+	}
 
 //
 // make cvars consistant
 //
 	if (coop.integer)
-		Cvar_SetValueQuick(&deathmatch, 0);
-	// LadyHavoc: it can be useful to have skills outside the range 0-3...
+		Cvar_SetValue ("deathmatch", 0);
+	// LordHavoc: it can be useful to have skills outside the range 0-3...
 	//current_skill = bound(0, (int)(skill.value + 0.5), 3);
 	//Cvar_SetValue ("skill", (float)current_skill);
 	current_skill = (int)(skill.value + 0.5);
@@ -3509,14 +3342,12 @@ void SV_SpawnServer (const char *map)
 	// level's data which is no longer valiud
 	cls.signon = 0;
 
-	Cvar_SetValueQuick(&halflifebsp, worldmodel->brush.ishlbsp);
-	Cvar_SetValueQuick(&sv_mapformat_is_quake2, worldmodel->brush.isq2bsp);
-	Cvar_SetValueQuick(&sv_mapformat_is_quake3, worldmodel->brush.isq3bsp);
+	Cvar_SetValue("halflifebsp", worldmodel->brush.ishlbsp);
 
 	if(*sv_random_seed.string)
 	{
 		srand(sv_random_seed.integer);
-		Con_Printf(CON_WARN "NOTE: random seed is %d; use for debugging/benchmarking only!\nUnset sv_random_seed to get real random numbers again.\n", sv_random_seed.integer);
+		Con_Printf("NOTE: random seed is %d; use for debugging/benchmarking only!\nUnset sv_random_seed to get real random numbers again.\n", sv_random_seed.integer);
 	}
 
 	SV_VM_Setup();
@@ -3524,7 +3355,7 @@ void SV_SpawnServer (const char *map)
 	sv.active = true;
 
 	// set level base name variables for later use
-	strlcpy (sv.name, map, sizeof (sv.name));
+	strlcpy (sv.name, server, sizeof (sv.name));
 	strlcpy(sv.worldname, modelname, sizeof(sv.worldname));
 	FS_StripExtension(sv.worldname, sv.worldnamenoextension, sizeof(sv.worldnamenoextension));
 	strlcpy(sv.worldbasename, !strncmp(sv.worldnamenoextension, "maps/", 5) ? sv.worldnamenoextension + 5 : sv.worldnamenoextension, sizeof(sv.worldbasename));
@@ -3538,7 +3369,7 @@ void SV_SpawnServer (const char *map)
 	{
 		char buffer[1024];
 		Protocol_Names(buffer, sizeof(buffer));
-		Con_Printf(CON_ERROR "Unknown sv_protocolname \"%s\", valid values are:\n%s\n", sv_protocolname.string, buffer);
+		Con_Printf("Unknown sv_protocolname \"%s\", valid values are:\n%s\n", sv_protocolname.string, buffer);
 		sv.protocol = PROTOCOL_QUAKE;
 	}
 
@@ -3638,23 +3469,20 @@ void SV_SpawnServer (const char *map)
 		PRVM_ED_LoadFromFile(prog, sv.worldmodel->brush.entities);
 
 
-	// LadyHavoc: clear world angles (to fix e3m3.bsp)
+	// LordHavoc: clear world angles (to fix e3m3.bsp)
 	VectorClear(PRVM_serveredictvector(prog->edicts, angles));
 
 // all setup is completed, any further precache statements are errors
-//	sv.state = ss_active; // LadyHavoc: workaround for svc_precache bug
+//	sv.state = ss_active; // LordHavoc: workaround for svc_precache bug
 	prog->allowworldwrites = false;
 
 // run two frames to allow everything to settle
 	sv.time = 1.0001;
-	for (i = 0;i < sv_init_frame_count.integer;i++)
+	for (i = 0;i < 2;i++)
 	{
 		sv.frametime = 0.1;
 		SV_Physics ();
 	}
-
-	// Once all init frames have been run, we consider svqc code fully initialized.
-	prog->inittime = host.realtime;
 
 	if (cls.state == ca_dedicated)
 		Mod_PurgeUnused();
@@ -3663,7 +3491,7 @@ void SV_SpawnServer (const char *map)
 	if (sv.protocol == PROTOCOL_QUAKE || sv.protocol == PROTOCOL_QUAKEDP || sv.protocol == PROTOCOL_NEHAHRAMOVIE || sv.protocol == PROTOCOL_NEHAHRABJP || sv.protocol == PROTOCOL_NEHAHRABJP2 || sv.protocol == PROTOCOL_NEHAHRABJP3)
 		SV_CreateBaseline ();
 
-	sv.state = ss_active; // LadyHavoc: workaround for svc_precache bug
+	sv.state = ss_active; // LordHavoc: workaround for svc_precache bug
 
 // send serverinfo to all connected clients, and set up botclients coming back from a level change
 	for (i = 0, host_client = svs.clients;i < svs.maxclients;i++, host_client++)
@@ -3697,61 +3525,13 @@ void SV_SpawnServer (const char *map)
 	strlcpy(sv.worldmessage, PRVM_GetString(prog, PRVM_serveredictstring(prog->edicts, message)), sizeof(sv.worldmessage)); // map title (not related to filename)
 	Cvar_SetQuick(&sv_worldmessage, sv.worldmessage);
 
-	Con_Printf("Server spawned.\n");
+	Con_DPrint("Server spawned.\n");
 	NetConn_Heartbeat (2);
 
 	if(cls.state == ca_dedicated)
 		Sys_MakeProcessMean();
 
 //	SV_UnlockThreadMutex();
-}
-
-/*
-==================
-SV_Shutdown
-
-This only happens at the end of a game, not between levels
-==================
-*/
-void SV_Shutdown(void)
-{
-	prvm_prog_t *prog = SVVM_prog;
-	int i;
-
-	Con_DPrintf("SV_Shutdown\n");
-
-	if (!sv.active)
-		return;
-
-	NetConn_Heartbeat(2);
-	NetConn_Heartbeat(2);
-
-// make sure all the clients know we're disconnecting
-	World_End(&sv.world);
-	if(prog->loaded)
-	{
-		if(PRVM_serverfunction(SV_Shutdown))
-		{
-			func_t s = PRVM_serverfunction(SV_Shutdown);
-			PRVM_serverglobalfloat(time) = sv.time;
-			PRVM_serverfunction(SV_Shutdown) = 0; // prevent it from getting called again
-			prog->ExecuteProgram(prog, s,"SV_Shutdown() required");
-		}
-	}
-	for (i = 0, host_client = svs.clients;i < svs.maxclients;i++, host_client++)
-		if (host_client->active)
-			SV_DropClient(false); // server shutdown
-
-	NetConn_CloseServerPorts();
-
-	sv.active = false;
-//
-// clear structures
-//
-	memset(&sv, 0, sizeof(sv));
-	memset(svs.clients, 0, svs.maxclients*sizeof(client_t));
-
-	cl.islocalgame = false;
 }
 
 /////////////////////////////////////////////////////
@@ -3770,13 +3550,13 @@ static void SVVM_end_increase_edicts(prvm_prog_t *prog)
 
 	// link every entity except world
 	for (i = 1, ent = prog->edicts;i < prog->num_edicts;i++, ent++)
-		if (!ent->priv.server->free && !VectorCompare(PRVM_serveredictvector(ent, absmin), PRVM_serveredictvector(ent, absmax)))
+		if (!ent->priv.server->free)
 			SV_LinkEdict(ent);
 }
 
 static void SVVM_init_edict(prvm_prog_t *prog, prvm_edict_t *e)
 {
-	// LadyHavoc: for consistency set these here
+	// LordHavoc: for consistency set these here
 	int num = PRVM_NUM_FOR_EDICT(e) - 1;
 
 	e->priv.server->move = false; // don't move on first frame
@@ -3807,7 +3587,6 @@ static void SVVM_init_edict(prvm_prog_t *prog, prvm_edict_t *e)
 			PRVM_serveredictstring(e, crypto_idfp) = PRVM_SetEngineString(prog, svs.clients[num].netconnection->crypto.client_idfp);
 		else
 			PRVM_serveredictstring(e, crypto_idfp) = 0;
-		PRVM_serveredictfloat(e, crypto_idfp_signed) = (svs.clients[num].netconnection != NULL && svs.clients[num].netconnection->crypto.authenticated && svs.clients[num].netconnection->crypto.client_issigned);
 		if(svs.clients[num].netconnection != NULL && svs.clients[num].netconnection->crypto.authenticated && svs.clients[num].netconnection->crypto.client_keyfp[0])
 			PRVM_serveredictstring(e, crypto_keyfp) = PRVM_SetEngineString(prog, svs.clients[num].netconnection->crypto.client_keyfp);
 		else
@@ -3884,7 +3663,7 @@ static void SVVM_count_edicts(prvm_prog_t *prog)
 	Con_Printf("step      :%3i\n", step);
 }
 
-static qbool SVVM_load_edict(prvm_prog_t *prog, prvm_edict_t *ent)
+static qboolean SVVM_load_edict(prvm_prog_t *prog, prvm_edict_t *ent)
 {
 	// remove things from different skill levels or deathmatch
 	if (gamemode != GAME_TRANSFUSION) //Transfusion does this in QC
@@ -3909,7 +3688,7 @@ static qbool SVVM_load_edict(prvm_prog_t *prog, prvm_edict_t *ent)
 static void SV_VM_Setup(void)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	PRVM_Prog_Init(prog, &cmd_server);
+	PRVM_Prog_Init(prog);
 
 	// allocate the mempools
 	// TODO: move the magic numbers/constants into #defines [9/13/2006 Black]
@@ -4086,7 +3865,7 @@ static void SV_VM_Setup(void)
 //		PRVM_ED_FindGlobalOffset_FromStruct(globalvars_t, SetChangeParms);
 	}
 	else
-		Con_DPrintf("%s: %s system vars have been modified (CRC %i != engine %i), will not load in other engines\n", prog->name, sv_progs.string, prog->progs_crc, PROGHEADER_CRC);
+		Con_DPrintf("%s: %s system vars have been modified (CRC %i != engine %i), will not load in other engines", prog->name, sv_progs.string, prog->progs_crc, PROGHEADER_CRC);
 
 	// OP_STATE is always supported on server because we add fields/globals for it
 	prog->flag |= PRVM_OP_STATE;
@@ -4098,181 +3877,10 @@ static void SV_VM_Setup(void)
 
 extern cvar_t host_maxwait;
 extern cvar_t host_framerate;
-extern cvar_t cl_maxphysicsframesperserverframe;
-double SV_Frame(double time)
-{
-	static double sv_timer;
-	int i;
-	char vabuf[1024];
-	qbool playing = false;
-
-	if (!svs.threaded)
-	{
-		svs.perf_acc_sleeptime = host.sleeptime;
-		svs.perf_acc_realtime += time;
-
-		// Look for clients who have spawned
-		for (i = 0, host_client = svs.clients; i < svs.maxclients; i++, host_client++)
-			if(host_client->begun && host_client->netconnection)
-				playing = true;
-
-		if(svs.perf_acc_realtime > 5)
-		{
-			svs.perf_cpuload = 1 - svs.perf_acc_sleeptime / svs.perf_acc_realtime;
-			svs.perf_lost = svs.perf_acc_lost / svs.perf_acc_realtime;
-
-			if(svs.perf_acc_offset_samples > 0)
-			{
-				svs.perf_offset_max = svs.perf_acc_offset_max;
-				svs.perf_offset_avg = svs.perf_acc_offset / svs.perf_acc_offset_samples;
-				svs.perf_offset_sdev = sqrt(svs.perf_acc_offset_squared / svs.perf_acc_offset_samples - svs.perf_offset_avg * svs.perf_offset_avg);
-			}
-
-			if(svs.perf_lost > 0 && developer_extra.integer && playing) // only complain if anyone is looking
-				Con_DPrintf("Server can't keep up: %s\n", Host_TimingReport(vabuf, sizeof(vabuf)));
-		}
-
-		if(svs.perf_acc_realtime > 5 || sv.time < 10)
-		{
-			/*
-			 * Don't accumulate time for the first 10 seconds of a match
-			 * so things can settle
-			 */
-			svs.perf_acc_realtime = svs.perf_acc_sleeptime =
-			svs.perf_acc_lost = svs.perf_acc_offset =
-			svs.perf_acc_offset_squared = svs.perf_acc_offset_max =
-			svs.perf_acc_offset_samples = host.sleeptime = 0;
-		}
-
-		/*
-		 * Receive packets on each main loop iteration, as the main loop may
-		 * be undersleeping due to select() detecting a new packet
-		 */
-		if (sv.active)
-			NetConn_ServerFrame();
-	}
-
-	/*
-	 * If the accumulator hasn't become positive, don't
-	 * run the frame. Everything that happens before this
-	 * point will happen even if we're sleeping this frame.
-	 */
-	if((sv_timer += time) < 0)
-		return sv_timer;
-
-	// limit the frametime steps to no more than 100ms each
-	if (sv_timer > 0.1)
-	{
-		if (!svs.threaded)
-			svs.perf_acc_lost += (sv_timer - 0.1);
-		sv_timer = 0.1;
-	}
-
-	if (sv.active && sv_timer > 0 && !svs.threaded)
-	{
-		/*
-		 * Execute one or more server frames, with an upper limit on how much
-		 * execution time to spend on server frames to avoid freezing the game if
-		 * the server is overloaded. This execution time limit means the game will
-		 * slow down if the server is taking too long.
-		 */
-		int framecount, framelimit = 1;
-		double advancetime, aborttime = 0;
-		float offset;
-		prvm_prog_t *prog = SVVM_prog;
-
-		// run the world state
-		// don't allow simulation to run too fast or too slow or logic glitches can occur
-
-		// stop running server frames if the wall time reaches this value
-		if (sys_ticrate.value <= 0)
-			advancetime = sv_timer;
-		else
-		{
-			advancetime = sys_ticrate.value;
-			// listen servers can run multiple server frames per client frame
-			framelimit = cl_maxphysicsframesperserverframe.integer;
-			aborttime = Sys_DirtyTime() + 0.1;
-		}
-
-		if(host_timescale.value > 0 && host_timescale.value < 1)
-			advancetime = min(advancetime, 0.1 / host_timescale.value);
-		else
-			advancetime = min(advancetime, 0.1);
-
-		if(advancetime > 0)
-		{
-			offset = Sys_DirtyTime() - host.dirtytime;
-			if (offset < 0 || offset >= 1800)
-				offset = 0;
-
-			offset += sv_timer;
-			++svs.perf_acc_offset_samples;
-			svs.perf_acc_offset += offset;
-			svs.perf_acc_offset_squared += offset * offset;
-			
-			if(svs.perf_acc_offset_max < offset)
-				svs.perf_acc_offset_max = offset;
-		}
-
-		// only advance time if not paused
-		// the game also pauses in singleplayer when menu or console is used
-		sv.frametime = advancetime * host_timescale.value;
-		if (host_framerate.value)
-			sv.frametime = host_framerate.value;
-		if (sv.paused || host.paused)
-			sv.frametime = 0;
-
-		for (framecount = 0; framecount < framelimit && sv_timer > 0; framecount++)
-		{
-			sv_timer -= advancetime;
-
-			// move things around and think unless paused
-			if (sv.frametime)
-				SV_Physics();
-
-			// if this server frame took too long, break out of the loop
-			if (framelimit > 1 && Sys_DirtyTime() >= aborttime)
-				break;
-		}
-
-		R_TimeReport("serverphysics");
-
-		// send all messages to the clients
-		SV_SendClientMessages();
-
-		if (sv.paused == 1 && host.realtime > sv.pausedstart && sv.pausedstart > 0) {
-			prog->globals.fp[OFS_PARM0] = host.realtime - sv.pausedstart;
-			PRVM_serverglobalfloat(time) = sv.time;
-			prog->ExecuteProgram(prog, PRVM_serverfunction(SV_PausedTic), "QC function SV_PausedTic is missing");
-		}
-
-		// send an heartbeat if enough time has passed since the last one
-		NetConn_Heartbeat(0);
-		R_TimeReport("servernetwork");
-	}
-	else
-	{
-		// don't let r_speeds display jump around
-		R_TimeReport("serverphysics");
-		R_TimeReport("servernetwork");
-	}
-
-	// if there is some time remaining from this frame, reset the timer
-	if (sv_timer >= 0)
-	{
-		if (!svs.threaded)
-			svs.perf_acc_lost += sv_timer;
-		sv_timer = 0;
-	}
-
-	return sv_timer;
-}
-
 static int SV_ThreadFunc(void *voiddata)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	qbool playing = false;
+	qboolean playing = false;
 	double sv_timer = 0;
 	double sv_deltarealtime, sv_oldrealtime, sv_realtime;
 	double wait;
@@ -4362,7 +3970,7 @@ static int SV_ThreadFunc(void *voiddata)
 
 			if(advancetime > 0)
 			{
-				offset = sv_timer + (Sys_DirtyTime() - sv_realtime); // LadyHavoc: FIXME: I don't understand this line
+				offset = sv_timer + (Sys_DirtyTime() - sv_realtime); // LordHavoc: FIXME: I don't understand this line
 				++svs.perf_acc_offset_samples;
 				svs.perf_acc_offset += offset;
 				svs.perf_acc_offset_squared += offset * offset;
@@ -4372,10 +3980,10 @@ static int SV_ThreadFunc(void *voiddata)
 
 			// only advance time if not paused
 			// the game also pauses in singleplayer when menu or console is used
-			sv.frametime = advancetime * host_timescale.value;
+			sv.frametime = advancetime * slowmo.value;
 			if (host_framerate.value)
 				sv.frametime = host_framerate.value;
-			if (sv.paused || host.paused)
+			if (sv.paused || (cl.islocalgame && (key_dest != key_game || key_consoleactive || cl.csqc_paused)))
 				sv.frametime = 0;
 
 			sv_timer -= advancetime;

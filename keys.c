@@ -25,7 +25,7 @@
 #include "utf8lib.h"
 #include "csprogs.h"
 
-cvar_t con_closeontoggleconsole = {CF_CLIENT | CF_ARCHIVE, "con_closeontoggleconsole","1", "allows toggleconsole binds to close the console as well; when set to 2, this even works when not at the start of the line in console input; when set to 3, this works even if the toggleconsole key is the color tag"};
+cvar_t con_closeontoggleconsole = {CVAR_SAVE, "con_closeontoggleconsole","1", "allows toggleconsole binds to close the console as well; when set to 2, this even works when not at the start of the line in console input; when set to 3, this works even if the toggleconsole key is the color tag"};
 
 /*
 key up events are sent even if in console mode
@@ -33,7 +33,7 @@ key up events are sent even if in console mode
 
 char		key_line[MAX_INPUTLINE];
 int			key_linepos;
-qbool	key_insert = true;	// insert key toggle (for editing)
+qboolean	key_insert = true;	// insert key toggle (for editing)
 keydest_t	key_dest;
 int			key_consoleactive;
 char		*keybindings[MAX_BINDMAPS][MAX_KEYS];
@@ -41,7 +41,7 @@ char		*keybindings[MAX_BINDMAPS][MAX_KEYS];
 int			history_line;
 char		history_savedline[MAX_INPUTLINE];
 char		history_searchstring[MAX_INPUTLINE];
-qbool	history_matchfound = false;
+qboolean	history_matchfound = false;
 conbuffer_t history;
 
 extern cvar_t	con_textsize;
@@ -116,19 +116,19 @@ static void Key_History_Push(void)
 	if(strncmp(key_line, "]quit ", 6)) // putting these into the history just sucks
 	if(strcmp(key_line, "]rcon_password")) // putting these into the history just sucks
 	if(strncmp(key_line, "]rcon_password ", 15)) // putting these into the history just sucks
-		ConBuffer_AddLine(&history, key_line + 1, (int)strlen(key_line) - 1, 0);
+		ConBuffer_AddLine(&history, key_line + 1, strlen(key_line) - 1, 0);
 	Con_Printf("%s\n", key_line); // don't mark empty lines as history
 	history_line = -1;
 	if (history_matchfound)
 		history_matchfound = false;
 }
 
-static qbool Key_History_Get_foundCommand(void)
+static qboolean Key_History_Get_foundCommand(void)
 {
 	if (!history_matchfound)
 		return false;
 	strlcpy(key_line + 1, ConBuffer_GetLine(&history, history_line), sizeof(key_line) - 1);
-	key_linepos = (int)strlen(key_line);
+	key_linepos = strlen(key_line);
 	history_matchfound = false;
 	return true;
 }
@@ -147,14 +147,14 @@ static void Key_History_Up(void)
 		if(history_line != -1)
 		{
 			strlcpy(key_line + 1, ConBuffer_GetLine(&history, history_line), sizeof(key_line) - 1);
-			key_linepos = (int)strlen(key_line);
+			key_linepos = strlen(key_line);
 		}
 	}
 	else if(history_line > 0)
 	{
 		--history_line; // this also does -1 -> 0, so it is good
 		strlcpy(key_line + 1, ConBuffer_GetLine(&history, history_line), sizeof(key_line) - 1);
-		key_linepos = (int)strlen(key_line);
+		key_linepos = strlen(key_line);
 	}
 }
 
@@ -177,7 +177,7 @@ static void Key_History_Down(void)
 		strlcpy(key_line + 1, history_savedline, sizeof(key_line) - 1);
 	}
 
-	key_linepos = (int)strlen(key_line);
+	key_linepos = strlen(key_line);
 }
 
 static void Key_History_First(void)
@@ -189,7 +189,7 @@ static void Key_History_First(void)
 	{
 		history_line = 0;
 		strlcpy(key_line + 1, ConBuffer_GetLine(&history, history_line), sizeof(key_line) - 1);
-		key_linepos = (int)strlen(key_line);
+		key_linepos = strlen(key_line);
 	}
 }
 
@@ -202,7 +202,7 @@ static void Key_History_Last(void)
 	{
 		history_line = CONBUFFER_LINES_COUNT(&history) - 1;
 		strlcpy(key_line + 1, ConBuffer_GetLine(&history, history_line), sizeof(key_line) - 1);
-		key_linepos = (int)strlen(key_line);
+		key_linepos = strlen(key_line);
 	}
 }
 
@@ -295,21 +295,21 @@ static void Key_History_Find_All(void)
 	Con_Printf("%i result%s\n\n", count, (count != 1) ? "s" : "");
 }
 
-static void Key_History_f(cmd_state_t *cmd)
+static void Key_History_f(void)
 {
 	char *errchar = NULL;
 	int i = 0;
 	char vabuf[1024];
 	size_t digits = strlen(va(vabuf, sizeof(vabuf), "%i", HIST_MAXLINES));
 
-	if (Cmd_Argc (cmd) > 1)
+	if (Cmd_Argc () > 1)
 	{
-		if (!strcmp(Cmd_Argv(cmd, 1), "-c"))
+		if (!strcmp(Cmd_Argv (1), "-c"))
 		{
 			ConBuffer_Clear(&history);
 			return;
 		}
-		i = strtol(Cmd_Argv(cmd, 1), &errchar, 0);
+		i = strtol(Cmd_Argv (1), &errchar, 0);
 		if ((i < 0) || (i > CONBUFFER_LINES_COUNT(&history)) || (errchar && *errchar))
 			i = 0;
 		else
@@ -663,109 +663,70 @@ static const keyname_t   keynames[] = {
 ==============================================================================
 */
 
-int Key_ClearEditLine(qbool is_console)
+void
+Key_ClearEditLine (int edit_line)
 {
-	if (is_console)
-	{
-		key_line[0] = ']';
-		key_line[1] = 0;
-		return 1;
-	}
-	else
-	{
-		chat_buffer[0] = 0;
-		return 0;
-	}
+	memset (key_line, '\0', sizeof(key_line));
+	key_line[0] = ']';
+	key_linepos = 1;
 }
-
-// key modifier states
-#define KM_NONE           (!keydown[K_CTRL] && !keydown[K_SHIFT] && !keydown[K_ALT])
-#define KM_CTRL_SHIFT_ALT ( keydown[K_CTRL] &&  keydown[K_SHIFT] &&  keydown[K_ALT])
-#define KM_CTRL_SHIFT     ( keydown[K_CTRL] &&  keydown[K_SHIFT] && !keydown[K_ALT])
-#define KM_CTRL_ALT       ( keydown[K_CTRL] && !keydown[K_SHIFT] &&  keydown[K_ALT])
-#define KM_SHIFT_ALT      (!keydown[K_CTRL] &&  keydown[K_SHIFT] &&  keydown[K_ALT])
-#define KM_CTRL           ( keydown[K_CTRL] && !keydown[K_SHIFT] && !keydown[K_ALT])
-#define KM_SHIFT          (!keydown[K_CTRL] &&  keydown[K_SHIFT] && !keydown[K_ALT])
-#define KM_ALT            (!keydown[K_CTRL] && !keydown[K_SHIFT] &&  keydown[K_ALT])
 
 /*
 ====================
 Interactive line editing and console scrollback
 ====================
 */
-
-int chat_mode; // 0 for say, 1 for say_team, -1 for command
-char chat_buffer[MAX_INPUTLINE];
-int chat_bufferpos = 0;
-
-int Key_AddChar(int unicode, qbool is_console)
+static void
+Key_Console (int key, int unicode)
 {
-	char *line;
-	char buf[16];
-	int len, blen, linepos;
-
-	if (is_console)
+	// LordHavoc: copied most of this from Q2 to improve keyboard handling
+	switch (key)
 	{
-		line = key_line;
-		linepos = key_linepos;
-	}
-	else
-	{
-		line = chat_buffer;
-		linepos = chat_bufferpos;
-	}
-
-	if (linepos >= MAX_INPUTLINE-1)
-		return linepos;
-
-	blen = u8_fromchar(unicode, buf, sizeof(buf));
-	if (!blen)
-		return linepos;
-	len = (int)strlen(&line[linepos]);
-	// check insert mode, or always insert if at end of line
-	if (key_insert || len == 0)
-	{
-		if (linepos + len + blen >= MAX_INPUTLINE)
-			return linepos;
-		// can't use strcpy to move string to right
-		len++;
-		if (linepos + blen + len >= MAX_INPUTLINE)
-			return linepos;
-		memmove(&line[linepos + blen], &line[linepos], len);
-	}
-	else if (linepos + len + blen - u8_bytelen(line + linepos, 1) >= MAX_INPUTLINE)
-		return linepos;
-	memcpy(line + linepos, buf, blen);
-	if (blen > len)
-		line[linepos + blen] = 0;
-	linepos += blen;
-	return linepos;
-}
-
-// returns -1 if no key has been recognized
-// returns linepos (>= 0) otherwise
-// if is_console is true can modify key_line (doesn't change key_linepos)
-int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicode)
-{
-	char *line;
-	int linepos, linestart;
-	unsigned int linesize;
-	if (is_console)
-	{
-		line = key_line;
-		linepos = key_linepos;
-		linesize = sizeof(key_line);
-		linestart = 1;
-	}
-	else
-	{
-		line = chat_buffer;
-		linepos = chat_bufferpos;
-		linesize = sizeof(chat_buffer);
-		linestart = 0;
+	case K_KP_SLASH:
+		key = '/';
+		break;
+	case K_KP_MINUS:
+		key = '-';
+		break;
+	case K_KP_PLUS:
+		key = '+';
+		break;
+	case K_KP_HOME:
+		key = '7';
+		break;
+	case K_KP_UPARROW:
+		key = '8';
+		break;
+	case K_KP_PGUP:
+		key = '9';
+		break;
+	case K_KP_LEFTARROW:
+		key = '4';
+		break;
+	case K_KP_5:
+		key = '5';
+		break;
+	case K_KP_RIGHTARROW:
+		key = '6';
+		break;
+	case K_KP_END:
+		key = '1';
+		break;
+	case K_KP_DOWNARROW:
+		key = '2';
+		break;
+	case K_KP_PGDN:
+		key = '3';
+		break;
+	case K_KP_INS:
+		key = '0';
+		break;
+	case K_KP_DEL:
+		key = '.';
+		break;
 	}
 
-	if ((key == 'v' && KM_CTRL) || ((key == K_INS || key == K_KP_INS) && KM_SHIFT))
+	if ((key == 'v' && keydown[K_CTRL]) || ((key == K_INS || key == K_KP_INS) && keydown[K_SHIFT]))
 	{
 		char *cbd, *p;
 		if ((cbd = Sys_GetClipboardData()) != 0)
@@ -788,81 +749,132 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 			strtok(cbd, "\n\r\b");
 #endif
 			i = (int)strlen(cbd);
-			if (i + linepos >= MAX_INPUTLINE)
-				i= MAX_INPUTLINE - linepos - 1;
+			if (i + key_linepos >= MAX_INPUTLINE)
+				i= MAX_INPUTLINE - key_linepos - 1;
 			if (i > 0)
 			{
+				// terencehill: insert the clipboard text between the characters of the line
+				/*
+				char *temp = (char *) Z_Malloc(MAX_INPUTLINE);
+				cbd[i]=0;
+				temp[0]=0;
+				if ( key_linepos < (int)strlen(key_line) )
+					strlcpy(temp, key_line + key_linepos, (int)strlen(key_line) - key_linepos +1);
+				key_line[key_linepos] = 0;
+				strlcat(key_line, cbd, sizeof(key_line));
+				if (temp[0])
+					strlcat(key_line, temp, sizeof(key_line));
+				Z_Free(temp);
+				key_linepos += i;
+				*/
+				// blub: I'm changing this to use memmove() like the rest of the code does.
 				cbd[i] = 0;
-				memmove(line + linepos + i, line + linepos, linesize - linepos - i);
-				memcpy(line + linepos, cbd, i);
-				linepos += i;
+				memmove(key_line + key_linepos + i, key_line + key_linepos, sizeof(key_line) - key_linepos - i);
+				memcpy(key_line + key_linepos, cbd, i);
+				key_linepos += i;
 			}
 			Z_Free(cbd);
 		}
-		return linepos;
+		return;
 	}
 
-	if (key == 'u' && KM_CTRL) // like vi/readline ^u: delete currently edited line
+	if (key == 'l' && keydown[K_CTRL])
 	{
-		return Key_ClearEditLine(is_console);
+		Cbuf_AddText ("clear\n");
+		return;
+	}
+
+	if (key == 'u' && keydown[K_CTRL]) // like vi/readline ^u: delete currently edited line
+	{
+		// clear line
+		key_line[0] = ']';
+		key_line[1] = 0;
+		key_linepos = 1;
+		return;
+	}
+
+	if (key == 'q' && keydown[K_CTRL]) // like zsh ^q: push line to history, don't execute, and clear
+	{
+		// clear line
+		Key_History_Push();
+		key_line[0] = ']';
+		key_line[1] = 0;
+		key_linepos = 1;
+		return;
+	}
+
+	if (key == K_ENTER || key == K_KP_ENTER)
+	{
+		Cbuf_AddText (key_line+1);	// skip the ]
+		Cbuf_AddText ("\n");
+		Key_History_Push();
+		key_line[0] = ']';
+		key_line[1] = 0;	// EvilTypeGuy: null terminate
+		key_linepos = 1;
+		// force an update, because the command may take some time
+		if (cls.state == ca_disconnected)
+			CL_UpdateScreen ();
+		return;
 	}
 
 	if (key == K_TAB)
 	{
-		if (is_console && KM_CTRL) // append the cvar value to the cvar name
+		if(keydown[K_CTRL]) // append to the cvar its value
 		{
 			int		cvar_len, cvar_str_len, chars_to_move;
 			char	k;
 			char	cvar[MAX_INPUTLINE];
 			const char *cvar_str;
-
+			
 			// go to the start of the variable
-			while(--linepos)
+			while(--key_linepos)
 			{
-				k = line[linepos];
+				k = key_line[key_linepos];
 				if(k == '\"' || k == ';' || k == ' ' || k == '\'')
 					break;
 			}
-			linepos++;
-
+			key_linepos++;
+			
 			// save the variable name in cvar
-			for(cvar_len=0; (k = line[linepos + cvar_len]) != 0; cvar_len++)
+			for(cvar_len=0; (k = key_line[key_linepos + cvar_len]) != 0; cvar_len++)
 			{
 				if(k == '\"' || k == ';' || k == ' ' || k == '\'')
 					break;
 				cvar[cvar_len] = k;
 			}
 			if (cvar_len==0)
-				return linepos;
+				return;
 			cvar[cvar_len] = 0;
-
+			
 			// go to the end of the cvar
-			linepos += cvar_len;
-
+			key_linepos += cvar_len;
+			
 			// save the content of the variable in cvar_str
-			cvar_str = Cvar_VariableString(&cvars_all, cvar, CF_CLIENT | CF_SERVER);
-			cvar_str_len = (int)strlen(cvar_str);
+			cvar_str = Cvar_VariableString(cvar);
+			cvar_str_len = strlen(cvar_str);
 			if (cvar_str_len==0)
-				return linepos;
-
-			// insert space and cvar_str in line
-			chars_to_move = (int)strlen(&line[linepos]);
-			if (linepos + 1 + cvar_str_len + chars_to_move < MAX_INPUTLINE)
+				return;
+			
+			// insert space and cvar_str in key_line
+			chars_to_move = strlen(&key_line[key_linepos]);
+			if (key_linepos + 1 + cvar_str_len + chars_to_move < MAX_INPUTLINE)
 			{
 				if (chars_to_move)
-					memmove(&line[linepos + 1 + cvar_str_len], &line[linepos], chars_to_move);
-				line[linepos++] = ' ';
-				memcpy(&line[linepos], cvar_str, cvar_str_len);
-				linepos += cvar_str_len;
-				line[linepos + chars_to_move] = 0;
+					memmove(&key_line[key_linepos + 1 + cvar_str_len], &key_line[key_linepos], chars_to_move);
+				key_line[key_linepos++] = ' ';
+				memcpy(&key_line[key_linepos], cvar_str, cvar_str_len);
+				key_linepos += cvar_str_len;
+				key_line[key_linepos + chars_to_move] = 0;
 			}
 			else
 				Con_Printf("Couldn't append cvar value, edit line too long.\n");
-			return linepos;
+			return;
 		}
-
-		if (KM_NONE)
-			return Con_CompleteCommandLine(cmd, is_console);
+		// Enhanced command completion
+		// by EvilTypeGuy eviltypeguy@qeradiant.com
+		// Thanks to Fett, Taniwha
+		Con_CompleteCommandLine();
+		return;
 	}
 
 	// Advanced Console Editing by Radix radix@planetquake.com
@@ -873,295 +885,177 @@ int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicod
 	// move cursor to the previous character
 	if (key == K_LEFTARROW || key == K_KP_LEFTARROW)
 	{
-		if(KM_CTRL) // move cursor to the previous word
+		if (key_linepos < 2)
+			return;
+		if(keydown[K_CTRL]) // move cursor to the previous word
 		{
 			int		pos;
 			char	k;
-			if (linepos <= linestart + 1)
-				return linestart;
-			pos = linepos;
+			pos = key_linepos-1;
 
-			do {
-				k = line[--pos];
-				if (!(k == '\"' || k == ';' || k == ' ' || k == '\''))
-					break;
-			} while(pos > linestart); // skip all "; ' after the word
-
-			if (pos == linestart)
-				return linestart;
-
-			do {
-				k = line[--pos];
-				if (k == '\"' || k == ';' || k == ' ' || k == '\'')
+			if(pos) // skip all "; ' after the word
+				while(--pos)
 				{
-					pos++;
-					break;
+					k = key_line[pos];
+					if (!(k == '\"' || k == ';' || k == ' ' || k == '\''))
+						break;
 				}
-			} while(pos > linestart);
 
-			linepos = pos;
-			return linepos;
+			if(pos)
+				while(--pos)
+				{
+					k = key_line[pos];
+					if(k == '\"' || k == ';' || k == ' ' || k == '\'')
+						break;
+				}
+			key_linepos = pos + 1;
 		}
-
-		if(KM_SHIFT) // move cursor to the previous character ignoring colors
+		else if(keydown[K_SHIFT]) // move cursor to the previous character ignoring colors
 		{
 			int		pos;
 			size_t          inchar = 0;
-			if (linepos <= linestart + 1)
-				return linestart;
-			pos = (int)u8_prevbyte(line + linestart, linepos - linestart) + linestart;
-			while (pos > linestart)
-				if(pos-1 >= linestart && line[pos-1] == STRING_COLOR_TAG && isdigit(line[pos]))
+			pos = u8_prevbyte(key_line+1, key_linepos-1) + 1; // do NOT give the ']' to u8_prevbyte
+			while (pos)
+				if(pos-1 > 0 && key_line[pos-1] == STRING_COLOR_TAG && isdigit(key_line[pos]))
 					pos-=2;
-				else if(pos-4 >= linestart && line[pos-4] == STRING_COLOR_TAG && line[pos-3] == STRING_COLOR_RGB_TAG_CHAR
-						&& isxdigit(line[pos-2]) && isxdigit(line[pos-1]) && isxdigit(line[pos]))
+				else if(pos-4 > 0 && key_line[pos-4] == STRING_COLOR_TAG && key_line[pos-3] == STRING_COLOR_RGB_TAG_CHAR
+						&& isxdigit(key_line[pos-2]) && isxdigit(key_line[pos-1]) && isxdigit(key_line[pos]))
 					pos-=5;
 				else
 				{
-					if(pos-1 >= linestart && line[pos-1] == STRING_COLOR_TAG && line[pos] == STRING_COLOR_TAG) // consider ^^ as a character
+					if(pos-1 > 0 && key_line[pos-1] == STRING_COLOR_TAG && key_line[pos] == STRING_COLOR_TAG) // consider ^^ as a character
 						pos--;
 					pos--;
 					break;
 				}
-			if (pos < linestart)
-				return linestart;
 			// we need to move to the beginning of the character when in a wide character:
-			u8_charidx(line, pos + 1, &inchar);
-			linepos = (int)(pos + 1 - inchar);
-			return linepos;
+			u8_charidx(key_line, pos + 1, &inchar);
+			key_linepos = pos + 1 - inchar;
 		}
-
-		if(KM_NONE)
+		else
 		{
-			if (linepos <= linestart + 1)
-				return linestart;
-			// hide ']' from u8_prevbyte otherwise it could go out of bounds
-			linepos = (int)u8_prevbyte(line + linestart, linepos - linestart) + linestart;
-			return linepos;
+			key_linepos = u8_prevbyte(key_line+1, key_linepos-1) + 1; // do NOT give the ']' to u8_prevbyte
 		}
+		return;
 	}
 
 	// delete char before cursor
-	if ((key == K_BACKSPACE && KM_NONE) || (key == 'h' && KM_CTRL))
+	if (key == K_BACKSPACE || (key == 'h' && keydown[K_CTRL]))
 	{
-		if (linepos > linestart)
+		if (key_linepos > 1)
 		{
-			// hide ']' from u8_prevbyte otherwise it could go out of bounds
-			int newpos = (int)u8_prevbyte(line + linestart, linepos - linestart) + linestart;
-			strlcpy(line + newpos, line + linepos, linesize + 1 - linepos);
-			linepos = newpos;
+			int newpos = u8_prevbyte(key_line+1, key_linepos-1) + 1; // do NOT give the ']' to u8_prevbyte
+			strlcpy(key_line + newpos, key_line + key_linepos, sizeof(key_line) + 1 - key_linepos);
+			key_linepos = newpos;
 		}
-		return linepos;
+		return;
 	}
 
 	// delete char on cursor
-	if ((key == K_DEL || key == K_KP_DEL) && KM_NONE)
+	if (key == K_DEL || key == K_KP_DEL)
 	{
 		size_t linelen;
-		linelen = strlen(line);
-		if (linepos < (int)linelen)
-			memmove(line + linepos, line + linepos + u8_bytelen(line + linepos, 1), linelen - linepos);
-		return linepos;
+		linelen = strlen(key_line);
+		if (key_linepos < (int)linelen)
+			memmove(key_line + key_linepos, key_line + key_linepos + u8_bytelen(key_line + key_linepos, 1), linelen - key_linepos);
+		return;
 	}
+
 
 	// move cursor to the next character
 	if (key == K_RIGHTARROW || key == K_KP_RIGHTARROW)
 	{
-		if (KM_CTRL) // move cursor to the next word
+		if (key_linepos >= (int)strlen(key_line))
+			return;
+		if(keydown[K_CTRL]) // move cursor to the next word
 		{
 			int		pos, len;
 			char	k;
-			len = (int)strlen(line);
-			if (linepos >= len)
-				return linepos;
-			pos = linepos;
+			len = (int)strlen(key_line);
+			pos = key_linepos;
 
 			while(++pos < len)
 			{
-				k = line[pos];
+				k = key_line[pos];
 				if(k == '\"' || k == ';' || k == ' ' || k == '\'')
 					break;
 			}
-
+			
 			if (pos < len) // skip all "; ' after the word
 				while(++pos < len)
 				{
-					k = line[pos];
+					k = key_line[pos];
 					if (!(k == '\"' || k == ';' || k == ' ' || k == '\''))
 						break;
 				}
-			linepos = pos;
-			return linepos;
+			key_linepos = pos;
 		}
-
-		if (KM_SHIFT) // move cursor to the next character ignoring colors
+		else if(keydown[K_SHIFT]) // move cursor to the next character ignoring colors
 		{
 			int		pos, len;
-			len = (int)strlen(line);
-			if (linepos >= len)
-				return linepos;
-			pos = linepos;
-
+			len = (int)strlen(key_line);
+			pos = key_linepos;
+			
 			// go beyond all initial consecutive color tags, if any
 			if(pos < len)
-				while (line[pos] == STRING_COLOR_TAG)
+				while (key_line[pos] == STRING_COLOR_TAG)
 				{
-					if(isdigit(line[pos+1]))
+					if(isdigit(key_line[pos+1]))
 						pos+=2;
-					else if(line[pos+1] == STRING_COLOR_RGB_TAG_CHAR && isxdigit(line[pos+2]) && isxdigit(line[pos+3]) && isxdigit(line[pos+4]))
+					else if(key_line[pos+1] == STRING_COLOR_RGB_TAG_CHAR && isxdigit(key_line[pos+2]) && isxdigit(key_line[pos+3]) && isxdigit(key_line[pos+4]))
 						pos+=5;
 					else
 						break;
 				}
-
+			
 			// skip the char
-			if (line[pos] == STRING_COLOR_TAG && line[pos+1] == STRING_COLOR_TAG) // consider ^^ as a character
+			if (key_line[pos] == STRING_COLOR_TAG && key_line[pos+1] == STRING_COLOR_TAG) // consider ^^ as a character
 				pos++;
-			pos += (int)u8_bytelen(line + pos, 1);
-
+			pos += u8_bytelen(key_line + pos, 1);
+			
 			// now go beyond all next consecutive color tags, if any
 			if(pos < len)
-				while (line[pos] == STRING_COLOR_TAG)
+				while (key_line[pos] == STRING_COLOR_TAG)
 				{
-					if(isdigit(line[pos+1]))
+					if(isdigit(key_line[pos+1]))
 						pos+=2;
-					else if(line[pos+1] == STRING_COLOR_RGB_TAG_CHAR && isxdigit(line[pos+2]) && isxdigit(line[pos+3]) && isxdigit(line[pos+4]))
+					else if(key_line[pos+1] == STRING_COLOR_RGB_TAG_CHAR && isxdigit(key_line[pos+2]) && isxdigit(key_line[pos+3]) && isxdigit(key_line[pos+4]))
 						pos+=5;
 					else
 						break;
 				}
-			linepos = pos;
-			return linepos;
+			key_linepos = pos;
 		}
-
-		if (KM_NONE)
-		{
-			if (linepos >= (int)strlen(line))
-				return linepos;
-			linepos += (int)u8_bytelen(line + linepos, 1);
-			return linepos;
-		}
+		else
+			key_linepos += u8_bytelen(key_line + key_linepos, 1);
+		return;
 	}
 
-	if ((key == K_INS || key == K_KP_INS) && KM_NONE) // toggle insert mode
+	if (key == K_INS || key == K_KP_INS) // toggle insert mode
 	{
 		key_insert ^= 1;
-		return linepos;
-	}
-
-	if (key == K_HOME || key == K_KP_HOME)
-	{
-		if (is_console && KM_CTRL)
-		{
-			con_backscroll = CON_TEXTSIZE;
-			return linepos;
-		}
-		if (KM_NONE)
-			return linestart;
-	}
-
-	if (key == K_END || key == K_KP_END)
-	{
-		if (is_console && KM_CTRL)
-		{
-			con_backscroll = 0;
-			return linepos;
-		}
-		if (KM_NONE)
-			return (int)strlen(line);
-	}
-
-	return -1;
-}
-
-static int Key_Convert_NumPadKey(int key)
-{
-	// LadyHavoc: copied most of this from Q2 to improve keyboard handling
-	switch (key)
-	{
-		case K_KP_SLASH:      return '/';
-		case K_KP_MINUS:      return '-';
-		case K_KP_PLUS:       return '+';
-		case K_KP_HOME:       return '7';
-		case K_KP_UPARROW:    return '8';
-		case K_KP_PGUP:       return '9';
-		case K_KP_LEFTARROW:  return '4';
-		case K_KP_5:          return '5';
-		case K_KP_RIGHTARROW: return '6';
-		case K_KP_END:        return '1';
-		case K_KP_DOWNARROW:  return '2';
-		case K_KP_PGDN:       return '3';
-		case K_KP_INS:        return '0';
-		case K_KP_DEL:        return '.';
-	}
-	return key;
-}
-
-static void
-Key_Console(cmd_state_t *cmd, int key, int unicode)
-{
-	int linepos;
-
-	key = Key_Convert_NumPadKey(key);
-
-	// Forbid Ctrl Alt shortcuts since on Windows they are used to type some characters
-	// in certain non-English keyboards using the AltGr key (which emulates Ctrl Alt)
-	// Reference: "Why Ctrl+Alt shouldn't be used as a shortcut modifier"
-	//            https://blogs.msdn.microsoft.com/oldnewthing/20040329-00/?p=40003
-	if (keydown[K_CTRL] && keydown[K_ALT])
-		goto add_char;
-
-	linepos = Key_Parse_CommonKeys(cmd, true, key, unicode);
-	if (linepos >= 0)
-	{
-		key_linepos = linepos;
-		return;
-	}
-
-	if ((key == K_ENTER || key == K_KP_ENTER) && KM_NONE)
-	{
-		Cbuf_AddText (cmd, key_line+1);	// skip the ]
-		Cbuf_AddText (cmd, "\n");
-		Key_History_Push();
-		key_linepos = Key_ClearEditLine(true);
-		// force an update, because the command may take some time
-		if (cls.state == ca_disconnected)
-			CL_UpdateScreen ();
-		return;
-	}
-
-	if (key == 'l' && KM_CTRL)
-	{
-		Cbuf_AddText (cmd, "clear\n");
-		return;
-	}
-
-	if (key == 'q' && KM_CTRL) // like zsh ^q: push line to history, don't execute, and clear
-	{
-		// clear line
-		Key_History_Push();
-		key_linepos = Key_ClearEditLine(true);
 		return;
 	}
 
 	// End Advanced Console Editing
 
-	if (((key == K_UPARROW || key == K_KP_UPARROW) && KM_NONE) || (key == 'p' && KM_CTRL))
+	if (key == K_UPARROW || key == K_KP_UPARROW || (key == 'p' && keydown[K_CTRL]))
 	{
 		Key_History_Up();
 		return;
 	}
 
-	if (((key == K_DOWNARROW || key == K_KP_DOWNARROW) && KM_NONE) || (key == 'n' && KM_CTRL))
+	if (key == K_DOWNARROW || key == K_KP_DOWNARROW || (key == 'n' && keydown[K_CTRL]))
 	{
 		Key_History_Down();
 		return;
 	}
+	// ~1.0795 = 82/76  using con_textsize 64 76 is height of the char, 6 is the distance between 2 lines
 
 	if (keydown[K_CTRL])
 	{
 		// prints all the matching commands
-		if (key == 'f' && KM_CTRL)
+		if (key == 'f')
 		{
 			Key_History_Find_All();
 			return;
@@ -1169,24 +1063,21 @@ Key_Console(cmd_state_t *cmd, int key, int unicode)
 		// Search forwards/backwards, pointing the history's index to the
 		// matching command but without fetching it to let one continue the search.
 		// To fetch it, it suffices to just press UP or DOWN.
-		if (key == 'r' && KM_CTRL_SHIFT)
+		if (key == 'r')
 		{
-			Key_History_Find_Forwards();
+			if (keydown[K_SHIFT])
+				Key_History_Find_Forwards();
+			else
+				Key_History_Find_Backwards();
 			return;
 		}
-		if (key == 'r' && KM_CTRL)
-		{
-			Key_History_Find_Backwards();
-			return;
-		}
-
 		// go to the last/first command of the history
-		if (key == ',' && KM_CTRL)
+		if (key == ',')
 		{
 			Key_History_First();
 			return;
 		}
-		if (key == '.' && KM_CTRL)
+		if (key == '.')
 		{
 			Key_History_Last();
 			return;
@@ -1195,135 +1086,161 @@ Key_Console(cmd_state_t *cmd, int key, int unicode)
 
 	if (key == K_PGUP || key == K_KP_PGUP)
 	{
-		if (KM_CTRL)
+		if(keydown[K_CTRL])
 		{
 			con_backscroll += ((vid_conheight.integer >> 2) / con_textsize.integer)-1;
-			return;
 		}
-		if (KM_NONE)
-		{
+		else
 			con_backscroll += ((vid_conheight.integer >> 1) / con_textsize.integer)-3;
-			return;
-		}
+		return;
 	}
 
 	if (key == K_PGDN || key == K_KP_PGDN)
 	{
-		if (KM_CTRL)
+		if(keydown[K_CTRL])
 		{
 			con_backscroll -= ((vid_conheight.integer >> 2) / con_textsize.integer)-1;
-			return;
 		}
-		if (KM_NONE)
-		{
+		else
 			con_backscroll -= ((vid_conheight.integer >> 1) / con_textsize.integer)-3;
-			return;
-		}
+		return;
 	}
-
+ 
 	if (key == K_MWHEELUP)
 	{
-		if (KM_CTRL)
-		{
+		if(keydown[K_CTRL])
 			con_backscroll += 1;
-			return;
-		}
-		if (KM_SHIFT)
-		{
+		else if(keydown[K_SHIFT])
 			con_backscroll += ((vid_conheight.integer >> 2) / con_textsize.integer)-1;
-			return;
-		}
-		if (KM_NONE)
-		{
+		else
 			con_backscroll += 5;
-			return;
-		}
+		return;
 	}
 
 	if (key == K_MWHEELDOWN)
 	{
-		if (KM_CTRL)
-		{
+		if(keydown[K_CTRL])
 			con_backscroll -= 1;
-			return;
-		}
-		if (KM_SHIFT)
-		{
+		else if(keydown[K_SHIFT])
 			con_backscroll -= ((vid_conheight.integer >> 2) / con_textsize.integer)-1;
-			return;
-		}
-		if (KM_NONE)
-		{
+		else
 			con_backscroll -= 5;
-			return;
-		}
+		return;
 	}
 
 	if (keydown[K_CTRL])
 	{
 		// text zoom in
-		if ((key == '+' || key == K_KP_PLUS) && KM_CTRL)
+		if (key == '+' || key == K_KP_PLUS)
 		{
 			if (con_textsize.integer < 128)
 				Cvar_SetValueQuick(&con_textsize, con_textsize.integer + 1);
 			return;
 		}
 		// text zoom out
-		if ((key == '-' || key == K_KP_MINUS) && KM_CTRL)
+		if (key == '-' || key == K_KP_MINUS)
 		{
 			if (con_textsize.integer > 1)
 				Cvar_SetValueQuick(&con_textsize, con_textsize.integer - 1);
 			return;
 		}
 		// text zoom reset
-		if ((key == '0' || key == K_KP_INS) && KM_CTRL)
+		if (key == '0' || key == K_KP_INS)
 		{
-			Cvar_SetValueQuick(&con_textsize, atoi(Cvar_VariableDefString(&cvars_all, "con_textsize", CF_CLIENT | CF_SERVER)));
+			Cvar_SetValueQuick(&con_textsize, atoi(Cvar_VariableDefString("con_textsize")));
 			return;
 		}
 	}
 
-add_char:
+	if (key == K_HOME || key == K_KP_HOME)
+	{
+		if (keydown[K_CTRL])
+			con_backscroll = CON_TEXTSIZE;
+		else
+			key_linepos = 1;
+		return;
+	}
+
+	if (key == K_END || key == K_KP_END)
+	{
+		if (keydown[K_CTRL])
+			con_backscroll = 0;
+		else
+			key_linepos = (int)strlen(key_line);
+		return;
+	}
 
 	// non printable
 	if (unicode < 32)
 		return;
 
-	key_linepos = Key_AddChar(unicode, true);
+	if (key_linepos < MAX_INPUTLINE-1)
+	{
+		char buf[16];
+		int len;
+		int blen;
+		blen = u8_fromchar(unicode, buf, sizeof(buf));
+		if (!blen)
+			return;
+		len = (int)strlen(&key_line[key_linepos]);
+		// check insert mode, or always insert if at end of line
+		if (key_insert || len == 0)
+		{
+			// can't use strcpy to move string to right
+			len++;
+			//memmove(&key_line[key_linepos + u8_bytelen(key_line + key_linepos, 1)], &key_line[key_linepos], len);
+			memmove(&key_line[key_linepos + blen], &key_line[key_linepos], len);
+		}
+		memcpy(key_line + key_linepos, buf, blen);
+		key_linepos += blen;
+		//key_linepos += u8_fromchar(unicode, key_line + key_linepos, sizeof(key_line) - key_linepos - 1);
+		//key_line[key_linepos] = ascii;
+		//key_linepos++;
+	}
 }
 
 //============================================================================
 
+int chat_mode;
+char		chat_buffer[MAX_INPUTLINE];
+unsigned int	chat_bufferlen = 0;
+
 static void
-Key_Message (cmd_state_t *cmd, int key, int ascii)
+Key_Message (int key, int ascii)
 {
-	int linepos;
 	char vabuf[1024];
-
-	key = Key_Convert_NumPadKey(key);
-
-	if (key == K_ENTER || key == K_KP_ENTER || ascii == 10 || ascii == 13)
+	if (key == K_ENTER || ascii == 10 || ascii == 13)
 	{
 		if(chat_mode < 0)
-			Cmd_ExecuteString(cmd, chat_buffer, src_local, true); // not Cbuf_AddText to allow semiclons in args; however, this allows no variables then. Use aliases!
+			Cmd_ExecuteString(chat_buffer, src_command, true); // not Cbuf_AddText to allow semiclons in args; however, this allows no variables then. Use aliases!
 		else
-			CL_ForwardToServer(va(vabuf, sizeof(vabuf), "%s %s", chat_mode ? "say_team" : "say ", chat_buffer));
+			Cmd_ForwardStringToServer(va(vabuf, sizeof(vabuf), "%s %s", chat_mode ? "say_team" : "say ", chat_buffer));
 
 		key_dest = key_game;
-		chat_bufferpos = Key_ClearEditLine(false);
+		chat_bufferlen = 0;
+		chat_buffer[0] = 0;
 		return;
 	}
+
+	// TODO add support for arrow keys and simple editing
 
 	if (key == K_ESCAPE) {
 		key_dest = key_game;
-		chat_bufferpos = Key_ClearEditLine(false);
+		chat_bufferlen = 0;
+		chat_buffer[0] = 0;
 		return;
 	}
 
-	linepos = Key_Parse_CommonKeys(cmd, false, key, ascii);
-	if (linepos >= 0)
-	{
-		chat_bufferpos = linepos;
+	if (key == K_BACKSPACE) {
+		if (chat_bufferlen) {
+			chat_bufferlen = u8_prevbyte(chat_buffer, chat_bufferlen);
+			chat_buffer[chat_bufferlen] = 0;
+		}
+		return;
+	}
+
+	if(key == K_TAB) {
+		chat_bufferlen = Nicks_CompleteChatLine(chat_buffer, sizeof(chat_buffer), chat_bufferlen);
 		return;
 	}
 
@@ -1331,10 +1248,16 @@ Key_Message (cmd_state_t *cmd, int key, int ascii)
 	if (ascii > 0 && ascii < 32 && utf8_enable.integer)
 		ascii = 0xE000 + ascii;
 
+	if (chat_bufferlen == sizeof (chat_buffer) - 1)
+		return;							// all full
+
 	if (!ascii)
 		return;							// non printable
 
-	chat_bufferpos = Key_AddChar(ascii, false);
+	chat_bufferlen += u8_fromchar(ascii, chat_buffer+chat_bufferlen, sizeof(chat_buffer) - chat_bufferlen - 1);
+
+	//chat_buffer[chat_bufferlen++] = ascii;
+	//chat_buffer[chat_bufferlen] = 0;
 }
 
 //============================================================================
@@ -1401,7 +1324,7 @@ Key_KeynumToString (int keynum, char *tinystr, size_t tinystrlength)
 }
 
 
-qbool
+qboolean
 Key_SetBinding (int keynum, int bindmap, const char *binding)
 {
 	char *newbinding;
@@ -1436,7 +1359,7 @@ void Key_GetBindMap(int *fg, int *bg)
 		*bg = key_bmap2;
 }
 
-qbool Key_SetBindMap(int fg, int bg)
+qboolean Key_SetBindMap(int fg, int bg)
 {
 	if(fg >= MAX_BINDMAPS)
 		return false;
@@ -1450,25 +1373,25 @@ qbool Key_SetBindMap(int fg, int bg)
 }
 
 static void
-Key_In_Unbind_f(cmd_state_t *cmd)
+Key_In_Unbind_f (void)
 {
 	int         b, m;
 	char *errchar = NULL;
 
-	if (Cmd_Argc (cmd) != 3) {
+	if (Cmd_Argc () != 3) {
 		Con_Print("in_unbind <bindmap> <key> : remove commands from a key\n");
 		return;
 	}
 
-	m = strtol(Cmd_Argv(cmd, 1), &errchar, 0);
+	m = strtol(Cmd_Argv (1), &errchar, 0);
 	if ((m < 0) || (m >= MAX_BINDMAPS) || (errchar && *errchar)) {
-		Con_Printf("%s isn't a valid bindmap\n", Cmd_Argv(cmd, 1));
+		Con_Printf("%s isn't a valid bindmap\n", Cmd_Argv(1));
 		return;
 	}
 
-	b = Key_StringToKeynum (Cmd_Argv(cmd, 2));
+	b = Key_StringToKeynum (Cmd_Argv (2));
 	if (b == -1) {
-		Con_Printf("\"%s\" isn't a valid key\n", Cmd_Argv(cmd, 2));
+		Con_Printf("\"%s\" isn't a valid key\n", Cmd_Argv (2));
 		return;
 	}
 
@@ -1477,72 +1400,72 @@ Key_In_Unbind_f(cmd_state_t *cmd)
 }
 
 static void
-Key_In_Bind_f(cmd_state_t *cmd)
+Key_In_Bind_f (void)
 {
 	int         i, c, b, m;
-	char        line[MAX_INPUTLINE];
+	char        cmd[MAX_INPUTLINE];
 	char *errchar = NULL;
 
-	c = Cmd_Argc (cmd);
+	c = Cmd_Argc ();
 
 	if (c != 3 && c != 4) {
 		Con_Print("in_bind <bindmap> <key> [command] : attach a command to a key\n");
 		return;
 	}
 
-	m = strtol(Cmd_Argv(cmd, 1), &errchar, 0);
+	m = strtol(Cmd_Argv (1), &errchar, 0);
 	if ((m < 0) || (m >= MAX_BINDMAPS) || (errchar && *errchar)) {
-		Con_Printf("%s isn't a valid bindmap\n", Cmd_Argv(cmd, 1));
+		Con_Printf("%s isn't a valid bindmap\n", Cmd_Argv(1));
 		return;
 	}
 
-	b = Key_StringToKeynum (Cmd_Argv(cmd, 2));
+	b = Key_StringToKeynum (Cmd_Argv (2));
 	if (b == -1 || b >= MAX_KEYS) {
-		Con_Printf("\"%s\" isn't a valid key\n", Cmd_Argv(cmd, 2));
+		Con_Printf("\"%s\" isn't a valid key\n", Cmd_Argv (2));
 		return;
 	}
 
 	if (c == 3) {
 		if (keybindings[m][b])
-			Con_Printf("\"%s\" = \"%s\"\n", Cmd_Argv(cmd, 2), keybindings[m][b]);
+			Con_Printf("\"%s\" = \"%s\"\n", Cmd_Argv (2), keybindings[m][b]);
 		else
-			Con_Printf("\"%s\" is not bound\n", Cmd_Argv(cmd, 2));
+			Con_Printf("\"%s\" is not bound\n", Cmd_Argv (2));
 		return;
 	}
 // copy the rest of the command line
-	line[0] = 0;							// start out with a null string
+	cmd[0] = 0;							// start out with a null string
 	for (i = 3; i < c; i++) {
-		strlcat (line, Cmd_Argv(cmd, i), sizeof (line));
+		strlcat (cmd, Cmd_Argv (i), sizeof (cmd));
 		if (i != (c - 1))
-			strlcat (line, " ", sizeof (line));
+			strlcat (cmd, " ", sizeof (cmd));
 	}
 
-	if(!Key_SetBinding (b, m, line))
+	if(!Key_SetBinding (b, m, cmd))
 		Con_Printf("Key_SetBinding failed for unknown reason\n");
 }
 
 static void
-Key_In_Bindmap_f(cmd_state_t *cmd)
+Key_In_Bindmap_f (void)
 {
 	int         m1, m2, c;
 	char *errchar = NULL;
 
-	c = Cmd_Argc (cmd);
+	c = Cmd_Argc ();
 
 	if (c != 3) {
 		Con_Print("in_bindmap <bindmap> <fallback>: set current bindmap and fallback\n");
 		return;
 	}
 
-	m1 = strtol(Cmd_Argv(cmd, 1), &errchar, 0);
+	m1 = strtol(Cmd_Argv (1), &errchar, 0);
 	if ((m1 < 0) || (m1 >= MAX_BINDMAPS) || (errchar && *errchar)) {
-		Con_Printf("%s isn't a valid bindmap\n", Cmd_Argv(cmd, 1));
+		Con_Printf("%s isn't a valid bindmap\n", Cmd_Argv(1));
 		return;
 	}
 
-	m2 = strtol(Cmd_Argv(cmd, 2), &errchar, 0);
+	m2 = strtol(Cmd_Argv (2), &errchar, 0);
 	if ((m2 < 0) || (m2 >= MAX_BINDMAPS) || (errchar && *errchar)) {
-		Con_Printf("%s isn't a valid bindmap\n", Cmd_Argv(cmd, 2));
+		Con_Printf("%s isn't a valid bindmap\n", Cmd_Argv(2));
 		return;
 	}
 
@@ -1551,18 +1474,18 @@ Key_In_Bindmap_f(cmd_state_t *cmd)
 }
 
 static void
-Key_Unbind_f(cmd_state_t *cmd)
+Key_Unbind_f (void)
 {
 	int         b;
 
-	if (Cmd_Argc (cmd) != 2) {
+	if (Cmd_Argc () != 2) {
 		Con_Print("unbind <key> : remove commands from a key\n");
 		return;
 	}
 
-	b = Key_StringToKeynum (Cmd_Argv(cmd, 1));
+	b = Key_StringToKeynum (Cmd_Argv (1));
 	if (b == -1) {
-		Con_Printf("\"%s\" isn't a valid key\n", Cmd_Argv(cmd, 1));
+		Con_Printf("\"%s\" isn't a valid key\n", Cmd_Argv (1));
 		return;
 	}
 
@@ -1571,7 +1494,7 @@ Key_Unbind_f(cmd_state_t *cmd)
 }
 
 static void
-Key_Unbindall_f(cmd_state_t *cmd)
+Key_Unbindall_f (void)
 {
 	int         i, j;
 
@@ -1604,16 +1527,16 @@ Key_PrintBindList(int j)
 }
 
 static void
-Key_In_BindList_f(cmd_state_t *cmd)
+Key_In_BindList_f (void)
 {
 	int m;
 	char *errchar = NULL;
 
-	if(Cmd_Argc(cmd) >= 2)
+	if(Cmd_Argc() >= 2)
 	{
-		m = strtol(Cmd_Argv(cmd, 1), &errchar, 0);
+		m = strtol(Cmd_Argv(1), &errchar, 0);
 		if ((m < 0) || (m >= MAX_BINDMAPS) || (errchar && *errchar)) {
-			Con_Printf("%s isn't a valid bindmap\n", Cmd_Argv(cmd, 1));
+			Con_Printf("%s isn't a valid bindmap\n", Cmd_Argv(1));
 			return;
 		}
 		Key_PrintBindList(m);
@@ -1626,45 +1549,45 @@ Key_In_BindList_f(cmd_state_t *cmd)
 }
 
 static void
-Key_BindList_f(cmd_state_t *cmd)
+Key_BindList_f (void)
 {
 	Key_PrintBindList(0);
 }
 
 static void
-Key_Bind_f(cmd_state_t *cmd)
+Key_Bind_f (void)
 {
 	int         i, c, b;
-	char        line[MAX_INPUTLINE];
+	char        cmd[MAX_INPUTLINE];
 
-	c = Cmd_Argc (cmd);
+	c = Cmd_Argc ();
 
 	if (c != 2 && c != 3) {
 		Con_Print("bind <key> [command] : attach a command to a key\n");
 		return;
 	}
-	b = Key_StringToKeynum (Cmd_Argv(cmd, 1));
+	b = Key_StringToKeynum (Cmd_Argv (1));
 	if (b == -1 || b >= MAX_KEYS) {
-		Con_Printf("\"%s\" isn't a valid key\n", Cmd_Argv(cmd, 1));
+		Con_Printf("\"%s\" isn't a valid key\n", Cmd_Argv (1));
 		return;
 	}
 
 	if (c == 2) {
 		if (keybindings[0][b])
-			Con_Printf("\"%s\" = \"%s\"\n", Cmd_Argv(cmd, 1), keybindings[0][b]);
+			Con_Printf("\"%s\" = \"%s\"\n", Cmd_Argv (1), keybindings[0][b]);
 		else
-			Con_Printf("\"%s\" is not bound\n", Cmd_Argv(cmd, 1));
+			Con_Printf("\"%s\" is not bound\n", Cmd_Argv (1));
 		return;
 	}
 // copy the rest of the command line
-	line[0] = 0;							// start out with a null string
+	cmd[0] = 0;							// start out with a null string
 	for (i = 2; i < c; i++) {
-		strlcat (line, Cmd_Argv(cmd, i), sizeof (line));
+		strlcat (cmd, Cmd_Argv (i), sizeof (cmd));
 		if (i != (c - 1))
-			strlcat (line, " ", sizeof (line));
+			strlcat (cmd, " ", sizeof (cmd));
 	}
 
-	if(!Key_SetBinding (b, 0, line))
+	if(!Key_SetBinding (b, 0, cmd))
 		Con_Printf("Key_SetBinding failed for unknown reason\n");
 }
 
@@ -1680,9 +1603,6 @@ Key_WriteBindings (qfile_t *f)
 	char bindbuf[MAX_INPUTLINE];
 	char tinystr[2];
 	const char *p;
-
-	// Override default binds
-	FS_Printf(f, "unbindall\n");
 
 	for (j = 0; j < MAX_BINDMAPS; j++)
 	{
@@ -1706,23 +1626,24 @@ void
 Key_Init (void)
 {
 	Key_History_Init();
-	key_linepos = Key_ClearEditLine(true);
+	key_line[0] = ']';
+	key_line[1] = 0;
+	key_linepos = 1;
 
 //
 // register our functions
 //
-	Cmd_AddCommand(CF_CLIENT, "in_bind", Key_In_Bind_f, "binds a command to the specified key in the selected bindmap");
-	Cmd_AddCommand(CF_CLIENT, "in_unbind", Key_In_Unbind_f, "removes command on the specified key in the selected bindmap");
-	Cmd_AddCommand(CF_CLIENT, "in_bindlist", Key_In_BindList_f, "bindlist: displays bound keys for all bindmaps, or the given bindmap");
-	Cmd_AddCommand(CF_CLIENT, "in_bindmap", Key_In_Bindmap_f, "selects active foreground and background (used only if a key is not bound in the foreground) bindmaps for typing");
-	Cmd_AddCommand(CF_CLIENT, "in_releaseall", Key_ReleaseAll_f, "releases all currently pressed keys (debug command)");
+	Cmd_AddCommand ("in_bind", Key_In_Bind_f, "binds a command to the specified key in the selected bindmap");
+	Cmd_AddCommand ("in_unbind", Key_In_Unbind_f, "removes command on the specified key in the selected bindmap");
+	Cmd_AddCommand ("in_bindlist", Key_In_BindList_f, "bindlist: displays bound keys for all bindmaps, or the given bindmap");
+	Cmd_AddCommand ("in_bindmap", Key_In_Bindmap_f, "selects active foreground and background (used only if a key is not bound in the foreground) bindmaps for typing");
 
-	Cmd_AddCommand(CF_CLIENT, "bind", Key_Bind_f, "binds a command to the specified key in bindmap 0");
-	Cmd_AddCommand(CF_CLIENT, "unbind", Key_Unbind_f, "removes a command on the specified key in bindmap 0");
-	Cmd_AddCommand(CF_CLIENT, "bindlist", Key_BindList_f, "bindlist: displays bound keys for bindmap 0 bindmaps");
-	Cmd_AddCommand(CF_CLIENT, "unbindall", Key_Unbindall_f, "removes all commands from all keys in all bindmaps (leaving only shift-escape and escape)");
+	Cmd_AddCommand ("bind", Key_Bind_f, "binds a command to the specified key in bindmap 0");
+	Cmd_AddCommand ("unbind", Key_Unbind_f, "removes a command on the specified key in bindmap 0");
+	Cmd_AddCommand ("bindlist", Key_BindList_f, "bindlist: displays bound keys for bindmap 0 bindmaps");
+	Cmd_AddCommand ("unbindall", Key_Unbindall_f, "removes all commands from all keys in all bindmaps (leaving only shift-escape and escape)");
 
-	Cmd_AddCommand(CF_CLIENT, "history", Key_History_f, "prints the history of executed commands (history X prints the last X entries, history -c clears the whole history)");
+	Cmd_AddCommand ("history", Key_History_f, "prints the history of executed commands (history X prints the last X entries, history -c clears the whole history)");
 
 	Cvar_RegisterVariable (&con_closeontoggleconsole);
 }
@@ -1794,14 +1715,14 @@ typedef struct eventqueueitem_s
 {
 	int key;
 	int ascii;
-	qbool down;
+	qboolean down;
 }
 eventqueueitem_t;
 static int events_blocked = 0;
 static eventqueueitem_t eventqueue[32];
 static unsigned eventqueue_idx = 0;
 
-static void Key_EventQueue_Add(int key, int ascii, qbool down)
+static void Key_EventQueue_Add(int key, int ascii, qboolean down)
 {
 	if(eventqueue_idx < sizeof(eventqueue) / sizeof(*eventqueue))
 	{
@@ -1829,11 +1750,10 @@ void Key_EventQueue_Unblock(void)
 }
 
 void
-Key_Event (int key, int ascii, qbool down)
+Key_Event (int key, int ascii, qboolean down)
 {
-	cmd_state_t *cmd = &cmd_client;
 	const char *bind;
-	qbool q;
+	qboolean q;
 	keydest_t keydest = key_dest;
 	char vabuf[1024];
 
@@ -1846,6 +1766,11 @@ Key_Event (int key, int ascii, qbool down)
 		return;
 	}
 
+	if (ascii == 0x80 && utf8_enable.integer) // pressing AltGr-5 (or AltGr-e) and for some reason we get windows-1252 encoding?
+		ascii = 0x20AC; // we want the Euro currency sign
+		// TODO find out which vid_ drivers do it and fix it there
+		// but catching U+0080 here is no loss as that char is not useful anyway
+
 	// get key binding
 	bind = keybindings[key_bmap][key];
 	if (!bind)
@@ -1856,7 +1781,7 @@ Key_Event (int key, int ascii, qbool down)
 
 	if(key_consoleactive)
 		keydest = key_console;
-
+	
 	if (down)
 	{
 		// increment key repeat count each time a down is received so that things
@@ -1880,7 +1805,7 @@ Key_Event (int key, int ascii, qbool down)
 
 	if(keydest == key_void)
 		return;
-
+	
 	// key_consoleactive is a flag not a key_dest because the console is a
 	// high priority overlay ontop of the normal screen (designed as a safety
 	// feature so that developers and users can rescue themselves from a bad
@@ -1909,7 +1834,7 @@ Key_Event (int key, int ascii, qbool down)
 		{
 			if(down)
 			{
-				Con_ToggleConsole_f(&cmd_client);
+				Con_ToggleConsole_f ();
 				tbl_keydest[key] = key_void; // esc release should go nowhere (especially not to key_menu or key_game)
 			}
 			return;
@@ -1928,13 +1853,13 @@ Key_Event (int key, int ascii, qbool down)
 #endif
 					}
 					else
-						Con_ToggleConsole_f(&cmd_client);
+						Con_ToggleConsole_f();
 				}
 				break;
 
 			case key_message:
 				if (down)
-					Key_Message (cmd, key, ascii); // that'll close the message input
+					Key_Message (key, ascii); // that'll close the message input
 				break;
 
 			case key_menu:
@@ -1970,14 +1895,14 @@ Key_Event (int key, int ascii, qbool down)
 			{
 				// button commands add keynum as a parm
 				if (bind[0] == '+')
-					Cbuf_AddText (cmd, va(vabuf, sizeof(vabuf), "%s %i\n", bind, key));
+					Cbuf_AddText (va(vabuf, sizeof(vabuf), "%s %i\n", bind, key));
 				else
 				{
-					Cbuf_AddText (cmd, bind);
-					Cbuf_AddText (cmd, "\n");
+					Cbuf_AddText (bind);
+					Cbuf_AddText ("\n");
 				}
 			} else if(bind[0] == '+' && !down && keydown[key] == 0)
-				Cbuf_AddText(cmd, va(vabuf, sizeof(vabuf), "-%s %i\n", bind + 1, key));
+				Cbuf_AddText(va(vabuf, sizeof(vabuf), "-%s %i\n", bind + 1, key));
 		}
 		return;
 	}
@@ -1992,14 +1917,14 @@ Key_Event (int key, int ascii, qbool down)
 		// (special exemption for german keyboard layouts)
 		if (con_closeontoggleconsole.integer && bind && !strncmp(bind, "toggleconsole", strlen("toggleconsole")) && (key_consoleactive & KEY_CONSOLEACTIVE_USER) && (con_closeontoggleconsole.integer >= ((ascii != STRING_COLOR_TAG) ? 2 : 3) || key_linepos == 1))
 		{
-			Con_ToggleConsole_f(&cmd_client);
+			Con_ToggleConsole_f ();
 			return;
 		}
 
-		if (Sys_CheckParm ("-noconsole"))
+		if (COM_CheckParm ("-noconsole"))
 			return; // only allow the key bind to turn off console
 
-		Key_Console (cmd, key, ascii);
+		Key_Console (key, ascii);
 		return;
 	}
 
@@ -2008,7 +1933,7 @@ Key_Event (int key, int ascii, qbool down)
 	{
 		if (down && con_closeontoggleconsole.integer && bind && !strncmp(bind, "toggleconsole", strlen("toggleconsole")) && ascii != STRING_COLOR_TAG)
 		{
-			Cbuf_AddText(cmd, "toggleconsole\n");  // Deferred to next frame so we're not sending the text event to the console.
+			Con_ToggleConsole_f ();
 			tbl_keydest[key] = key_void; // key release should go nowhere (especially not to key_menu or key_game)
 			return;
 		}
@@ -2034,7 +1959,7 @@ Key_Event (int key, int ascii, qbool down)
 	{
 		case key_message:
 			if (down)
-				Key_Message (cmd, key, ascii);
+				Key_Message (key, ascii);
 			break;
 		case key_menu:
 		case key_menu_grabbed:
@@ -2051,14 +1976,14 @@ Key_Event (int key, int ascii, qbool down)
 				{
 					// button commands add keynum as a parm
 					if (bind[0] == '+')
-						Cbuf_AddText (cmd, va(vabuf, sizeof(vabuf), "%s %i\n", bind, key));
+						Cbuf_AddText (va(vabuf, sizeof(vabuf), "%s %i\n", bind, key));
 					else
 					{
-						Cbuf_AddText (cmd, bind);
-						Cbuf_AddText (cmd, "\n");
+						Cbuf_AddText (bind);
+						Cbuf_AddText ("\n");
 					}
 				} else if(bind[0] == '+' && !down && keydown[key] == 0)
-					Cbuf_AddText(cmd, va(vabuf, sizeof(vabuf), "-%s %i\n", bind + 1, key));
+					Cbuf_AddText(va(vabuf, sizeof(vabuf), "-%s %i\n", bind + 1, key));
 			}
 			break;
 		default:
@@ -2081,7 +2006,13 @@ Key_ReleaseAll (void)
 	// and only future events count
 }
 
-void Key_ReleaseAll_f(cmd_state_t *cmd)
+/*
+===================
+Key_ClearStates
+===================
+*/
+void
+Key_ClearStates (void)
 {
-	Key_ReleaseAll();
+	memset(keydown, 0, sizeof(keydown));
 }

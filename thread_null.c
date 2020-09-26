@@ -10,7 +10,7 @@ void Thread_Shutdown(void)
 {
 }
 
-qbool Thread_HasThreads(void)
+qboolean Thread_HasThreads(void)
 {
 	return false;
 }
@@ -78,47 +78,5 @@ void _Thread_DestroyBarrier(void *barrier, const char *filename, int fileline)
 }
 
 void _Thread_WaitBarrier(void *barrier, const char *filename, int fileline)
-{
-}
-
-int _Thread_AtomicGet(Thread_Atomic *a, const char *filename, int fileline)
-{
-	return a->value;
-}
-
-int _Thread_AtomicSet(Thread_Atomic *a, int v, const char *filename, int fileline)
-{
-	int value = a->value;
-	a->value = v;
-	return value;
-}
-
-int _Thread_AtomicAdd(Thread_Atomic *a, int v, const char *filename, int fileline)
-{
-	int value = a->value;
-	a->value += v;
-	return value;
-}
-
-void _Thread_AtomicIncRef(Thread_Atomic *a, const char *filename, int fileline)
-{
-	a->value++;
-}
-
-qbool _Thread_AtomicDecRef(Thread_Atomic *a, const char *filename, int fileline)
-{
-	return a->value++ == 1;
-}
-
-qbool _Thread_AtomicTryLock(Thread_SpinLock *lock, const char *filename, int fileline)
-{
-	return true;
-}
-
-void _Thread_AtomicLock(Thread_SpinLock *lock, const char *filename, int fileline)
-{
-}
-
-void _Thread_AtomicUnlock(Thread_SpinLock *lock, const char *filename, int fileline)
 {
 }

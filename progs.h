@@ -68,17 +68,17 @@ typedef struct edict_odefunc_s
 typedef struct edict_engineprivate_s
 {
 	// true if this edict is unused
-	qbool free;
+	qboolean free;
 	// sv.time when the object was freed (to prevent early reuse which could
 	// mess up client interpolation or obscure severe QuakeC bugs)
-	double freetime;
+	float freetime;
 	// mark for the leak detector
 	int mark;
 	// place in the code where it was allocated (for the leak detector)
 	const char *allocation_origin;
 	// initially false to prevent projectiles from moving on their first frame
 	// (even if they were spawned by an synchronous client think)
-	qbool move;
+	qboolean move;
 
 	// cached cluster links for quick stationary object visibility checking
 	vec3_t cullmins, cullmaxs;
@@ -97,11 +97,11 @@ typedef struct edict_engineprivate_s
 	// baseline values
 	entity_state_t baseline;
 
-	// LadyHavoc: gross hack to make floating items still work
+	// LordHavoc: gross hack to make floating items still work
 	int suspendedinairflag;
 
 	// cached position to avoid redundant SV_CheckWaterTransition calls on monsters
-	qbool waterposition_forceupdate; // force an update on this entity (set by SV_PushMove code for moving water entities)
+	qboolean waterposition_forceupdate; // force an update on this entity (set by SV_PushMove code for moving water entities)
 	vec3_t waterposition_origin; // updates whenever this changes
 
 	// used by PushMove to keep track of where objects were before they were
@@ -114,7 +114,7 @@ typedef struct edict_engineprivate_s
 	skeleton_t skeleton;
 
 	// physics parameters
-	qbool ode_physics;
+	qboolean ode_physics;
 	void *ode_body;
 	void *ode_geom;
 	void *ode_joint;
@@ -132,7 +132,7 @@ typedef struct edict_engineprivate_s
 	vec3_t ode_velocity;
 	vec3_t ode_angles;
 	vec3_t ode_avelocity;
-	qbool ode_gravity;
+	qboolean ode_gravity;
 	int ode_modelindex;
 	vec_t ode_movelimit; // smallest component of (maxs[]-mins[])
 	matrix4x4_t ode_offsetmatrix;

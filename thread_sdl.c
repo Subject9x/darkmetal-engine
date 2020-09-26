@@ -15,7 +15,7 @@ void Thread_Shutdown(void)
 {
 }
 
-qbool Thread_HasThreads(void)
+qboolean Thread_HasThreads(void)
 {
 #ifdef THREADDISABLE
 	return false;
@@ -100,7 +100,11 @@ int _Thread_CondWait(void *cond, void *mutex, const char *filename, int fileline
 
 void *_Thread_CreateThread(int (*fn)(void *), void *data, const char *filename, int fileline)
 {
+#if SDL_MAJOR_VERSION == 1
+	void *thread = (void *)SDL_CreateThread(fn, data);
+#else
 	void *thread = (void *)SDL_CreateThread(fn, filename, data);
+#endif
 #ifdef THREADDEBUG
 	Sys_PrintfToTerminal("%p thread create %s:%i\n"   , thread, filename, fileline);
 #endif
@@ -166,68 +170,4 @@ void _Thread_WaitBarrier(void *barrier, const char *filename, int fileline)
 		} while(b->called);
 	}
 	Thread_UnlockMutex(b->mutex);
-}
-
-int _Thread_AtomicGet(Thread_Atomic *a, const char *filename, int fileline)
-{
-#ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p atomic get at %s:%i\n", a, filename, fileline);
-#endif
-	return SDL_AtomicGet((SDL_atomic_t *)a);
-}
-
-int _Thread_AtomicSet(Thread_Atomic *a, int v, const char *filename, int fileline)
-{
-#ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p atomic set %v at %s:%i\n", a, v, filename, fileline);
-#endif
-	return SDL_AtomicSet((SDL_atomic_t *)a, v);
-}
-
-int _Thread_AtomicAdd(Thread_Atomic *a, int v, const char *filename, int fileline)
-{
-#ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p atomic add %v at %s:%i\n", a, v, filename, fileline);
-#endif
-	return SDL_AtomicAdd((SDL_atomic_t *)a, v);
-}
-
-void _Thread_AtomicIncRef(Thread_Atomic *a, const char *filename, int fileline)
-{
-#ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p atomic incref %s:%i\n", a, filename, fileline);
-#endif
-	SDL_AtomicIncRef((SDL_atomic_t *)a);
-}
-
-qbool _Thread_AtomicDecRef(Thread_Atomic *a, const char *filename, int fileline)
-{
-#ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p atomic decref %s:%i\n", a, filename, fileline);
-#endif
-	return SDL_AtomicDecRef((SDL_atomic_t *)a) != SDL_FALSE;
-}
-
-qbool _Thread_AtomicTryLock(Thread_SpinLock *lock, const char *filename, int fileline)
-{
-#ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p atomic try lock %s:%i\n", lock, filename, fileline);
-#endif
-	return SDL_AtomicTryLock(lock) != SDL_FALSE;
-}
-
-void _Thread_AtomicLock(Thread_SpinLock *lock, const char *filename, int fileline)
-{
-#ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p atomic lock %s:%i\n", lock, filename, fileline);
-#endif
-	SDL_AtomicLock(lock);
-}
-
-void _Thread_AtomicUnlock(Thread_SpinLock *lock, const char *filename, int fileline)
-{
-#ifdef THREADDEBUG
-	Sys_PrintfToTerminal("%p atomic unlock %s:%i\n", lock, filename, fileline);
-#endif
-	SDL_AtomicUnlock(lock);
 }

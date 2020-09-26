@@ -159,7 +159,7 @@ float OS_MAC		= 2;
 //////////////////////////////////////////////////
 // AK FIXME: Create perhaps a special builtin file for the common cmds
 
-float 	checkextension(string ext) 	= #1;
+void 	checkextension(string ext) 	= #1;
 
 // error cmds
 void 	error(string err,...) 		= #2;
@@ -354,7 +354,6 @@ float(string key) stringtokeynum = #341;
 //field definitions: (MENUQC)
 string(string serveraddress) crypto_getkeyfp = #633; // retrieves the cached host key's CA fingerprint of a server given by IP address
 string(string serveraddress) crypto_getidfp = #634; // retrieves the cached host key fingerprint of a server given by IP address
-float(string serveraddress) crypto_getidstatus = #643; // retrieves the cached host key's key status. See below for CRYPTO_IDSTATUS_ defines.
 string(string serveraddress) crypto_getencryptlevel = #635; // 0 if never encrypting, 1 supported, 2 requested, 3 required, appended by list of allowed methods in order of preference ("AES128"), preceded by a space each
 string(float i) crypto_getmykeyfp = #636; // retrieves the CA key fingerprint of a given CA slot, or "" if slot is unused but more to come, or string_null if end of list
 string(float i) crypto_getmyidfp = #637; // retrieves the ID fingerprint of a given CA slot, or "" if slot is unused but more to come, or string_null if end of list
@@ -402,7 +401,6 @@ string(float ccase, float calpha, float cnum, string s, ...) strconv = #224;
 string(float chars, string s, ...) strpad = #225;
 string(string info, string key, string value, ...) infoadd = #226;
 string(string info, string key) infoget = #227;
-float(string s1, string s2) strcmp = #228;
 float(string s1, string s2, float len) strncmp = #228;
 float(string s1, string s2) strcasecmp = #229;
 float(string s1, string s2, float len) strncasecmp = #230;
@@ -434,7 +432,7 @@ float CVAR_TYPEFLAG_READONLY = 32;
 
 //DP_QC_STRINGBUFFERS
 //idea: ??
-//darkplaces implementation: LadyHavoc
+//darkplaces implementation: LordHavoc
 //functions to manage string buffer objects - that is, arbitrary length string arrays that are handled by the engine
 float() buf_create = #440;
 void(float bufhandle) buf_del = #441;
@@ -450,7 +448,7 @@ void(float bufhandle, string pattern, string antipattern) buf_cvarlist = #517;
 
 //DP_QC_STRING_CASE_FUNCTIONS
 //idea: Dresk
-//darkplaces implementation: LadyHavoc / Dresk
+//darkplaces implementation: LordHavoc / Dresk
 //builtin definitions:
 string(string s) strtolower = #480; // returns the passed in string in pure lowercase form
 string(string s) strtoupper = #481; // returns the passed in string in pure uppercase form
@@ -538,19 +536,9 @@ float FIELD_FUNCTION = 6;
 //function definitions:
 void coverage() = #642;  // Reports a coverage event. The engine counts for each of the calls to this builtin whether it has been called.
 
-//DP_QC_FS_SEARCH_PACKFILE
-//idea: Mario
-//darkplaces implementation: Mario
-//builtin definitions:
-float(string pattern, float caseinsensitive, float quiet, string packfile) search_packfile_begin = #74;
-//description:
-//extension to search_begin (DP_QC_FS_SEARCH), performs a filename search with the specified pattern (for example "maps/*.bsp") and stores the results in a search slot (minimum of 128 supported by any engine with this extension), the other functions take this returned search slot number, be sure to search_free when done (they are also freed on progs reload).
-//only searches for files within the specified packfile, which is expected to match the results of whichpack().
-
 // assorted undocumented extensions
 string(string, float) netaddress_resolve = #625;
 string(string search, string replace, string subject) strreplace = #484;
-string(string search, string replace, string subject) strireplace = #485;
 string(float uselocaltime, string format, ...) strftime = #478;
 float(string s) tokenize_console = #514;
 float(float i) argv_start_index = #515;

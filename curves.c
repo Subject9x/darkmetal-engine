@@ -1,6 +1,6 @@
 
 /*
-this code written by Ashley Rose Hale (LadyHavoc), on 2004-10-17, and placed into public domain
+this code written by Forest Hale, on 2004-10-17, and placed into public domain
 this implements Quadratic BSpline surfaces as seen in Quake3 by id Software
 
 a small rant on misuse of the name 'bezier': many people seem to think that
@@ -277,7 +277,7 @@ static int FindEqualOddVertexInArray(int numcomponents, float *vertex, float *ve
 	{
 		for (x=0; x<width; x+=2)
 		{
-			qbool found = true;
+			qboolean found = true;
 			for (j=0; j<numcomponents; j++)
 				if (fabs(*(vertex+j) - *(vertices+j)) > 0.05)
 				// div0: this is notably smaller than the smallest radiant grid
@@ -337,7 +337,7 @@ int Q3PatchAdjustTesselation(int numcomponents, patchinfo_t *patch1, float *patc
 	struct {int id1,id2;} commonverts[8];
 	int i, j, k, side1, side2, *tess1, *tess2;
 	int dist1 = 0, dist2 = 0;
-	qbool modified = false;
+	qboolean modified = false;
 
 	// Potential paired vertices (corners of the first patch)
 	commonverts[0].id1 = 0;

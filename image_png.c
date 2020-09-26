@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2006  Serge "(515)" Ziryukin, Ashley Rose Hale (LadyHavoc)
+	Copyright (C) 2006  Serge "(515)" Ziryukin, Forest "LordHavoc" Hale
 
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@
 //[515]: png implemented into DP ONLY FOR TESTING 2d stuff with csqc
 // so delete this bullshit :D
 //
-//LadyHavoc: rewrote most of this.
+//LordHavoc: rewrote most of this.
 
 #include "quakedef.h"
 #include "image.h"
@@ -140,7 +140,7 @@ PNG_OpenLibrary
 Try to load the PNG DLL
 ====================
 */
-qbool PNG_OpenLibrary (void)
+qboolean PNG_OpenLibrary (void)
 {
 	const char* dllnames [] =
 	{
@@ -254,7 +254,7 @@ static struct
 	qfile_t *outfile;
 } my_png;
 
-//LadyHavoc: removed __cdecl prefix, added overrun protection, and rewrote this to be more efficient
+//LordHavoc: removed __cdecl prefix, added overrun protection, and rewrote this to be more efficient
 static void PNG_fReadData(void *png, unsigned char *data, size_t length)
 {
 	size_t l;
@@ -283,12 +283,12 @@ static void PNG_fFlushData(void *png)
 
 static void PNG_error_fn(void *png, const char *message)
 {
-	Con_Printf(CON_ERROR "PNG_LoadImage: error: %s\n", message);
+	Con_Printf("PNG_LoadImage: error: %s\n", message);
 }
 
 static void PNG_warning_fn(void *png, const char *message)
 {
-	Con_Printf(CON_WARN "PNG_LoadImage: warning: %s\n", message);
+	Con_Printf("PNG_LoadImage: warning: %s\n", message);
 }
 
 unsigned char *PNG_LoadImage_BGRA (const unsigned char *raw, int filesize, int *miplevel)
@@ -474,7 +474,7 @@ PNG_SaveImage_preflipped
 Save a preflipped PNG image to a file
 ====================
 */
-qbool PNG_SaveImage_preflipped (const char *filename, int width, int height, qbool has_alpha, unsigned char *data)
+qboolean PNG_SaveImage_preflipped (const char *filename, int width, int height, qboolean has_alpha, unsigned char *data)
 {
 	unsigned int offset, linesize;
 	qfile_t* file = NULL;
@@ -511,6 +511,7 @@ qbool PNG_SaveImage_preflipped (const char *filename, int width, int height, qbo
 
 	// NOTE: this relies on jmp_buf being the first thing in the png structure
 	// created by libpng! (this is correct for libpng 1.2.x)
+#ifdef __cplusplus
 #ifdef WIN64
 	if (setjmp((_JBTYPE *)png))
 #elif defined(MACOSX) || defined(WIN32)
@@ -518,7 +519,10 @@ qbool PNG_SaveImage_preflipped (const char *filename, int width, int height, qbo
 #elif defined(__ANDROID__)
 	if (setjmp((long *)png))
 #else
-	if (setjmp((struct __jmp_buf_tag *)png))
+	if (setjmp((__jmp_buf_tag *)png))
+#endif
+#else
+	if (setjmp(png))
 #endif
 	{
 		qpng_destroy_write_struct(&png, &pnginfo);

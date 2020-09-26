@@ -22,11 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef QUAKEDEF_H
 #define QUAKEDEF_H
 
-#ifdef __APPLE__
-# include <TargetConditionals.h>
-#endif
-
-#if (__GNUC__ > 2) || defined (__clang__) || (__TINYC__)
+#if defined(__GNUC__) && (__GNUC__ > 2)
 #define DP_FUNC_PRINTF(n) __attribute__ ((format (printf, n, n+1)))
 #define DP_FUNC_PURE      __attribute__ ((pure))
 #define DP_FUNC_NORETURN  __attribute__ ((noreturn))
@@ -95,7 +91,7 @@ extern char engineversion[128];
 #define	MAX_CUBEMAPS			1024
 #define	MAX_EXPLOSIONS			8
 #define	MAX_DLIGHTS				16
-#define	MAX_CACHED_PICS			2048 // this is 144 bytes each (or 152 on 64bit)
+#define	MAX_CACHED_PICS			1024 // this is 144 bytes each (or 152 on 64bit)
 #define	CACHEPICHASHSIZE		256
 #define	MAX_PARTICLEEFFECTNAME	256
 #define	MAX_PARTICLEEFFECTINFO	1024
@@ -114,7 +110,9 @@ extern char engineversion[128];
 #define	MAX_BINDMAPS			8
 #define	MAX_PARTICLES_INITIAL	8192
 #define	MAX_PARTICLES			8192
-#define	MAX_ENTITIES_INITIAL	256
+#define	MAX_DECALS_INITIAL		1024
+#define	MAX_DECALS				1024
+#define	MAX_ENITIES_INITIAL		256
 #define	MAX_STATICENTITIES		256
 #define	MAX_EFFECTS				16
 #define	MAX_BEAMS				16
@@ -132,7 +130,7 @@ extern char engineversion[128];
 #define	CMDBUFSIZE				655360 ///< maximum script size that can be loaded by the exec command (8192 in Quake)
 #define	MAX_ARGS				80 ///< maximum number of parameters to a console command or alias
 
-#define	NET_MAXMESSAGE			131072 ///< max reliable packet size (sent as multiple fragments of MAX_PACKETFRAGMENT)
+#define	NET_MAXMESSAGE			65536 ///< max reliable packet size (sent as multiple fragments of MAX_PACKETFRAGMENT)
 #define	MAX_PACKETFRAGMENT		1024 ///< max length of packet fragment
 #define	MAX_EDICTS				32768 ///< max number of objects in game world at once (32768 protocol limit)
 #define	MAX_MODELS				8192 ///< max number of models loaded at once (including during level transitions)
@@ -153,7 +151,7 @@ extern char engineversion[128];
 #define	SAVEGAME_COMMENT_LENGTH	39 ///< max comment length of savegame in menu
 #define	MAX_CLIENTNETWORKEYES	16 ///< max number of locations that can be added to pvs when culling network entities (must be at least 2 for prediction)
 #define	MAX_LEVELNETWORKEYES	512 ///< max number of locations that can be added to pvs when culling network entities (must be at least 2 for prediction)
-#define	MAX_OCCLUSION_QUERIES	4096 ///< max number of query objects that can be used in one frame
+#define	MAX_OCCLUSION_QUERIES	4096 ///< max number of GL_ARB_occlusion_query objects that can be used in one frame
 
 #define CRYPTO_HOSTKEY_HASHSIZE 8192 ///< number of hash buckets for accelerating host key lookups
 #define MAX_NETWM_ICON 352822 // 16x16, 22x22, 24x24, 32x32, 48x48, 64x64, 128x128, 256x256, 512x512
@@ -162,7 +160,7 @@ extern char engineversion[128];
 #define	MAX_CUBEMAPS			1024 ///< max number of cubemap textures loaded for light filters
 #define	MAX_EXPLOSIONS			64 ///< max number of explosion shell effects active at once (not particle related)
 #define	MAX_DLIGHTS				256 ///< max number of dynamic lights (rocket flashes, etc) in scene at once
-#define	MAX_CACHED_PICS			2048 ///< max number of 2D pics loaded at once
+#define	MAX_CACHED_PICS			1024 ///< max number of 2D pics loaded at once
 #define	CACHEPICHASHSIZE		256 ///< number of hash buckets for accelerating 2D pic name lookups
 #define	MAX_PARTICLEEFFECTNAME	4096 ///< maximum number of unique names of particle effects (for particleeffectnum)
 #define	MAX_PARTICLEEFFECTINFO	8192 ///< maximum number of unique particle effects (each name may associate with several of these)
@@ -176,7 +174,7 @@ extern char engineversion[128];
 // NUM_AMBIENTS to NUM_AMBIENTS + MAX_DYNAMIC_CHANNELS - 1 = normal entity sounds
 // NUM_AMBIENTS + MAX_DYNAMIC_CHANNELS to total_channels = static sounds
 #define	MAX_DYNAMIC_CHANNELS	512
-#define	MAX_CHANNELS			(8192 + 4)
+#define	MAX_CHANNELS			1028
 #define	MODLIST_TOTALSIZE		256
 #define	MAX_FAVORITESERVERS		256
 #define	MAX_DECALSYSTEM_QUEUE	1024
@@ -184,8 +182,10 @@ extern char engineversion[128];
 #define	MAX_BINDMAPS			8
 #define	MAX_PARTICLES_INITIAL	8192 ///< initial allocation for cl.particles
 #define	MAX_PARTICLES			1048576 ///< upper limit on cl.particles size
-#define	MAX_ENTITIES_INITIAL		256 ///< initial size of cl.entities
-#define	MAX_STATICENTITIES		4096 ///< limit on size of cl.static_entities
+#define	MAX_DECALS_INITIAL		8192 ///< initial allocation for cl.decals
+#define	MAX_DECALS				1048576 ///< upper limit on cl.decals size
+#define	MAX_ENITIES_INITIAL		256 ///< initial size of cl.entities
+#define	MAX_STATICENTITIES		1024 ///< limit on size of cl.static_entities
 #define	MAX_EFFECTS				256 ///< limit on size of cl.effects
 #define	MAX_BEAMS				256 ///< limit on size of cl.beams
 #define	MAX_TEMPENTITIES		4096 ///< max number of temporary models visible per frame (certain sprite effects, certain types of CSQC entities also use this)
@@ -235,8 +235,6 @@ extern char engineversion[128];
 //#define STAT_TIME			17 ///< FTE
 //#define STAT_VIEW2		20 ///< FTE
 #define STAT_VIEWZOOM		21 ///< DP
-#define MIN_VM_STAT         32 ///< stat range available to VM_SV_AddStat
-#define MAX_VM_STAT         220 ///< stat range available to VM_SV_AddStat
 #define STAT_MOVEVARS_AIRACCEL_QW_STRETCHFACTOR 220 ///< DP
 #define STAT_MOVEVARS_AIRCONTROL_PENALTY					221 ///< DP
 #define STAT_MOVEVARS_AIRSPEEDLIMIT_NONQW 222 ///< DP
@@ -369,10 +367,8 @@ extern char engineversion[128];
 //===========================================
 
 #include "zone.h"
-#include "thread.h"
 #include "fs.h"
 #include "common.h"
-#include "com_list.h"
 #include "cvar.h"
 #include "bspfile.h"
 #include "sys.h"
@@ -405,10 +401,9 @@ extern char engineversion[128];
 #endif
 #include "csprogs.h"
 
-extern qbool noclip_anglehack;
+extern qboolean noclip_anglehack;
 
 extern cvar_t developer;
-extern cvar_t developer_entityparsing;
 extern cvar_t developer_extra;
 extern cvar_t developer_insane;
 extern cvar_t developer_loadfile;
@@ -428,15 +423,11 @@ extern cvar_t sessionid;
 # define DP_OS_NAME		"Android"
 # define DP_OS_STR		"android"
 # define USE_GLES2		1
-# define USE_RWOPS		1
 # define LINK_TO_ZLIB	1
 # define LINK_TO_LIBVORBIS 1
-#ifdef USEXMP
-# define LINK_TO_LIBXMP 1 // nyov: if someone can test with the android NDK compiled libxmp?
-#endif
 # define DP_MOBILETOUCH	1
 # define DP_FREETYPE_STATIC 1
-#elif TARGET_OS_IPHONE /* must come first because it also defines MACOSX */
+#elif defined(TARGET_OS_IPHONE) /* must come first because it also defines MACOSX */
 # define DP_OS_NAME		"iPhoneOS"
 # define DP_OS_STR		"iphoneos"
 # define USE_GLES2		1
@@ -462,29 +453,18 @@ extern cvar_t sessionid;
 #elif defined(__OpenBSD__)
 # define DP_OS_NAME		"OpenBSD"
 # define DP_OS_STR		"openbsd"
-#elif defined(__DragonFly__)
-# define DP_OS_NAME		"DragonFlyBSD"
-# define DP_OS_STR		"dragonflybsd"
 #elif defined(MACOSX)
 # define DP_OS_NAME		"Mac OS X"
 # define DP_OS_STR		"osx"
 #elif defined(__MORPHOS__)
 # define DP_OS_NAME		"MorphOS"
 # define DP_OS_STR		"morphos"
-#elif defined (sun) || defined (__sun)
-# if defined (__SVR4) || defined (__svr4__)
-#  define DP_OS_NAME	"Solaris"
-#  define DP_OS_STR		"solaris"
-# else
-#  define DP_OS_NAME	"SunOS"
-#  define DP_OS_STR		"sunos"
-# endif
 #else
 # define DP_OS_NAME		"Unknown"
 # define DP_OS_STR		"unknown"
 #endif
 
-#if defined(__GNUC__) || (__clang__)
+#if defined(__GNUC__)
 # if defined(__i386__)
 #  define DP_ARCH_STR		"686"
 #  define SSE_POSSIBLE
@@ -522,8 +502,8 @@ extern cvar_t sessionid;
 
 #ifdef SSE_POSSIBLE
 // runtime detection of SSE/SSE2 capabilities for x86
-qbool Sys_HaveSSE(void);
-qbool Sys_HaveSSE2(void);
+qboolean Sys_HaveSSE(void);
+qboolean Sys_HaveSSE2(void);
 #else
 #define Sys_HaveSSE() false
 #define Sys_HaveSSE2() false
@@ -532,46 +512,24 @@ qbool Sys_HaveSSE2(void);
 #include "glquake.h"
 
 #include "palette.h"
-typedef enum host_state_e
-{
-	host_shutdown,
-	host_init,
-	host_loading,
-	host_active
-} host_state_t;
 
-typedef struct host_s
-{
-	jmp_buf abortframe;
-	int state;
-	int framecount; // incremented every frame, never reset (checked by Host_Error and Host_SaveConfig_f)
-	double realtime; // the accumulated mainloop time since application started (with filtering), without any slowmo or clamping
-	double dirtytime; // the main loop wall time for this frame, equal to Sys_DirtyTime() at the start of this host frame
-	double sleeptime; // time spent sleeping overall
-	qbool restless; // don't sleep
-	qbool paused; // global paused state, pauses both client and server
-	cmd_buf_t *cbuf;
-
-	struct
-	{
-		void (*ConnectLocal)(void);
-	} hook;
-} host_t;
-
-extern host_t host;
+/// incremented every frame, never reset
+extern int host_framecount;
+/// not bounded in any way, changed at start of every frame, never reset
+extern double realtime;
+/// equal to Sys_DirtyTime() at the start of this host frame
+extern double host_dirtytime;
 
 void Host_InitCommands(void);
 void Host_Main(void);
-double Host_Frame(double time);
 void Host_Shutdown(void);
 void Host_StartVideo(void);
 void Host_Error(const char *error, ...) DP_FUNC_PRINTF(1) DP_FUNC_NORETURN;
-void Host_Quit_f(cmd_state_t *cmd);
-void SV_ClientCommands(const char *fmt, ...) DP_FUNC_PRINTF(1);
-double SV_Frame(double time);
-void SV_Shutdown(void);
-void CL_Reconnect_f(cmd_state_t *cmd);
-void Host_NoOperation_f(cmd_state_t *cmd);
+void Host_Quit_f(void);
+void Host_ClientCommands(const char *fmt, ...) DP_FUNC_PRINTF(1);
+void Host_ShutdownServer(void);
+void Host_Reconnect_f(void);
+void Host_NoOperation_f(void);
 void Host_LockSession(void);
 void Host_UnlockSession(void);
 
@@ -604,7 +562,7 @@ void Sys_Shared_Init(void);
 // In Quake, any char in 0..32 counts as whitespace
 //#define ISWHITESPACE(ch) ((unsigned char) ch <= (unsigned char) ' ')
 #define ISWHITESPACE(ch) (!(ch) || (ch) == ' ' || (ch) == '\t' || (ch) == '\r' || (ch) == '\n')
-#define ISCOMMENT(ch, pos) ch[pos] == '/' && ch[pos + 1] == '/' && (pos == 0 || ISWHITESPACE(ch[pos - 1]))
+
 // This also includes extended characters, and ALL control chars
 #define ISWHITESPACEORCONTROL(ch) ((signed char) (ch) <= (signed char) ' ')
 

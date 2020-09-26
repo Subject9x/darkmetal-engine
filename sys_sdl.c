@@ -1,5 +1,9 @@
 
 #ifdef WIN32
+#ifdef _MSC_VER
+#pragma comment(lib, "sdl.lib")
+#pragma comment(lib, "sdlmain.lib")
+#endif
 #include <io.h>
 #include "conio.h"
 #else
@@ -10,22 +14,17 @@
 
 #ifdef __ANDROID__
 #include <android/log.h>
+
+#ifndef FNDELAY
+#define FNDELAY		O_NDELAY
+#endif
 #endif
 
 #include <signal.h>
 
 #include <SDL.h>
 
-#ifdef WIN32
-#ifdef _MSC_VER
-#pragma comment(lib, "sdl2.lib")
-#pragma comment(lib, "sdl2main.lib")
-#endif
-#endif
-
 #include "quakedef.h"
-
-sys_t sys;
 
 // =======================================================================
 // General routines
@@ -37,13 +36,13 @@ void Sys_Shutdown (void)
 	Sys_AllowProfiling(false);
 #endif
 #ifndef WIN32
-	fcntl (0, F_SETFL, fcntl (0, F_GETFL, 0) & ~O_NONBLOCK);
+	fcntl (0, F_SETFL, fcntl (0, F_GETFL, 0) & ~FNDELAY);
 #endif
 	fflush(stdout);
 	SDL_Quit();
 }
 
-static qbool nocrashdialog;
+
 void Sys_Error (const char *error, ...)
 {
 	va_list argptr;
@@ -51,51 +50,49 @@ void Sys_Error (const char *error, ...)
 
 // change stdin to non blocking
 #ifndef WIN32
-	fcntl (0, F_SETFL, fcntl (0, F_GETFL, 0) & ~O_NONBLOCK);
+	fcntl (0, F_SETFL, fcntl (0, F_GETFL, 0) & ~FNDELAY);
 #endif
 
 	va_start (argptr,error);
 	dpvsnprintf (string, sizeof (string), error, argptr);
 	va_end (argptr);
 
-	Con_Printf(CON_ERROR "Engine Error: %s\n", string);
-	
-	if(!nocrashdialog)
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Engine Error", string, NULL);
+	Con_Printf ("Quake Error: %s\n", string);
 
 	Host_Shutdown ();
 	exit (1);
 }
 
+static int outfd = 1;
 void Sys_PrintToTerminal(const char *text)
 {
 #ifdef __ANDROID__
 	if (developer.integer > 0)
 	{
-		__android_log_write(ANDROID_LOG_DEBUG, sys.argv[0], text);
+		__android_log_write(ANDROID_LOG_DEBUG, com_argv[0], text);
 	}
 #else
-	if(sys.outfd < 0)
+	if(outfd < 0)
 		return;
-#ifndef WIN32
+#ifdef FNDELAY
 	// BUG: for some reason, NDELAY also affects stdout (1) when used on stdin (0).
 	// this is because both go to /dev/tty by default!
 	{
-		int origflags = fcntl (sys.outfd, F_GETFL, 0);
-		fcntl (sys.outfd, F_SETFL, origflags & ~O_NONBLOCK);
+		int origflags = fcntl (outfd, F_GETFL, 0);
+		fcntl (outfd, F_SETFL, origflags & ~FNDELAY);
 #endif
 #ifdef WIN32
 #define write _write
 #endif
 		while(*text)
 		{
-			fs_offset_t written = (fs_offset_t)write(sys.outfd, text, (int)strlen(text));
+			fs_offset_t written = (fs_offset_t)write(outfd, text, strlen(text));
 			if(written <= 0)
 				break; // sorry, I cannot do anything about this error - without an output
 			text += written;
 		}
-#ifndef WIN32
-		fcntl (sys.outfd, F_SETFL, origflags);
+#ifdef FNDELAY
+		fcntl (outfd, F_SETFL, origflags);
 	}
 #endif
 	//fprintf(stdout, "%s", text);
@@ -164,19 +161,31 @@ char *Sys_ConsoleInput(void)
 
 char *Sys_GetClipboardData (void)
 {
+#ifdef WIN32
 	char *data = NULL;
 	char *cliptext;
 
-	cliptext = SDL_GetClipboardText();
-	if (cliptext != NULL) {
-		size_t allocsize;
-		allocsize = min(MAX_INPUTLINE, strlen(cliptext) + 1);
-		data = (char *)Z_Malloc (allocsize);
-		strlcpy (data, cliptext, allocsize);
-		SDL_free(cliptext);
-	}
+	if (OpenClipboard (NULL) != 0)
+	{
+		HANDLE hClipboardData;
 
+		if ((hClipboardData = GetClipboardData (CF_TEXT)) != 0)
+		{
+			if ((cliptext = (char *)GlobalLock (hClipboardData)) != 0)
+			{
+				size_t allocsize;
+				allocsize = GlobalSize (hClipboardData) + 1;
+				data = (char *)Z_Malloc (allocsize);
+				strlcpy (data, cliptext, allocsize);
+				GlobalUnlock (hClipboardData);
+			}
+		}
+		CloseClipboard ();
+	}
 	return data;
+#else
+	return NULL;
+#endif
 }
 
 void Sys_InitConsole (void)
@@ -191,46 +200,32 @@ int main (int argc, char *argv[])
 	Sys_AllowProfiling(true);
 #endif
 
-	sys.selffd = -1;
-	sys.argc = argc;
-	sys.argv = (const char **)argv;
-
-	// Sys_Error this early in startup might screw with automated
-	// workflows or something if we show the dialog by default.
-	nocrashdialog = true;
-
+	com_argc = argc;
+	com_argv = (const char **)argv;
 	Sys_ProvideSelfFD();
 
-	// COMMANDLINEOPTION: -nocrashdialog disables "Engine Error" crash dialog boxes
-	if(!Sys_CheckParm("-nocrashdialog"))
-		nocrashdialog = false;
 	// COMMANDLINEOPTION: sdl: -noterminal disables console output on stdout
-	if(Sys_CheckParm("-noterminal"))
-		sys.outfd = -1;
+	if(COM_CheckParm("-noterminal"))
+		outfd = -1;
 	// COMMANDLINEOPTION: sdl: -stderr moves console output to stderr
-	else if(Sys_CheckParm("-stderr"))
-		sys.outfd = 2;
+	else if(COM_CheckParm("-stderr"))
+		outfd = 2;
 	else
-		sys.outfd = 1;
+		outfd = 1;
 
 #ifndef WIN32
-	fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | O_NONBLOCK);
+	fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | FNDELAY);
 #endif
 
 	// we don't know which systems we'll want to init, yet...
 	SDL_Init(0);
 
-	// used by everything
-	Memory_Init();
-
 	Host_Main();
 
-	Sys_Quit(0);
-	
 	return 0;
 }
 
-qbool sys_supportsdlgetticks = true;
+qboolean sys_supportsdlgetticks = true;
 unsigned int Sys_SDL_GetTicks (void)
 {
 	return SDL_GetTicks();

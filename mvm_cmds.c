@@ -10,48 +10,46 @@
 //============================================================================
 // Menu
 
-const char *vm_m_extensions[] = {
-"BX_WAL_SUPPORT",
-"DP_CINEMATIC_DPV",
-"DP_COVERAGE",
-"DP_CRYPTO",
-"DP_CSQC_BINDMAPS",
-"DP_GFX_FONTS",
-"DP_GFX_FONTS_FREETYPE",
-"DP_UTF8",
-"DP_FONT_VARIABLEWIDTH",
-"DP_MENU_EXTRESPONSEPACKET",
-"DP_QC_ASINACOSATANATAN2TAN",
-"DP_QC_AUTOCVARS",
-"DP_QC_CMD",
-"DP_QC_CRC16",
-"DP_QC_CVAR_TYPE",
-"DP_QC_CVAR_DESCRIPTION",
-"DP_QC_DIGEST",
-"DP_QC_DIGEST_SHA256",
-"DP_QC_FINDCHAIN_TOFIELD",
-"DP_QC_I18N",
-"DP_QC_LOG",
-"DP_QC_RENDER_SCENE",
-"DP_QC_SPRINTF",
-"DP_QC_STRFTIME",
-"DP_QC_STRINGBUFFERS",
-"DP_QC_STRINGBUFFERS_CVARLIST",
-"DP_QC_STRINGBUFFERS_EXT_WIP",
-"DP_QC_STRINGCOLORFUNCTIONS",
-"DP_QC_STRING_CASE_FUNCTIONS",
-"DP_QC_STRREPLACE",
-"DP_QC_TOKENIZEBYSEPARATOR",
-"DP_QC_TOKENIZE_CONSOLE",
-"DP_QC_UNLIMITEDTEMPSTRINGS",
-"DP_QC_URI_ESCAPE",
-"DP_QC_URI_GET",
-"DP_QC_URI_POST",
-"DP_QC_WHICHPACK",
-"FTE_STRINGS",
-"DP_QC_FS_SEARCH_PACKFILE",
-NULL
-};
+const char *vm_m_extensions =
+"BX_WAL_SUPPORT "
+"DP_CINEMATIC_DPV "
+"DP_COVERAGE "
+"DP_CRYPTO "
+"DP_CSQC_BINDMAPS "
+"DP_GFX_FONTS "
+"DP_GFX_FONTS_FREETYPE "
+"DP_UTF8 "
+"DP_FONT_VARIABLEWIDTH "
+"DP_MENU_EXTRESPONSEPACKET "
+"DP_QC_ASINACOSATANATAN2TAN "
+"DP_QC_AUTOCVARS "
+"DP_QC_CMD "
+"DP_QC_CRC16 "
+"DP_QC_CVAR_TYPE "
+"DP_QC_CVAR_DESCRIPTION "
+"DP_QC_DIGEST "
+"DP_QC_DIGEST_SHA256 "
+"DP_QC_FINDCHAIN_TOFIELD "
+"DP_QC_I18N "
+"DP_QC_LOG "
+"DP_QC_RENDER_SCENE "
+"DP_QC_SPRINTF "
+"DP_QC_STRFTIME "
+"DP_QC_STRINGBUFFERS "
+"DP_QC_STRINGBUFFERS_CVARLIST "
+"DP_QC_STRINGBUFFERS_EXT_WIP "
+"DP_QC_STRINGCOLORFUNCTIONS "
+"DP_QC_STRING_CASE_FUNCTIONS "
+"DP_QC_STRREPLACE "
+"DP_QC_TOKENIZEBYSEPARATOR "
+"DP_QC_TOKENIZE_CONSOLE "
+"DP_QC_UNLIMITEDTEMPSTRINGS "
+"DP_QC_URI_ESCAPE "
+"DP_QC_URI_GET "
+"DP_QC_URI_POST "
+"DP_QC_WHICHPACK "
+"FTE_STRINGS "
+;
 
 /*
 =========
@@ -173,7 +171,7 @@ vector	getresolution(float number)
 static void VM_M_getresolution(prvm_prog_t *prog)
 {
 	int nr, fs;
-	VM_SAFEPARMCOUNTRANGE(1, 2, VM_M_getresolution);
+	VM_SAFEPARMCOUNTRANGE(1, 2, VM_getresolution);
 
 	nr = (int)PRVM_G_FLOAT(OFS_PARM0);
 
@@ -320,9 +318,9 @@ static void VM_M_setserverlistmaskstring(prvm_prog_t *prog)
 	str = PRVM_G_STRING( OFS_PARM2 );
 
 	masknr = (int)PRVM_G_FLOAT( OFS_PARM0 );
-	if( masknr >= 0 && masknr < SERVERLIST_ANDMASKCOUNT )
+	if( masknr >= 0 && masknr <= SERVERLIST_ANDMASKCOUNT )
 		mask = &serverlist_andmasks[masknr];
-	else if( masknr >= 512 && masknr - 512 < SERVERLIST_ORMASKCOUNT )
+	else if( masknr >= 512 && masknr - 512 <= SERVERLIST_ORMASKCOUNT )
 		mask = &serverlist_ormasks[masknr - 512 ];
 	else
 	{
@@ -382,9 +380,9 @@ static void VM_M_setserverlistmasknumber(prvm_prog_t *prog)
 	VM_SAFEPARMCOUNT( 4, VM_M_setserverlistmasknumber );
 
 	masknr = (int)PRVM_G_FLOAT( OFS_PARM0 );
-	if( masknr >= 0 && masknr < SERVERLIST_ANDMASKCOUNT )
+	if( masknr >= 0 && masknr <= SERVERLIST_ANDMASKCOUNT )
 		mask = &serverlist_andmasks[masknr];
-	else if( masknr >= 512 && masknr - 512 < SERVERLIST_ORMASKCOUNT )
+	else if( masknr >= 512 && masknr - 512 <= SERVERLIST_ORMASKCOUNT )
 		mask = &serverlist_ormasks[masknr - 512 ];
 	else
 	{
@@ -523,7 +521,7 @@ static void VM_M_getserverlistnumber(prvm_prog_t *prog)
 	const serverlist_entry_t *cache;
 	int hostnr;
 
-	VM_SAFEPARMCOUNT(2, VM_M_getserverlistnumber);
+	VM_SAFEPARMCOUNT(2, VM_M_getserverliststring);
 
 	PRVM_G_INT(OFS_RETURN) = OFS_NULL;
 
@@ -599,7 +597,7 @@ refreshserverlist()
 */
 static void VM_M_refreshserverlist(prvm_prog_t *prog)
 {
-	qbool do_reset = false;
+	qboolean do_reset = false;
 	VM_SAFEPARMCOUNTRANGE( 0, 1, VM_M_refreshserverlist );
 	if (prog->argc >= 1 && PRVM_G_FLOAT(OFS_PARM0))
 		do_reset = true;
@@ -811,7 +809,7 @@ static void VM_M_crypto_getkeyfp(prvm_prog_t *prog)
 	s = PRVM_G_STRING( OFS_PARM0 );
 	VM_CheckEmptyString( prog, s );
 
-	if(LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, keyfp, sizeof(keyfp), NULL, 0, NULL, NULL))
+	if(LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, keyfp, sizeof(keyfp), NULL, 0, NULL))
 		PRVM_G_INT( OFS_RETURN ) = PRVM_SetTempString( prog, keyfp );
 	else
 		PRVM_G_INT( OFS_RETURN ) = OFS_NULL;
@@ -827,26 +825,10 @@ static void VM_M_crypto_getidfp(prvm_prog_t *prog)
 	s = PRVM_G_STRING( OFS_PARM0 );
 	VM_CheckEmptyString( prog, s );
 
-	if(LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, NULL, 0, idfp, sizeof(idfp), NULL, NULL))
+	if(LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, NULL, 0, idfp, sizeof(idfp), NULL))
 		PRVM_G_INT( OFS_RETURN ) = PRVM_SetTempString( prog, idfp );
 	else
 		PRVM_G_INT( OFS_RETURN ) = OFS_NULL;
-}
-static void VM_M_crypto_getidstatus(prvm_prog_t *prog)
-{
-	lhnetaddress_t addr;
-	const char *s;
-	qbool issigned;
-
-	VM_SAFEPARMCOUNT(1,VM_M_crypto_getidstatus);
-
-	s = PRVM_G_STRING( OFS_PARM0 );
-	VM_CheckEmptyString( prog, s );
-
-	if(LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, NULL, 0, NULL, 0, NULL, &issigned))
-		PRVM_G_FLOAT( OFS_RETURN ) = issigned ? 2 : 1;
-	else
-		PRVM_G_FLOAT( OFS_RETURN ) = 0;
 }
 static void VM_M_crypto_getencryptlevel(prvm_prog_t *prog)
 {
@@ -860,7 +842,7 @@ static void VM_M_crypto_getencryptlevel(prvm_prog_t *prog)
 	s = PRVM_G_STRING( OFS_PARM0 );
 	VM_CheckEmptyString( prog, s );
 
-	if(LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, NULL, 0, NULL, 0, &aeslevel, NULL))
+	if(LHNETADDRESS_FromString(&addr, s, 26000) && Crypto_RetrieveHostKey(&addr, NULL, NULL, 0, NULL, 0, &aeslevel))
 		PRVM_G_INT( OFS_RETURN ) = PRVM_SetTempString(prog, aeslevel ? va(vabuf, sizeof(vabuf), "%d AES128", aeslevel) : "0");
 	else
 		PRVM_G_INT( OFS_RETURN ) = OFS_NULL;
@@ -870,7 +852,7 @@ static void VM_M_crypto_getmykeyfp(prvm_prog_t *prog)
 	int i;
 	char keyfp[FP64_SIZE + 1];
 
-	VM_SAFEPARMCOUNT(1, VM_M_crypto_getmykeyfp);
+	VM_SAFEPARMCOUNT(1,VM_M_crypto_getmykey);
 
 	i = PRVM_G_FLOAT( OFS_PARM0 );
 	switch(Crypto_RetrieveLocalKey(i, keyfp, sizeof(keyfp), NULL, 0, NULL))
@@ -892,7 +874,7 @@ static void VM_M_crypto_getmyidfp(prvm_prog_t *prog)
 	int i;
 	char idfp[FP64_SIZE + 1];
 
-	VM_SAFEPARMCOUNT(1, VM_M_crypto_getmyidfp);
+	VM_SAFEPARMCOUNT(1,VM_M_crypto_getmykey);
 
 	i = PRVM_G_FLOAT( OFS_PARM0 );
 	switch(Crypto_RetrieveLocalKey(i, NULL, 0, idfp, sizeof(idfp), NULL))
@@ -912,9 +894,9 @@ static void VM_M_crypto_getmyidfp(prvm_prog_t *prog)
 static void VM_M_crypto_getmyidstatus(prvm_prog_t *prog)
 {
 	int i;
-	qbool issigned;
+	qboolean issigned;
 
-	VM_SAFEPARMCOUNT(1, VM_M_crypto_getmyidstatus);
+	VM_SAFEPARMCOUNT(1,VM_M_crypto_getmykey);
 
 	i = PRVM_G_FLOAT( OFS_PARM0 );
 	switch(Crypto_RetrieveLocalKey(i, NULL, 0, NULL, 0, &issigned))
@@ -946,7 +928,7 @@ VM_vlen,								//   #9
 VM_vectoyaw,						//  #10
 VM_vectoangles,					//  #11
 VM_random,							//  #12
-VM_localcmd_client,						//  #13
+VM_localcmd,						//  #13
 VM_cvar,								//  #14
 VM_cvar_set,						//  #15
 VM_dprint,							//  #16
@@ -1603,7 +1585,6 @@ VM_digest_hex,						// #639
 NULL,							// #640
 VM_M_crypto_getmyidstatus,				// #641 float(float i) crypto_getmyidstatus
 VM_coverage,						// #642
-VM_M_crypto_getidstatus,				// #643 float(string addr) crypto_getidstatus
 NULL
 };
 
@@ -1614,8 +1595,7 @@ void MVM_init_cmd(prvm_prog_t *prog)
 	r_refdef_scene_t *scene;
 
 	VM_Cmd_Init(prog);
-	prog->polygonbegin_model = NULL;
-	prog->polygonbegin_guess2d = 0;
+	VM_Polygons_Reset(prog);
 
 	scene = R_GetScenePointer( RST_MENU );
 
@@ -1627,8 +1607,7 @@ void MVM_init_cmd(prvm_prog_t *prog)
 	scene->maxentities = MAX_EDICTS + 256 + 512;
 	scene->entities = (entity_render_t **)Mem_Alloc(prog->progs_mempool, sizeof(entity_render_t *) * scene->maxentities);
 
-	// LadyHavoc: what is this for?
-	scene->ambientintensity = 32.0f;
+	scene->ambient = 32.0f;
 }
 
 void MVM_reset_cmd(prvm_prog_t *prog)
@@ -1637,6 +1616,5 @@ void MVM_reset_cmd(prvm_prog_t *prog)
 
 	//VM_Cmd_Init();
 	VM_Cmd_Reset(prog);
-	prog->polygonbegin_model = NULL;
-	prog->polygonbegin_guess2d = 0;
+	VM_Polygons_Reset(prog);
 }

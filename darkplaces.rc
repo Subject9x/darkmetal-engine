@@ -14,11 +14,11 @@ FILETYPE VFT_APP
 			 VALUE "CompanyName", "Forest Hale Digital Services"
 			 VALUE "FileVersion", "1.0"
 			 VALUE "FileDescription", "DarkPlaces Game Engine"
-			 VALUE "InternalName", "battleMETAL.exe"
+			 VALUE "InternalName", "darkplaces.exe"
 			 VALUE "LegalCopyright", "id Software, Forest Hale, and contributors"
 			 VALUE "LegalTrademarks", ""
-			 VALUE "OriginalFilename", "battleMETAL.exe"
-			 VALUE "ProductName", "Darkmetal"
+			 VALUE "OriginalFilename", "darkplaces.exe"
+			 VALUE "ProductName", "DarkPlaces"
 			 VALUE "ProductVersion", "1.0"
 		 }
 	 }

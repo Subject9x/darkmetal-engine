@@ -111,7 +111,7 @@ void W_UnloadAll(void)
 	memset(&wad, 0, sizeof(wad));
 }
 
-unsigned char *W_GetLumpName(const char *name, fs_offset_t *returnfilesize)
+unsigned char *W_GetLumpName(const char *name)
 {
 	int i;
 	fs_offset_t filesize;
@@ -146,14 +146,8 @@ unsigned char *W_GetLumpName(const char *name, fs_offset_t *returnfilesize)
 	}
 
 	for (lump = wad.gfx.lumps, i = 0;i < wad.gfx.numlumps;i++, lump++)
-	{
 		if (!strcmp(clean, lump->name))
-		{
-			if (returnfilesize)
-				*returnfilesize = lump->size;
 			return (wad.gfx_base + lump->filepos);
-		}
-	}
 	return NULL;
 }
 
@@ -174,22 +168,22 @@ void W_LoadTextureWadFile (char *filename, int complain)
 	if (!file)
 	{
 		if (complain)
-			Con_Printf(CON_ERROR "W_LoadTextureWadFile: couldn't find %s\n", filename);
+			Con_Printf("W_LoadTextureWadFile: couldn't find %s\n", filename);
 		return;
 	}
 
 	if (FS_Read(file, &header, sizeof(wadinfo_t)) != sizeof(wadinfo_t))
-	{Con_Print(CON_ERROR "W_LoadTextureWadFile: unable to read wad header\n");FS_Close(file);file = NULL;return;}
+	{Con_Print("W_LoadTextureWadFile: unable to read wad header\n");FS_Close(file);file = NULL;return;}
 
 	if(memcmp(header.identification, "WAD3", 4))
-	{Con_Printf(CON_ERROR "W_LoadTextureWadFile: Wad file %s doesn't have WAD3 id\n",filename);FS_Close(file);file = NULL;return;}
+	{Con_Printf("W_LoadTextureWadFile: Wad file %s doesn't have WAD3 id\n",filename);FS_Close(file);file = NULL;return;}
 
 	numlumps = LittleLong(header.numlumps);
 	if (numlumps < 1 || numlumps > 65536)
-	{Con_Printf(CON_ERROR "W_LoadTextureWadFile: invalid number of lumps (%i)\n", numlumps);FS_Close(file);file = NULL;return;}
+	{Con_Printf("W_LoadTextureWadFile: invalid number of lumps (%i)\n", numlumps);FS_Close(file);file = NULL;return;}
 	infotableofs = LittleLong(header.infotableofs);
 	if (FS_Seek (file, infotableofs, SEEK_SET))
-	{Con_Print(CON_ERROR "W_LoadTextureWadFile: unable to seek to lump table\n");FS_Close(file);file = NULL;return;}
+	{Con_Print("W_LoadTextureWadFile: unable to seek to lump table\n");FS_Close(file);file = NULL;return;}
 
 	if (!wad.hlwads.mempool)
 		Mem_ExpandableArray_NewArray(&wad.hlwads, cls.permanentmempool, sizeof(mwad_t), 16);
@@ -200,7 +194,7 @@ void W_LoadTextureWadFile (char *filename, int complain)
 
 	if (!w->lumps)
 	{
-		Con_Print(CON_ERROR "W_LoadTextureWadFile: unable to allocate temporary memory for lump table\n");
+		Con_Print("W_LoadTextureWadFile: unable to allocate temporary memory for lump table\n");
 		FS_Close(w->file);
 		w->file = NULL;
 		w->numlumps = 0;
@@ -209,7 +203,7 @@ void W_LoadTextureWadFile (char *filename, int complain)
 
 	if (FS_Read(file, w->lumps, sizeof(lumpinfo_t) * w->numlumps) != (fs_offset_t)sizeof(lumpinfo_t) * numlumps)
 	{
-		Con_Print(CON_ERROR "W_LoadTextureWadFile: unable to read lump table\n");
+		Con_Print("W_LoadTextureWadFile: unable to read lump table\n");
 		FS_Close(w->file);
 		w->file = NULL;
 		w->numlumps = 0;

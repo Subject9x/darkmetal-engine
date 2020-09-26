@@ -1,6 +1,6 @@
 /*
 Copyright (C) 1996-1997 Id Software, Inc.
-Copyright (C) 2003 Ashley Rose Hale (LadyHavoc)
+Copyright (C) 2003 Forest Hale
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -182,7 +182,7 @@ typedef struct netconn_s
 	struct netconn_qw_s
 	{
 		// QW protocol
-		qbool	fatal_error;
+		qboolean	fatal_error;
 
 		float		last_received;		// for timeouts
 
@@ -197,14 +197,14 @@ typedef struct netconn_s
 		int			qport;
 
 	// sequencing variables
-		unsigned int		incoming_sequence;
-		unsigned int		incoming_acknowledged;
-		qbool		incoming_reliable_acknowledged;	///< single bit
+		int			incoming_sequence;
+		int			incoming_acknowledged;
+		int			incoming_reliable_acknowledged;	///< single bit
 
-		qbool		incoming_reliable_sequence;		///< single bit, maintained local
+		int			incoming_reliable_sequence;		///< single bit, maintained local
 
-		qbool		reliable_sequence;			///< single bit
-		unsigned int		last_reliable_sequence;		///< sequence number of last send
+		int			reliable_sequence;			///< single bit
+		int			last_reliable_sequence;		///< sequence number of last send
 	}
 	qw;
 
@@ -282,7 +282,7 @@ typedef struct serverlist_info_s
 	/// qc-defined short status string
 	char qcstatus[128];
 	/// frags/ping/name list (if they fit in the packet)
-	char players[2800];
+	char players[1400];
 	/// max client number
 	int maxplayers;
 	/// number of currently connected players (including bots)
@@ -303,7 +303,7 @@ typedef struct serverlist_info_s
 	// categorized sorting
 	int category;
 	/// favorite server flag
-	qbool isfavorite;
+	qboolean isfavorite;
 } serverlist_info_t;
 
 typedef enum
@@ -363,7 +363,7 @@ typedef struct serverlist_entry_s
 
 typedef struct serverlist_mask_s
 {
-	qbool			active;
+	qboolean			active;
 	serverlist_maskop_t  tests[SLIF_COUNT];
 	serverlist_info_t info;
 } serverlist_mask_t;
@@ -387,7 +387,7 @@ extern int serverlist_cachecount;
 extern serverlist_entry_t *serverlist_cache;
 extern const serverlist_entry_t *serverlist_callbackentry;
 
-extern qbool serverlist_consoleoutput;
+extern qboolean serverlist_consoleoutput;
 
 void ServerList_GetPlayerStatistics(int *numplayerspointer, int *maxplayerspointer);
 #endif
@@ -421,7 +421,7 @@ extern char sv_readstring[MAX_INPUTLINE];
 
 extern cvar_t sv_public;
 
-extern cvar_t net_fakelag;
+extern cvar_t cl_netlocalping;
 
 extern cvar_t cl_netport;
 extern cvar_t sv_netport;
@@ -430,10 +430,10 @@ extern cvar_t net_address_ipv6;
 extern cvar_t net_usesizelimit;
 extern cvar_t net_burstreserve;
 
-qbool NetConn_CanSend(netconn_t *conn);
-int NetConn_SendUnreliableMessage(netconn_t *conn, sizebuf_t *data, protocolversion_t protocol, int rate, int burstsize, qbool quakesignon_suppressreliables);
-qbool NetConn_HaveClientPorts(void);
-qbool NetConn_HaveServerPorts(void);
+qboolean NetConn_CanSend(netconn_t *conn);
+int NetConn_SendUnreliableMessage(netconn_t *conn, sizebuf_t *data, protocolversion_t protocol, int rate, int burstsize, qboolean quakesignon_suppressreliables);
+qboolean NetConn_HaveClientPorts(void);
+qboolean NetConn_HaveServerPorts(void);
 void NetConn_CloseClientPorts(void);
 void NetConn_OpenClientPorts(void);
 void NetConn_CloseServerPorts(void);
@@ -445,7 +445,7 @@ void NetConn_Init(void);
 void NetConn_Shutdown(void);
 netconn_t *NetConn_Open(lhnetsocket_t *mysocket, lhnetaddress_t *peeraddress);
 void NetConn_Close(netconn_t *conn);
-void NetConn_Listen(qbool state);
+void NetConn_Listen(qboolean state);
 int NetConn_Read(lhnetsocket_t *mysocket, void *data, int maxlength, lhnetaddress_t *peeraddress);
 int NetConn_Write(lhnetsocket_t *mysocket, const void *data, int length, const lhnetaddress_t *peeraddress);
 int NetConn_WriteString(lhnetsocket_t *mysocket, const char *string, const lhnetaddress_t *peeraddress);
@@ -454,23 +454,23 @@ void NetConn_ClientFrame(void);
 void NetConn_ServerFrame(void);
 void NetConn_SleepMicroseconds(int microseconds);
 void NetConn_Heartbeat(int priority);
-void Net_Stats_f(cmd_state_t *cmd);
+void Net_Stats_f(void);
 
 #ifdef CONFIG_MENU
-void NetConn_QueryMasters(qbool querydp, qbool queryqw);
+void NetConn_QueryMasters(qboolean querydp, qboolean queryqw);
 void NetConn_QueryQueueFrame(void);
-void Net_Slist_f(cmd_state_t *cmd);
-void Net_SlistQW_f(cmd_state_t *cmd);
-void Net_Refresh_f(cmd_state_t *cmd);
+void Net_Slist_f(void);
+void Net_SlistQW_f(void);
+void Net_Refresh_f(void);
 
 /// ServerList interface (public)
 /// manually refresh the view set, do this after having changed the mask or any other flag
 void ServerList_RebuildViewList(void);
 void ServerList_ResetMasks(void);
-void ServerList_QueryList(qbool resetcache, qbool querydp, qbool queryqw, qbool consoleoutput);
+void ServerList_QueryList(qboolean resetcache, qboolean querydp, qboolean queryqw, qboolean consoleoutput);
 
 /// called whenever net_slist_favorites changes
-void NetConn_UpdateFavorites_c(cvar_t *var);
+void NetConn_UpdateFavorites(void);
 #endif
 
 #define MAX_CHALLENGES 128
@@ -482,7 +482,7 @@ typedef struct challenge_s
 }
 challenge_t;
 
-extern challenge_t challenges[MAX_CHALLENGES];
+extern challenge_t challenge[MAX_CHALLENGES];
 
 #endif
 

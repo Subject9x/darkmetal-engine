@@ -21,7 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef ZONE_H
 #define ZONE_H
 
-extern qbool mem_bigendian;
+extern qboolean mem_bigendian;
 
 // div0: heap overflow detection paranoia
 #define MEMPARANOIA 0
@@ -83,11 +83,7 @@ mempool_t;
 #define Mem_Realloc(pool,data,size) _Mem_Alloc(pool, data, size, 16, __FILE__, __LINE__)
 #define Mem_Free(mem) _Mem_Free(mem, __FILE__, __LINE__)
 #define Mem_CheckSentinels(data) _Mem_CheckSentinels(data, __FILE__, __LINE__)
-#if MEMPARANOIA
-#define Mem_CheckSentinelsGlobal()  _Mem_CheckSentinelsGlobal(__FILE__, __LINE__)
-#else
-#define Mem_CheckSentinelsGlobal() if(developer_memorydebug.integer) { _Mem_CheckSentinelsGlobal(__FILE__, __LINE__); }
-#endif
+#define Mem_CheckSentinelsGlobal() _Mem_CheckSentinelsGlobal(__FILE__, __LINE__)
 #define Mem_AllocPool(name, flags, parent) _Mem_AllocPool(name, flags, parent, __FILE__, __LINE__)
 #define Mem_FreePool(pool) _Mem_FreePool(pool, __FILE__, __LINE__)
 #define Mem_EmptyPool(pool) _Mem_EmptyPool(pool, __FILE__, __LINE__)
@@ -100,7 +96,7 @@ void _Mem_EmptyPool(mempool_t *pool, const char *filename, int fileline);
 void _Mem_CheckSentinels(void *data, const char *filename, int fileline);
 void _Mem_CheckSentinelsGlobal(const char *filename, int fileline);
 // if pool is NULL this searches ALL pools for the allocation
-qbool Mem_IsAllocated(mempool_t *pool, void *data);
+qboolean Mem_IsAllocated(mempool_t *pool, void *data);
 
 char* Mem_strdup (mempool_t *pool, const char* s);
 
@@ -143,7 +139,6 @@ extern mempool_t *zonemempool;
 
 extern struct cvar_s developer_memory;
 extern struct cvar_s developer_memorydebug;
-extern struct cvar_s developer_memoryreportlargerthanmb;
 
 #endif
 

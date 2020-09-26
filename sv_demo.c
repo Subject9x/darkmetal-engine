@@ -22,14 +22,14 @@ void SV_StartDemoRecording(client_t *client, const char *filename, int forcetrac
 	client->sv_demo_file = FS_OpenRealFile(name, "wb", false);
 	if(!client->sv_demo_file)
 	{
-		Con_Print(CON_ERROR "ERROR: couldn't open.\n");
+		Con_Print("ERROR: couldn't open.\n");
 		return;
 	}
 
 	FS_Printf(client->sv_demo_file, "%i\n", forcetrack);
 }
 
-void SV_WriteDemoMessage(client_t *client, sizebuf_t *sendbuffer, qbool clienttoserver)
+void SV_WriteDemoMessage(client_t *client, sizebuf_t *sendbuffer, qboolean clienttoserver)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	int len, i;
@@ -83,7 +83,7 @@ void SV_WriteNetnameIntoDemo(client_t *client)
 {
 	// This "pseudo packet" is written so a program can easily find out whose demo this is
 	sizebuf_t buf;
-	unsigned char bufdata[MAX_SCOREBOARDNAME + 64];
+	unsigned char bufdata[128];
 
 	if(client->sv_demo_file == NULL)
 		return;

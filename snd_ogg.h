@@ -25,9 +25,9 @@
 #define SND_OGG_H
 
 
-qbool OGG_OpenLibrary (void);
+qboolean OGG_OpenLibrary (void);
 void OGG_CloseLibrary (void);
-qbool OGG_LoadVorbisFile (const char *filename, sfx_t *sfx);
+qboolean OGG_LoadVorbisFile (const char *filename, sfx_t *sfx);
 
 
 #endif

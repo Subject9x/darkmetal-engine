@@ -18,7 +18,7 @@ float CL_SelectTraceLine(const vec3_t start, const vec3_t end, vec3_t impact, ve
 	if (hitent)
 		*hitent = 0;
 	if (cl.worldmodel && cl.worldmodel->TraceLine)
-		cl.worldmodel->TraceLine(cl.worldmodel, NULL, NULL, &trace, start, end, SUPERCONTENTS_SOLID, 0, 0);
+		cl.worldmodel->TraceLine(cl.worldmodel, NULL, NULL, &trace, start, end, SUPERCONTENTS_SOLID);
 
 	if (normal)
 		VectorCopy(trace.plane.normal, normal);
@@ -50,11 +50,11 @@ float CL_SelectTraceLine(const vec3_t start, const vec3_t end, vec3_t impact, ve
 			continue;
 		Matrix4x4_Transform(&ent->inversematrix, start, starttransformed);
 		Matrix4x4_Transform(&ent->inversematrix, end, endtransformed);
-		Collision_ClipTrace_Box(&trace, ent->model->normalmins, ent->model->normalmaxs, starttransformed, vec3_origin, vec3_origin, endtransformed, SUPERCONTENTS_SOLID, 0, 0, SUPERCONTENTS_SOLID, 0, NULL);
+		Collision_ClipTrace_Box(&trace, ent->model->normalmins, ent->model->normalmaxs, starttransformed, vec3_origin, vec3_origin, endtransformed, SUPERCONTENTS_SOLID, SUPERCONTENTS_SOLID, 0, NULL);
 		if (maxfrac < trace.fraction)
 			continue;
 
-		ent->model->TraceLine(ent->model, ent->frameblend, ent->skeleton, &trace, starttransformed, endtransformed, SUPERCONTENTS_SOLID, 0, 0);
+		ent->model->TraceLine(ent->model, ent->frameblend, ent->skeleton, &trace, starttransformed, endtransformed, SUPERCONTENTS_SOLID);
 
 		if (maxfrac > trace.fraction)
 		{
@@ -203,7 +203,7 @@ int CL_GenericHitSuperContentsMask(const prvm_edict_t *passedict)
 CL_Move
 ==================
 */
-trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int hitsupercontentsmask, int skipsupercontentsmask, int skipmaterialflagsmask, qbool hitnetworkbrushmodels, qbool hitnetworkplayers, int *hitnetworkentity, qbool hitcsqcentities)
+trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int hitsupercontentsmask, qboolean hitnetworkbrushmodels, qboolean hitnetworkplayers, int *hitnetworkentity, qboolean hitcsqcentities)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	int i, bodysupercontents;
@@ -227,7 +227,6 @@ trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 	// list of entities to test for collisions
 	int numtouchedicts;
 	static prvm_edict_t *touchedicts[MAX_EDICTS];
-	int clipgroup;
 
 	if (hitnetworkentity)
 		*hitnetworkentity = 0;
@@ -240,7 +239,7 @@ trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 #endif
 
 	// clip to world
-	Collision_ClipPointToWorld(&cliptrace, cl.worldmodel, clipstart, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask);
+	Collision_ClipPointToWorld(&cliptrace, cl.worldmodel, clipstart, hitsupercontentsmask);
 	cliptrace.worldstartsolid = cliptrace.bmodelstartsolid = cliptrace.startsolid;
 	if (cliptrace.startsolid || cliptrace.fraction < 1)
 		cliptrace.ent = prog ? prog->edicts : NULL;
@@ -249,7 +248,7 @@ trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 
 	if (type == MOVE_MISSILE)
 	{
-		// LadyHavoc: modified this, was = -15, now -= 15
+		// LordHavoc: modified this, was = -15, now -= 15
 		for (i = 0;i < 3;i++)
 		{
 			clipmins2[i] -= 15;
@@ -267,8 +266,8 @@ trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 	// debug override to test against everything
 	if (sv_debugmove.integer)
 	{
-		clipboxmins[0] = clipboxmins[1] = clipboxmins[2] = (vec_t)-999999999;
-		clipboxmaxs[0] = clipboxmaxs[1] = clipboxmaxs[2] =  (vec_t)999999999;
+		clipboxmins[0] = clipboxmins[1] = clipboxmins[2] = -999999999;
+		clipboxmaxs[0] = clipboxmaxs[1] = clipboxmaxs[2] =  999999999;
 	}
 
 	// if the passedict is world, make it NULL (to avoid two checks each time)
@@ -281,8 +280,6 @@ trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 	// precalculate passedict's owner edict pointer for comparisons
 	traceowner = passedict ? PRVM_PROG_TO_EDICT(PRVM_clientedictedict(passedict, owner)) : NULL;
 
-	clipgroup = passedict ? (int)PRVM_clientedictfloat(passedict, clipgroup) : 0;
-
 	// collide against network entities
 	if (hitnetworkbrushmodels)
 	{
@@ -291,7 +288,7 @@ trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 			entity_render_t *ent = &cl.entities[cl.brushmodel_entities[i]].render;
 			if (!BoxesOverlap(clipboxmins, clipboxmaxs, ent->mins, ent->maxs))
 				continue;
-			Collision_ClipPointToGenericEntity(&trace, ent->model, ent->frameblend, ent->skeleton, vec3_origin, vec3_origin, 0, &ent->matrix, &ent->inversematrix, start, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask);
+			Collision_ClipPointToGenericEntity(&trace, ent->model, ent->frameblend, ent->skeleton, vec3_origin, vec3_origin, 0, &ent->matrix, &ent->inversematrix, start, hitsupercontentsmask);
 			if (cliptrace.fraction > trace.fraction && hitnetworkentity)
 				*hitnetworkentity = cl.brushmodel_entities[i];
 			Collision_CombineTraces(&cliptrace, &trace, NULL, true);
@@ -320,8 +317,6 @@ trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 				continue;
 
 			// don't hit players that don't exist
-			if (!cl.entities_active[i])
-				continue;
 			if (!cl.scores[i-1].name[0])
 				continue;
 
@@ -339,7 +334,7 @@ trace_t CL_TracePoint(const vec3_t start, int type, prvm_edict_t *passedict, int
 				continue;
 			Matrix4x4_CreateTranslate(&entmatrix, origin[0], origin[1], origin[2]);
 			Matrix4x4_CreateTranslate(&entinversematrix, -origin[0], -origin[1], -origin[2]);
-			Collision_ClipPointToGenericEntity(&trace, NULL, NULL, NULL, cl.playerstandmins, cl.playerstandmaxs, SUPERCONTENTS_BODY, &entmatrix, &entinversematrix, start, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask);
+			Collision_ClipPointToGenericEntity(&trace, NULL, NULL, NULL, cl.playerstandmins, cl.playerstandmaxs, SUPERCONTENTS_BODY, &entmatrix, &entinversematrix, start, hitsupercontentsmask);
 			if (cliptrace.fraction > trace.fraction && hitnetworkentity)
 				*hitnetworkentity = i;
 			Collision_CombineTraces(&cliptrace, &trace, NULL, false);
@@ -384,9 +379,6 @@ skipnetworkplayers:
 			// don't clip owner against owned entities
 			if (passedictprog == PRVM_clientedictedict(touch, owner))
 				continue;
-			// don't clip against any entities in the same clipgroup (DP_RM_CLIPGROUP)
-			if (clipgroup && clipgroup == (int)PRVM_clientedictfloat(touch, clipgroup))
-				continue;
 			// don't clip points against points (they can't collide)
 			if (VectorCompare(PRVM_clientedictvector(touch, mins), PRVM_clientedictvector(touch, maxs)) && (type != MOVE_MISSILE || !((int)PRVM_clientedictfloat(touch, flags) & FL_MONSTER)))
 				continue;
@@ -406,9 +398,9 @@ skipnetworkplayers:
 		VectorCopy(PRVM_clientedictvector(touch, mins), touchmins);
 		VectorCopy(PRVM_clientedictvector(touch, maxs), touchmaxs);
 		if ((int)PRVM_clientedictfloat(touch, flags) & FL_MONSTER)
-			Collision_ClipToGenericEntity(&trace, model, touch->priv.server->frameblend, &touch->priv.server->skeleton, touchmins, touchmaxs, bodysupercontents, &matrix, &imatrix, clipstart, clipmins2, clipmaxs2, clipstart, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, 0.0f);
+			Collision_ClipToGenericEntity(&trace, model, touch->priv.server->frameblend, &touch->priv.server->skeleton, touchmins, touchmaxs, bodysupercontents, &matrix, &imatrix, clipstart, clipmins2, clipmaxs2, clipstart, hitsupercontentsmask, 0.0f);
 		else
-			Collision_ClipPointToGenericEntity(&trace, model, touch->priv.server->frameblend, &touch->priv.server->skeleton, touchmins, touchmaxs, bodysupercontents, &matrix, &imatrix, clipstart, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask);
+			Collision_ClipPointToGenericEntity(&trace, model, touch->priv.server->frameblend, &touch->priv.server->skeleton, touchmins, touchmaxs, bodysupercontents, &matrix, &imatrix, clipstart, hitsupercontentsmask);
 
 		if (cliptrace.fraction > trace.fraction && hitnetworkentity)
 			*hitnetworkentity = 0;
@@ -424,7 +416,7 @@ finished:
 CL_TraceLine
 ==================
 */
-trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_t *passedict, int hitsupercontentsmask, int skipsupercontentsmask, int skipmaterialflagsmask, float extend, qbool hitnetworkbrushmodels, qbool hitnetworkplayers, int *hitnetworkentity, qbool hitcsqcentities, qbool hitsurfaces)
+trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_t *passedict, int hitsupercontentsmask, float extend, qboolean hitnetworkbrushmodels, qboolean hitnetworkplayers, int *hitnetworkentity, qboolean hitcsqcentities, qboolean hitsurfaces)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	int i, bodysupercontents;
@@ -448,9 +440,8 @@ trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 	// list of entities to test for collisions
 	int numtouchedicts;
 	static prvm_edict_t *touchedicts[MAX_EDICTS];
-	int clipgroup;
 	if (VectorCompare(start, end))
-		return CL_TracePoint(start, type, passedict, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, hitnetworkbrushmodels, hitnetworkplayers, hitnetworkentity, hitcsqcentities);
+		return CL_TracePoint(start, type, passedict, hitsupercontentsmask, hitnetworkbrushmodels, hitnetworkplayers, hitnetworkentity, hitcsqcentities);
 
 	if (hitnetworkentity)
 		*hitnetworkentity = 0;
@@ -464,7 +455,7 @@ trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 #endif
 
 	// clip to world
-	Collision_ClipLineToWorld(&cliptrace, cl.worldmodel, clipstart, clipend, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, extend, hitsurfaces);
+	Collision_ClipLineToWorld(&cliptrace, cl.worldmodel, clipstart, clipend, hitsupercontentsmask, extend, hitsurfaces);
 	cliptrace.worldstartsolid = cliptrace.bmodelstartsolid = cliptrace.startsolid;
 	if (cliptrace.startsolid || cliptrace.fraction < 1)
 		cliptrace.ent = prog ? prog->edicts : NULL;
@@ -473,7 +464,7 @@ trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 
 	if (type == MOVE_MISSILE)
 	{
-		// LadyHavoc: modified this, was = -15, now -= 15
+		// LordHavoc: modified this, was = -15, now -= 15
 		for (i = 0;i < 3;i++)
 		{
 			clipmins2[i] -= 15;
@@ -491,8 +482,8 @@ trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 	// debug override to test against everything
 	if (sv_debugmove.integer)
 	{
-		clipboxmins[0] = clipboxmins[1] = clipboxmins[2] = (vec_t)-999999999;
-		clipboxmaxs[0] = clipboxmaxs[1] = clipboxmaxs[2] =  (vec_t)999999999;
+		clipboxmins[0] = clipboxmins[1] = clipboxmins[2] = -999999999;
+		clipboxmaxs[0] = clipboxmaxs[1] = clipboxmaxs[2] =  999999999;
 	}
 
 	// if the passedict is world, make it NULL (to avoid two checks each time)
@@ -505,8 +496,6 @@ trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 	// precalculate passedict's owner edict pointer for comparisons
 	traceowner = passedict ? PRVM_PROG_TO_EDICT(PRVM_clientedictedict(passedict, owner)) : NULL;
 
-	clipgroup = passedict ? (int)PRVM_clientedictfloat(passedict, clipgroup) : 0;
-
 	// collide against network entities
 	if (hitnetworkbrushmodels)
 	{
@@ -515,7 +504,7 @@ trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 			entity_render_t *ent = &cl.entities[cl.brushmodel_entities[i]].render;
 			if (!BoxesOverlap(clipboxmins, clipboxmaxs, ent->mins, ent->maxs))
 				continue;
-			Collision_ClipLineToGenericEntity(&trace, ent->model, ent->frameblend, ent->skeleton, vec3_origin, vec3_origin, 0, &ent->matrix, &ent->inversematrix, start, end, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, extend, hitsurfaces);
+			Collision_ClipLineToGenericEntity(&trace, ent->model, ent->frameblend, ent->skeleton, vec3_origin, vec3_origin, 0, &ent->matrix, &ent->inversematrix, start, end, hitsupercontentsmask, extend, hitsurfaces);
 			if (cliptrace.fraction > trace.fraction && hitnetworkentity)
 				*hitnetworkentity = cl.brushmodel_entities[i];
 			Collision_CombineTraces(&cliptrace, &trace, NULL, true);
@@ -544,8 +533,6 @@ trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 				continue;
 
 			// don't hit players that don't exist
-			if (!cl.entities_active[i])
-				continue;
 			if (!cl.scores[i-1].name[0])
 				continue;
 
@@ -563,7 +550,7 @@ trace_t CL_TraceLine(const vec3_t start, const vec3_t end, int type, prvm_edict_
 				continue;
 			Matrix4x4_CreateTranslate(&entmatrix, origin[0], origin[1], origin[2]);
 			Matrix4x4_CreateTranslate(&entinversematrix, -origin[0], -origin[1], -origin[2]);
-			Collision_ClipLineToGenericEntity(&trace, NULL, NULL, NULL, cl.playerstandmins, cl.playerstandmaxs, SUPERCONTENTS_BODY, &entmatrix, &entinversematrix, start, end, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, extend, hitsurfaces);
+			Collision_ClipLineToGenericEntity(&trace, NULL, NULL, NULL, cl.playerstandmins, cl.playerstandmaxs, SUPERCONTENTS_BODY, &entmatrix, &entinversematrix, start, end, hitsupercontentsmask, extend, hitsurfaces);
 			if (cliptrace.fraction > trace.fraction && hitnetworkentity)
 				*hitnetworkentity = i;
 			Collision_CombineTraces(&cliptrace, &trace, NULL, false);
@@ -608,9 +595,6 @@ skipnetworkplayers:
 			// don't clip owner against owned entities
 			if (passedictprog == PRVM_clientedictedict(touch, owner))
 				continue;
-			// don't clip against any entities in the same clipgroup (DP_RM_CLIPGROUP)
-			if (clipgroup && clipgroup == (int)PRVM_clientedictfloat(touch, clipgroup))
-				continue;
 			// don't clip points against points (they can't collide)
 			if (VectorCompare(PRVM_clientedictvector(touch, mins), PRVM_clientedictvector(touch, maxs)) && (type != MOVE_MISSILE || !((int)PRVM_clientedictfloat(touch, flags) & FL_MONSTER)))
 				continue;
@@ -630,9 +614,9 @@ skipnetworkplayers:
 		VectorCopy(PRVM_clientedictvector(touch, mins), touchmins);
 		VectorCopy(PRVM_clientedictvector(touch, maxs), touchmaxs);
 		if (type == MOVE_MISSILE && (int)PRVM_clientedictfloat(touch, flags) & FL_MONSTER)
-			Collision_ClipToGenericEntity(&trace, model, touch->priv.server->frameblend, &touch->priv.server->skeleton, touchmins, touchmaxs, bodysupercontents, &matrix, &imatrix, clipstart, clipmins2, clipmaxs2, clipend, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, extend);
+			Collision_ClipToGenericEntity(&trace, model, touch->priv.server->frameblend, &touch->priv.server->skeleton, touchmins, touchmaxs, bodysupercontents, &matrix, &imatrix, clipstart, clipmins2, clipmaxs2, clipend, hitsupercontentsmask, extend);
 		else
-			Collision_ClipLineToGenericEntity(&trace, model, touch->priv.server->frameblend, &touch->priv.server->skeleton, touchmins, touchmaxs, bodysupercontents, &matrix, &imatrix, clipstart, clipend, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, extend, hitsurfaces);
+			Collision_ClipLineToGenericEntity(&trace, model, touch->priv.server->frameblend, &touch->priv.server->skeleton, touchmins, touchmaxs, bodysupercontents, &matrix, &imatrix, clipstart, clipend, hitsupercontentsmask, extend, hitsurfaces);
 
 		if (cliptrace.fraction > trace.fraction && hitnetworkentity)
 			*hitnetworkentity = 0;
@@ -648,13 +632,13 @@ finished:
 CL_Move
 ==================
 */
-trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int type, prvm_edict_t *passedict, int hitsupercontentsmask, int skipsupercontentsmask, int skipmaterialflagsmask, float extend, qbool hitnetworkbrushmodels, qbool hitnetworkplayers, int *hitnetworkentity, qbool hitcsqcentities)
+trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int type, prvm_edict_t *passedict, int hitsupercontentsmask, float extend, qboolean hitnetworkbrushmodels, qboolean hitnetworkplayers, int *hitnetworkentity, qboolean hitcsqcentities)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	vec3_t hullmins, hullmaxs;
 	int i, bodysupercontents;
 	int passedictprog;
-	qbool pointtrace;
+	qboolean pointtrace;
 	prvm_edict_t *traceowner, *touch;
 	trace_t trace;
 	// temporary storage because prvm_vec_t may need conversion
@@ -676,16 +660,15 @@ trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 	// list of entities to test for collisions
 	int numtouchedicts;
 	static prvm_edict_t *touchedicts[MAX_EDICTS];
-	int clipgroup;
 	if (VectorCompare(mins, maxs))
 	{
 		vec3_t shiftstart, shiftend;
 		VectorAdd(start, mins, shiftstart);
 		VectorAdd(end, mins, shiftend);
 		if (VectorCompare(start, end))
-			trace = CL_TracePoint(shiftstart, type, passedict, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, hitnetworkbrushmodels, hitnetworkplayers, hitnetworkentity, hitcsqcentities);
+			trace = CL_TracePoint(shiftstart, type, passedict, hitsupercontentsmask, hitnetworkbrushmodels, hitnetworkplayers, hitnetworkentity, hitcsqcentities);
 		else
-			trace = CL_TraceLine(shiftstart, shiftend, type, passedict, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, extend, hitnetworkbrushmodels, hitnetworkplayers, hitnetworkentity, hitcsqcentities, false);
+			trace = CL_TraceLine(shiftstart, shiftend, type, passedict, hitsupercontentsmask, extend, hitnetworkbrushmodels, hitnetworkplayers, hitnetworkentity, hitcsqcentities, false);
 		VectorSubtract(trace.endpos, mins, trace.endpos);
 		return trace;
 	}
@@ -704,7 +687,7 @@ trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 #endif
 
 	// clip to world
-	Collision_ClipToWorld(&cliptrace, cl.worldmodel, clipstart, clipmins, clipmaxs, clipend, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, extend);
+	Collision_ClipToWorld(&cliptrace, cl.worldmodel, clipstart, clipmins, clipmaxs, clipend, hitsupercontentsmask, extend);
 	cliptrace.worldstartsolid = cliptrace.bmodelstartsolid = cliptrace.startsolid;
 	if (cliptrace.startsolid || cliptrace.fraction < 1)
 		cliptrace.ent = prog ? prog->edicts : NULL;
@@ -713,7 +696,7 @@ trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 
 	if (type == MOVE_MISSILE)
 	{
-		// LadyHavoc: modified this, was = -15, now -= 15
+		// LordHavoc: modified this, was = -15, now -= 15
 		for (i = 0;i < 3;i++)
 		{
 			clipmins2[i] -= 15;
@@ -740,8 +723,8 @@ trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 	// debug override to test against everything
 	if (sv_debugmove.integer)
 	{
-		clipboxmins[0] = clipboxmins[1] = clipboxmins[2] = (vec_t)-999999999;
-		clipboxmaxs[0] = clipboxmaxs[1] = clipboxmaxs[2] =  (vec_t)999999999;
+		clipboxmins[0] = clipboxmins[1] = clipboxmins[2] = -999999999;
+		clipboxmaxs[0] = clipboxmaxs[1] = clipboxmaxs[2] =  999999999;
 	}
 
 	// if the passedict is world, make it NULL (to avoid two checks each time)
@@ -756,8 +739,6 @@ trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 	// precalculate passedict's owner edict pointer for comparisons
 	traceowner = passedict ? PRVM_PROG_TO_EDICT(PRVM_clientedictedict(passedict, owner)) : NULL;
 
-	clipgroup = passedict ? (int)PRVM_clientedictfloat(passedict, clipgroup) : 0;
-
 	// collide against network entities
 	if (hitnetworkbrushmodels)
 	{
@@ -766,7 +747,7 @@ trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 			entity_render_t *ent = &cl.entities[cl.brushmodel_entities[i]].render;
 			if (!BoxesOverlap(clipboxmins, clipboxmaxs, ent->mins, ent->maxs))
 				continue;
-			Collision_ClipToGenericEntity(&trace, ent->model, ent->frameblend, ent->skeleton, vec3_origin, vec3_origin, 0, &ent->matrix, &ent->inversematrix, start, mins, maxs, end, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, extend);
+			Collision_ClipToGenericEntity(&trace, ent->model, ent->frameblend, ent->skeleton, vec3_origin, vec3_origin, 0, &ent->matrix, &ent->inversematrix, start, mins, maxs, end, hitsupercontentsmask, extend);
 			if (cliptrace.fraction > trace.fraction && hitnetworkentity)
 				*hitnetworkentity = cl.brushmodel_entities[i];
 			Collision_CombineTraces(&cliptrace, &trace, NULL, true);
@@ -795,8 +776,6 @@ trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 				continue;
 
 			// don't hit players that don't exist
-			if (!cl.entities_active[i])
-				continue;
 			if (!cl.scores[i-1].name[0])
 				continue;
 
@@ -814,7 +793,7 @@ trace_t CL_TraceBox(const vec3_t start, const vec3_t mins, const vec3_t maxs, co
 				continue;
 			Matrix4x4_CreateTranslate(&entmatrix, origin[0], origin[1], origin[2]);
 			Matrix4x4_CreateTranslate(&entinversematrix, -origin[0], -origin[1], -origin[2]);
-			Collision_ClipToGenericEntity(&trace, NULL, NULL, NULL, cl.playerstandmins, cl.playerstandmaxs, SUPERCONTENTS_BODY, &entmatrix, &entinversematrix, start, mins, maxs, end, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, extend);
+			Collision_ClipToGenericEntity(&trace, NULL, NULL, NULL, cl.playerstandmins, cl.playerstandmaxs, SUPERCONTENTS_BODY, &entmatrix, &entinversematrix, start, mins, maxs, end, hitsupercontentsmask, extend);
 			if (cliptrace.fraction > trace.fraction && hitnetworkentity)
 				*hitnetworkentity = i;
 			Collision_CombineTraces(&cliptrace, &trace, NULL, false);
@@ -859,9 +838,6 @@ skipnetworkplayers:
 			// don't clip owner against owned entities
 			if (passedictprog == PRVM_clientedictedict(touch, owner))
 				continue;
-			// don't clip against any entities in the same clipgroup (DP_RM_CLIPGROUP)
-			if (clipgroup && clipgroup == (int)PRVM_clientedictfloat(touch, clipgroup))
-				continue;
 			// don't clip points against points (they can't collide)
 			if (pointtrace && VectorCompare(PRVM_clientedictvector(touch, mins), PRVM_clientedictvector(touch, maxs)) && (type != MOVE_MISSILE || !((int)PRVM_clientedictfloat(touch, flags) & FL_MONSTER)))
 				continue;
@@ -881,9 +857,9 @@ skipnetworkplayers:
 		VectorCopy(PRVM_clientedictvector(touch, mins), touchmins);
 		VectorCopy(PRVM_clientedictvector(touch, maxs), touchmaxs);
 		if ((int)PRVM_clientedictfloat(touch, flags) & FL_MONSTER)
-			Collision_ClipToGenericEntity(&trace, model, touch->priv.server->frameblend, &touch->priv.server->skeleton, touchmins, touchmaxs, bodysupercontents, &matrix, &imatrix, clipstart, clipmins2, clipmaxs2, clipend, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, extend);
+			Collision_ClipToGenericEntity(&trace, model, touch->priv.server->frameblend, &touch->priv.server->skeleton, touchmins, touchmaxs, bodysupercontents, &matrix, &imatrix, clipstart, clipmins2, clipmaxs2, clipend, hitsupercontentsmask, extend);
 		else
-			Collision_ClipToGenericEntity(&trace, model, touch->priv.server->frameblend, &touch->priv.server->skeleton, touchmins, touchmaxs, bodysupercontents, &matrix, &imatrix, clipstart, clipmins, clipmaxs, clipend, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask, extend);
+			Collision_ClipToGenericEntity(&trace, model, touch->priv.server->frameblend, &touch->priv.server->skeleton, touchmins, touchmaxs, bodysupercontents, &matrix, &imatrix, clipstart, clipmins, clipmaxs, clipend, hitsupercontentsmask, extend);
 
 		if (cliptrace.fraction > trace.fraction && hitnetworkentity)
 			*hitnetworkentity = 0;
@@ -899,7 +875,7 @@ finished:
 CL_Cache_TraceLine
 ==================
 */
-trace_t CL_Cache_TraceLineSurfaces(const vec3_t start, const vec3_t end, int type, int hitsupercontentsmask, int skipsupercontentsmask, int skipmaterialflagsmask)
+trace_t CL_Cache_TraceLineSurfaces(const vec3_t start, const vec3_t end, int type, int hitsupercontentsmask)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	int i;
@@ -926,7 +902,7 @@ trace_t CL_Cache_TraceLineSurfaces(const vec3_t start, const vec3_t end, int typ
 #endif
 
 	// clip to world
-	Collision_Cache_ClipLineToWorldSurfaces(&cliptrace, cl.worldmodel, clipstart, clipend, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask);
+	Collision_Cache_ClipLineToWorldSurfaces(&cliptrace, cl.worldmodel, clipstart, clipend, hitsupercontentsmask);
 	cliptrace.worldstartsolid = cliptrace.bmodelstartsolid = cliptrace.startsolid;
 	if (cliptrace.startsolid || cliptrace.fraction < 1)
 		cliptrace.ent = prog ? prog->edicts : NULL;
@@ -950,7 +926,7 @@ trace_t CL_Cache_TraceLineSurfaces(const vec3_t start, const vec3_t end, int typ
 		entity_render_t *ent = &cl.entities[cl.brushmodel_entities[i]].render;
 		if (!BoxesOverlap(clipboxmins, clipboxmaxs, ent->mins, ent->maxs))
 			continue;
-		Collision_Cache_ClipLineToGenericEntitySurfaces(&trace, ent->model, &ent->matrix, &ent->inversematrix, start, end, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask);
+		Collision_Cache_ClipLineToGenericEntitySurfaces(&trace, ent->model, &ent->matrix, &ent->inversematrix, start, end, hitsupercontentsmask);
 		Collision_CombineTraces(&cliptrace, &trace, NULL, true);
 	}
 
@@ -977,14 +953,14 @@ trace_t CL_Cache_TraceLineSurfaces(const vec3_t start, const vec3_t end, int typ
 		model = CL_GetModelFromEdict(touch);
 		if (!model)
 			continue;
-		// animated models are not suitable for caching
-		if ((&touch->priv.server->frameblend[0] && (touch->priv.server->frameblend[0].lerp != 1.0 || touch->priv.server->frameblend[0].subframe != 0)) || touch->priv.server->skeleton.relativetransforms)
+		// animated models are too slow to collide against and can't be cached
+		if (touch->priv.server->frameblend || touch->priv.server->skeleton.relativetransforms)
 			continue;
 		if (type == MOVE_NOMONSTERS && PRVM_clientedictfloat(touch, solid) != SOLID_BSP)
 			continue;
 		Matrix4x4_CreateFromQuakeEntity(&matrix, PRVM_clientedictvector(touch, origin)[0], PRVM_clientedictvector(touch, origin)[1], PRVM_clientedictvector(touch, origin)[2], PRVM_clientedictvector(touch, angles)[0], PRVM_clientedictvector(touch, angles)[1], PRVM_clientedictvector(touch, angles)[2], 1);
 		Matrix4x4_Invert_Simple(&imatrix, &matrix);
-		Collision_Cache_ClipLineToGenericEntitySurfaces(&trace, model, &matrix, &imatrix, clipstart, clipend, hitsupercontentsmask, skipsupercontentsmask, skipmaterialflagsmask);
+		Collision_Cache_ClipLineToGenericEntitySurfaces(&trace, model, &matrix, &imatrix, clipstart, clipend, hitsupercontentsmask);
 		Collision_CombineTraces(&cliptrace, &trace, (void *)touch, PRVM_clientedictfloat(touch, solid) == SOLID_BSP);
 	}
 

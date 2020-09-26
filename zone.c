@@ -37,7 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MEMHEADER_SENTINEL_FOR_ADDRESS(p) ((sentinel_seed ^ (unsigned int) (uintptr_t) (p)) + sentinel_seed)
 unsigned int sentinel_seed;
 
-qbool mem_bigendian = false;
+qboolean mem_bigendian = false;
 void *mem_mutex = NULL;
 
 // divVerent: enables file backed malloc using mmap to conserve swap space (instead of malloc)
@@ -45,7 +45,7 @@ void *mem_mutex = NULL;
 # define FILE_BACKED_MALLOC 0
 #endif
 
-// LadyHavoc: enables our own low-level allocator (instead of malloc)
+// LordHavoc: enables our own low-level allocator (instead of malloc)
 #ifndef MEMCLUMPING
 # define MEMCLUMPING 0
 #endif
@@ -93,11 +93,10 @@ static memclump_t *clumpchain = NULL;
 #endif
 
 
-cvar_t developer_memory = {CF_CLIENT | CF_SERVER, "developer_memory", "0", "prints debugging information about memory allocations"};
-cvar_t developer_memorydebug = {CF_CLIENT | CF_SERVER, "developer_memorydebug", "0", "enables memory corruption checks (very slow)"};
-cvar_t developer_memoryreportlargerthanmb = {CF_CLIENT | CF_SERVER, "developer_memorylargerthanmb", "16", "prints debugging information about memory allocations over this size"};
-cvar_t sys_memsize_physical = {CF_CLIENT | CF_SERVER | CF_READONLY, "sys_memsize_physical", "", "physical memory size in MB (or empty if unknown)"};
-cvar_t sys_memsize_virtual = {CF_CLIENT | CF_SERVER | CF_READONLY, "sys_memsize_virtual", "", "virtual memory size in MB (or empty if unknown)"};
+cvar_t developer_memory = {0, "developer_memory", "0", "prints debugging information about memory allocations"};
+cvar_t developer_memorydebug = {0, "developer_memorydebug", "0", "enables memory corruption checks (very slow)"};
+cvar_t sys_memsize_physical = {CVAR_READONLY, "sys_memsize_physical", "", "physical memory size in MB (or empty if unknown)"};
+cvar_t sys_memsize_virtual = {CVAR_READONLY, "sys_memsize_virtual", "", "virtual memory size in MB (or empty if unknown)"};
 
 static mempool_t *poolchain = NULL;
 
@@ -107,9 +106,6 @@ void Mem_PrintList(size_t minallocationsize);
 #if FILE_BACKED_MALLOC
 #include <stdlib.h>
 #include <sys/mman.h>
-#ifndef MAP_NORESERVE
-#define MAP_NORESERVE 0
-#endif
 typedef struct mmap_data_s
 {
 	size_t len;
@@ -130,7 +126,7 @@ static void *mmap_malloc(size_t size)
 	data = (unsigned char *) mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_NORESERVE, fd, 0);
 	close(fd);
 	unlink(vabuf);
-	if(!data || data == (void *)-1)
+	if(!data)
 		return NULL;
 	data->len = size;
 	return (void *) (data + 1);
@@ -394,21 +390,21 @@ void *_Mem_Alloc(mempool_t *pool, void *olddata, size_t size, size_t alignment, 
 	}
 	if (mem_mutex)
 		Thread_LockMutex(mem_mutex);
-	if (developer_memory.integer || size >= developer_memoryreportlargerthanmb.value * 1048576)
-		Con_DPrintf("Mem_Alloc: pool %s, file %s:%i, size %f bytes (%f MB)\n", pool->name, filename, fileline, (double)size, (double)size / 1048576.0f);
+	if (developer_memory.integer)
+		Con_DPrintf("Mem_Alloc: pool %s, file %s:%i, size %i bytes\n", pool->name, filename, fileline, (int)size);
 	//if (developer.integer > 0 && developer_memorydebug.integer)
 	//	_Mem_CheckSentinelsGlobal(filename, fileline);
 	pool->totalsize += size;
 	realsize = alignment + sizeof(memheader_t) + size + sizeof(sentinel2);
 	pool->realsize += realsize;
 	base = (unsigned char *)Clump_AllocBlock(realsize);
-	if (base == NULL)
+	if (base== NULL)
 	{
 		Mem_PrintList(0);
 		Mem_PrintStats();
 		Mem_PrintList(1<<30);
 		Mem_PrintStats();
-		Sys_Error("Mem_Alloc: out of memory (alloc of size %f (%.3fMB) at %s:%i)", (double)realsize, (double)realsize / (1 << 20), filename, fileline);
+		Sys_Error("Mem_Alloc: out of memory (alloc at %s:%i)", filename, fileline);
 	}
 	// calculate address that aligns the end of the memheader_t to the specified alignment
 	mem = (memheader_t*)((((size_t)base + sizeof(memheader_t) + (alignment-1)) & ~(alignment-1)) - sizeof(memheader_t));
@@ -562,11 +558,9 @@ void _Mem_FreePool(mempool_t **poolpointer, const char *filename, int fileline)
 			_Mem_FreeBlock(pool->chain, filename, fileline);
 
 		// free child pools, too
-		for(iter = poolchain; iter; iter = temp) {
-			temp = iter->next;
+		for(iter = poolchain; iter; temp = iter = iter->next)
 			if(iter->parent == pool)
 				_Mem_FreePool(&temp, filename, fileline);
-		}
 
 		// free the pool itself
 		Clump_FreeBlock(pool, sizeof(*pool));
@@ -660,7 +654,7 @@ void _Mem_CheckSentinelsGlobal(const char *filename, int fileline)
 #endif
 }
 
-qbool Mem_IsAllocated(mempool_t *pool, void *data)
+qboolean Mem_IsAllocated(mempool_t *pool, void *data)
 {
 	memheader_t *header;
 	memheader_t *target;
@@ -761,9 +755,9 @@ void Mem_ExpandableArray_FreeRecord(memexpandablearray_t *l, void *record) // co
 		{
 			j = (p - l->arrays[i].data) / l->recordsize;
 			if (p != l->arrays[i].data + j * l->recordsize)
-				Sys_Error("Mem_ExpandableArray_FreeRecord: no such record %p\n", (void *)p);
+				Sys_Error("Mem_ExpandableArray_FreeRecord: no such record %p\n", p);
 			if (!l->arrays[i].allocflags[j])
-				Sys_Error("Mem_ExpandableArray_FreeRecord: record %p is already free!\n", (void *)p);
+				Sys_Error("Mem_ExpandableArray_FreeRecord: record %p is already free!\n", p);
 			l->arrays[i].allocflags[j] = false;
 			l->arrays[i].numflaggedrecords--;
 			return;
@@ -848,16 +842,16 @@ void Mem_PrintList(size_t minallocationsize)
 	}
 }
 
-static void MemList_f(cmd_state_t *cmd)
+static void MemList_f(void)
 {
-	switch(Cmd_Argc(cmd))
+	switch(Cmd_Argc())
 	{
 	case 1:
 		Mem_PrintList(1<<30);
 		Mem_PrintStats();
 		break;
 	case 2:
-		Mem_PrintList(atoi(Cmd_Argv(cmd, 1)) * 1024);
+		Mem_PrintList(atoi(Cmd_Argv(1)) * 1024);
 		Mem_PrintStats();
 		break;
 	default:
@@ -866,7 +860,7 @@ static void MemList_f(cmd_state_t *cmd)
 	}
 }
 
-static void MemStats_f(cmd_state_t *cmd)
+static void MemStats_f(void)
 {
 	Mem_CheckSentinelsGlobal();
 	R_TextureStats_Print(false, false, true);
@@ -919,12 +913,10 @@ void Memory_Shutdown (void)
 
 void Memory_Init_Commands (void)
 {
-	Cmd_AddCommand(CF_SHARED, "memstats", MemStats_f, "prints memory system statistics");
-	Cmd_AddCommand(CF_SHARED, "memlist", MemList_f, "prints memory pool information (or if used as memlist 5 lists individual allocations of 5K or larger, 0 lists all allocations)");
-
+	Cmd_AddCommand ("memstats", MemStats_f, "prints memory system statistics");
+	Cmd_AddCommand ("memlist", MemList_f, "prints memory pool information (or if used as memlist 5 lists individual allocations of 5K or larger, 0 lists all allocations)");
 	Cvar_RegisterVariable (&developer_memory);
 	Cvar_RegisterVariable (&developer_memorydebug);
-	Cvar_RegisterVariable (&developer_memoryreportlargerthanmb);
 	Cvar_RegisterVariable (&sys_memsize_physical);
 	Cvar_RegisterVariable (&sys_memsize_virtual);
 

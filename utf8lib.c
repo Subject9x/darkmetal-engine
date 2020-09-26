@@ -7,7 +7,7 @@ Initialization of UTF-8 support and new cvars.
 ================================================================================
 */
 // for compatibility this defaults to 0
-cvar_t utf8_enable = {CF_CLIENT | CF_SERVER | CF_ARCHIVE, "utf8_enable", "0", "Enable UTF-8 support. For compatibility, this is disabled by default in most games."};
+cvar_t    utf8_enable = {CVAR_SAVE, "utf8_enable", "0", "Enable UTF-8 support. For compatibility, this is disabled by default in most games."};
 
 void   u8_Init(void)
 {
@@ -59,7 +59,7 @@ Uchar utf8_range[5] = {
  * @return        Whether or not another valid character is in the string
  */
 #define U8_ANALYZE_INFINITY 7
-static qbool u8_analyze(const char *_s, size_t *_start, size_t *_len, Uchar *_ch, size_t _maxlen)
+static qboolean u8_analyze(const char *_s, size_t *_start, size_t *_len, Uchar *_ch, size_t _maxlen)
 {
 	const unsigned char *s = (const unsigned char*)_s;
 	size_t i, j;
@@ -231,11 +231,20 @@ static int colorcode_skipwidth(const unsigned char *s)
 	if(*s == STRING_COLOR_TAG)
 	{
 		if(s[1] <= '9' && s[1] >= '0') // ^[0-9] found
+		{
 			return 2;
-		else if(s[1] == STRING_COLOR_RGB_TAG_CHAR && isxdigit(s[2]) && isxdigit(s[3]) && isxdigit(s[4]))
+		}
+		else if(s[1] == STRING_COLOR_RGB_TAG_CHAR &&
+			((s[2] >= '0' && s[2] <= '9') || (s[2] >= 'a' && s[2] <= 'f') || (s[2] >= 'A' && s[2] <= 'F')) &&
+			((s[3] >= '0' && s[3] <= '9') || (s[3] >= 'a' && s[3] <= 'f') || (s[3] >= 'A' && s[3] <= 'F')) &&
+			((s[4] >= '0' && s[4] <= '9') || (s[4] >= 'a' && s[4] <= 'f') || (s[4] >= 'A' && s[4] <= 'F')))
+		{
 			return 5;
+		}
 		else if(s[1] == STRING_COLOR_TAG)
+		{
 			return 1; // special case, do NOT call colorcode_skipwidth for next char
+		}
 	}
 	return 0;
 }
@@ -436,7 +445,7 @@ int u8_byteofs(const char *_s, size_t i, size_t *len)
 		}
 
 		if (len) *len = 1;
-		return (int)i;
+		return i;
 	}
 
 	st = ln = 0;
@@ -449,7 +458,7 @@ int u8_byteofs(const char *_s, size_t i, size_t *len)
 	} while(i-- > 0);
 	if (len)
 		*len = ln;
-	return (int)ofs;
+	return ofs;
 }
 
 /** Get the char-index for a byte-index.
@@ -469,7 +478,7 @@ int u8_charidx(const char *_s, size_t i, size_t *len)
 	if (!utf8_enable.integer)
 	{
 		if (len) *len = 0;
-		return (int)i;
+		return i;
 	}
 
 	while (ofs < i && s[ofs])
@@ -771,9 +780,9 @@ all characters until the zero terminator.
 ============
 */
 size_t
-COM_StringLengthNoColors(const char *s, size_t size_s, qbool *valid);
+COM_StringLengthNoColors(const char *s, size_t size_s, qboolean *valid);
 size_t
-u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
+u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qboolean *valid)
 {
 	const unsigned char *s = (const unsigned char*)_s;
 	const unsigned char *end;
@@ -791,7 +800,7 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
 		{
 			case 0:
 				if(valid)
-					*valid = true;
+					*valid = TRUE;
 				return len;
 			case STRING_COLOR_TAG:
 				++s;
@@ -811,7 +820,7 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
 					case 0: // ends with unfinished color code!
 						++len;
 						if(valid)
-							*valid = false;
+							*valid = FALSE;
 						return len;
 					case STRING_COLOR_TAG: // escaped ^
 						++len;
@@ -849,7 +858,7 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
 		{
 			// we CAN end up here, if an invalid char is between this one and the end of the string
 			if(valid)
-				*valid = true;
+				*valid = TRUE;
 			return len;
 		}
 
@@ -857,7 +866,7 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
 		{
 			// string length exceeded by new character
 			if(valid)
-				*valid = true;
+				*valid = TRUE;
 			return len;
 		}
 
@@ -877,7 +886,7 @@ u8_COM_StringLengthNoColors(const char *_s, size_t size_s, qbool *valid)
  * @param maxwidth The maximum output width
  * @return        The number of bytes written, not including the terminating \0
  */
-size_t u8_strpad(char *out, size_t outsize, const char *in, qbool leftalign, size_t minwidth, size_t maxwidth)
+size_t u8_strpad(char *out, size_t outsize, const char *in, qboolean leftalign, size_t minwidth, size_t maxwidth)
 {
 	if(!utf8_enable.integer)
 	{
@@ -887,20 +896,20 @@ size_t u8_strpad(char *out, size_t outsize, const char *in, qbool leftalign, siz
 	{
 		size_t l = u8_bytelen(in, maxwidth);
 		size_t actual_width = u8_strnlen(in, l);
-		int pad = (int)((actual_width >= minwidth) ? 0 : (minwidth - actual_width));
-		int prec = (int)l;
+		int pad = (actual_width >= minwidth) ? 0 : (minwidth - actual_width);
+		int prec = l;
 		int lpad = leftalign ? 0 : pad;
 		int rpad = leftalign ? pad : 0;
 		return dpsnprintf(out, outsize, "%*s%.*s%*s", lpad, "", prec, in, rpad, "");
 	}
 }
 
-size_t u8_strpad_colorcodes(char *out, size_t outsize, const char *in, qbool leftalign, size_t minwidth, size_t maxwidth)
+size_t u8_strpad_colorcodes(char *out, size_t outsize, const char *in, qboolean leftalign, size_t minwidth, size_t maxwidth)
 {
 	size_t l = u8_bytelen_colorcodes(in, maxwidth);
 	size_t actual_width = u8_strnlen_colorcodes(in, l);
-	int pad = (int)((actual_width >= minwidth) ? 0 : (minwidth - actual_width));
-	int prec = (int)l;
+	int pad = (actual_width >= minwidth) ? 0 : (minwidth - actual_width);
+	int prec = l;
 	int lpad = leftalign ? 0 : pad;
 	int rpad = leftalign ? pad : 0;
 	return dpsnprintf(out, outsize, "%*s%.*s%*s", lpad, "", prec, in, rpad, "");

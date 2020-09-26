@@ -33,14 +33,14 @@ CVars introduced with the freetype extension
 ================================================================================
 */
 
-cvar_t r_font_disable_freetype = {CF_CLIENT | CF_ARCHIVE, "r_font_disable_freetype", "0", "disable freetype support for fonts entirely"};
-cvar_t r_font_use_alpha_textures = {CF_CLIENT | CF_ARCHIVE, "r_font_use_alpha_textures", "0", "use alpha-textures for font rendering, this should safe memory"};
-cvar_t r_font_size_snapping = {CF_CLIENT | CF_ARCHIVE, "r_font_size_snapping", "1", "stick to good looking font sizes whenever possible - bad when the mod doesn't support it!"};
-cvar_t r_font_kerning = {CF_CLIENT | CF_ARCHIVE, "r_font_kerning", "1", "Use kerning if available"};
-cvar_t r_font_diskcache = {CF_CLIENT | CF_ARCHIVE, "r_font_diskcache", "0", "save font textures to disk for future loading rather than generating them every time"};
-cvar_t r_font_compress = {CF_CLIENT | CF_ARCHIVE, "r_font_compress", "0", "use texture compression on font textures to save video memory"};
-cvar_t r_font_nonpoweroftwo = {CF_CLIENT | CF_ARCHIVE, "r_font_nonpoweroftwo", "1", "use nonpoweroftwo textures for font (saves memory, potentially slower)"};
-cvar_t developer_font = {CF_CLIENT | CF_ARCHIVE, "developer_font", "0", "prints debug messages about fonts"};
+cvar_t r_font_disable_freetype = {CVAR_SAVE, "r_font_disable_freetype", "1", "disable freetype support for fonts entirely"};
+cvar_t r_font_use_alpha_textures = {CVAR_SAVE, "r_font_use_alpha_textures", "0", "use alpha-textures for font rendering, this should safe memory"};
+cvar_t r_font_size_snapping = {CVAR_SAVE, "r_font_size_snapping", "1", "stick to good looking font sizes whenever possible - bad when the mod doesn't support it!"};
+cvar_t r_font_kerning = {CVAR_SAVE, "r_font_kerning", "1", "Use kerning if available"};
+cvar_t r_font_diskcache = {CVAR_SAVE, "r_font_diskcache", "0", "save font textures to disk for future loading rather than generating them every time"};
+cvar_t r_font_compress = {CVAR_SAVE, "r_font_compress", "0", "use texture compression on font textures to save video memory"};
+cvar_t r_font_nonpoweroftwo = {CVAR_SAVE, "r_font_nonpoweroftwo", "1", "use nonpoweroftwo textures for font (saves memory, potentially slower)"};
+cvar_t developer_font = {CVAR_SAVE, "developer_font", "0", "prints debug messages about fonts"};
 
 #ifndef DP_FREETYPE_STATIC
 
@@ -246,7 +246,7 @@ typedef struct fontfilecache_s
 fontfilecache_t;
 #define MAX_FONTFILES 8
 static fontfilecache_t fontfiles[MAX_FONTFILES];
-static const unsigned char *fontfilecache_LoadFile(const char *path, qbool quiet, fs_offset_t *filesizepointer)
+static const unsigned char *fontfilecache_LoadFile(const char *path, qboolean quiet, fs_offset_t *filesizepointer)
 {
 	int i;
 	unsigned char *buf;
@@ -339,7 +339,7 @@ Font_OpenLibrary
 Try to load the FreeType2 DLL
 ====================
 */
-qbool Font_OpenLibrary (void)
+qboolean Font_OpenLibrary (void)
 {
 #ifndef DP_FREETYPE_STATIC
 	const char* dllnames [] =
@@ -388,7 +388,7 @@ void font_start(void)
 
 	if (qFT_Init_FreeType(&font_ft2lib))
 	{
-		Con_Print(CON_ERROR "ERROR: Failed to initialize the FreeType2 library!\n");
+		Con_Print("ERROR: Failed to initialize the FreeType2 library!\n");
 		Font_CloseLibrary();
 		return;
 	}
@@ -396,7 +396,7 @@ void font_start(void)
 	font_mempool = Mem_AllocPool("FONT", 0, NULL);
 	if (!font_mempool)
 	{
-		Con_Print(CON_ERROR "ERROR: Failed to allocate FONT memory pool!\n");
+		Con_Print("ERROR: Failed to allocate FONT memory pool!\n");
 		Font_CloseLibrary();
 		return;
 	}
@@ -454,7 +454,7 @@ ft2_font_t *Font_Alloc(void)
 	return (ft2_font_t *)Mem_Alloc(font_mempool, sizeof(ft2_font_t));
 }
 
-static qbool Font_Attach(ft2_font_t *font, ft2_attachment_t *attachment)
+static qboolean Font_Attach(ft2_font_t *font, ft2_attachment_t *attachment)
 {
 	ft2_attachment_t *na;
 
@@ -495,9 +495,9 @@ float Font_SnapTo(float val, float snapwidth)
 	return floor(val / snapwidth + 0.5f) * snapwidth;
 }
 
-static qbool Font_LoadFile(const char *name, int _face, ft2_settings_t *settings, ft2_font_t *font);
-static qbool Font_LoadSize(ft2_font_t *font, float size, qbool check_only);
-qbool Font_LoadFont(const char *name, dp_font_t *dpfnt)
+static qboolean Font_LoadFile(const char *name, int _face, ft2_settings_t *settings, ft2_font_t *font);
+static qboolean Font_LoadSize(ft2_font_t *font, float size, qboolean check_only);
+qboolean Font_LoadFont(const char *name, dp_font_t *dpfnt)
 {
 	int s, count, i;
 	ft2_font_t *ft2, *fbfont, *fb;
@@ -543,7 +543,7 @@ qbool Font_LoadFont(const char *name, dp_font_t *dpfnt)
 			break;
 		if (! (fb = Font_Alloc()) )
 		{
-			Con_Printf(CON_ERROR "Failed to allocate font for fallback %i of font %s\n", i, name);
+			Con_Printf("Failed to allocate font for fallback %i of font %s\n", i, name);
 			break;
 		}
 
@@ -553,7 +553,7 @@ qbool Font_LoadFont(const char *name, dp_font_t *dpfnt)
 			if(!FS_FileExists(va(vabuf, sizeof(vabuf), "%s.png", dpfnt->fallbacks[i])))
 			if(!FS_FileExists(va(vabuf, sizeof(vabuf), "%s.jpg", dpfnt->fallbacks[i])))
 			if(!FS_FileExists(va(vabuf, sizeof(vabuf), "%s.pcx", dpfnt->fallbacks[i])))
-				Con_Printf(CON_ERROR "Failed to load font %s for fallback %i of font %s\n", dpfnt->fallbacks[i], i, name);
+				Con_Printf("Failed to load font %s for fallback %i of font %s\n", dpfnt->fallbacks[i], i, name);
 			Mem_Free(fb);
 			continue;
 		}
@@ -565,7 +565,7 @@ qbool Font_LoadFont(const char *name, dp_font_t *dpfnt)
 		}
 		if (!count)
 		{
-			Con_Printf(CON_ERROR "Failed to allocate font for fallback %i of font %s\n", i, name);
+			Con_Printf("Failed to allocate font for fallback %i of font %s\n", i, name);
 			Font_UnloadFont(fb);
 			Mem_Free(fb);
 			break;
@@ -604,7 +604,7 @@ qbool Font_LoadFont(const char *name, dp_font_t *dpfnt)
 	return true;
 }
 
-static qbool Font_LoadFile(const char *name, int _face, ft2_settings_t *settings, ft2_font_t *font)
+static qboolean Font_LoadFile(const char *name, int _face, ft2_settings_t *settings, ft2_font_t *font)
 {
 	size_t namelen;
 	char filename[MAX_QPATH];
@@ -619,7 +619,7 @@ static qbool Font_LoadFile(const char *name, int _face, ft2_settings_t *settings
 	{
 		if (!r_font_disable_freetype.integer)
 		{
-			Con_Printf(CON_WARN "WARNING: can't open load font %s\n"
+			Con_Printf("WARNING: can't open load font %s\n"
 				   "You need the FreeType2 DLL to load font files\n",
 				   name);
 		}
@@ -629,11 +629,6 @@ static qbool Font_LoadFile(const char *name, int _face, ft2_settings_t *settings
 	font->settings = settings;
 
 	namelen = strlen(name);
-	if (namelen + 5 > sizeof(filename))
-	{
-		Con_Printf(CON_WARN "WARNING: too long font name. Cannot load this.\n");
-		return false;
-	}
 
 	// try load direct file
 	memcpy(filename, name, namelen+1);
@@ -677,14 +672,14 @@ static qbool Font_LoadFile(const char *name, int _face, ft2_settings_t *settings
 	status = qFT_New_Memory_Face(font_ft2lib, (FT_Bytes)data, datasize, _face, (FT_Face*)&font->face);
 	if (status && _face != 0)
 	{
-		Con_Printf(CON_ERROR "Failed to load face %i of %s. Falling back to face 0\n", _face, name);
+		Con_Printf("Failed to load face %i of %s. Falling back to face 0\n", _face, name);
 		_face = 0;
 		status = qFT_New_Memory_Face(font_ft2lib, (FT_Bytes)data, datasize, _face, (FT_Face*)&font->face);
 	}
 	font->data = data;
 	if (status)
 	{
-		Con_Printf(CON_ERROR "ERROR: can't create face for %s\n"
+		Con_Printf("ERROR: can't create face for %s\n"
 			   "Error %i\n", // TODO: error strings
 			   name, status);
 		Font_UnloadFont(font);
@@ -700,10 +695,10 @@ static qbool Font_LoadFile(const char *name, int _face, ft2_settings_t *settings
 		args.memory_base = (const FT_Byte*)font->attachments[i].data;
 		args.memory_size = font->attachments[i].size;
 		if (qFT_Attach_Stream((FT_Face)font->face, &args))
-			Con_Printf(CON_ERROR "Failed to add attachment %u to %s\n", (unsigned)i, font->name);
+			Con_Printf("Failed to add attachment %u to %s\n", (unsigned)i, font->name);
 	}
 
-	strlcpy(font->name, name, sizeof(font->name));
+	memcpy(font->name, name, namelen+1);
 	font->image_font = false;
 	font->has_kerning = !!(((FT_Face)(font->face))->face_flags & FT_FACE_FLAG_KERNING);
 	return true;
@@ -713,8 +708,8 @@ static void Font_Postprocess_Update(ft2_font_t *fnt, int bpp, int w, int h)
 {
 	int needed, x, y;
 	float gausstable[2*POSTPROCESS_MAXRADIUS+1];
-	qbool need_gauss  = (!pp.buf || pp.blur != fnt->settings->blur || pp.shadowz != fnt->settings->shadowz);
-	qbool need_circle = (!pp.buf || pp.outline != fnt->settings->outline || pp.shadowx != fnt->settings->shadowx || pp.shadowy != fnt->settings->shadowy);
+	qboolean need_gauss  = (!pp.buf || pp.blur != fnt->settings->blur || pp.shadowz != fnt->settings->shadowz);
+	qboolean need_circle = (!pp.buf || pp.outline != fnt->settings->outline || pp.shadowx != fnt->settings->shadowx || pp.shadowy != fnt->settings->shadowy);
 	pp.blur = fnt->settings->blur;
 	pp.outline = fnt->settings->outline;
 	pp.shadowx = fnt->settings->shadowx;
@@ -886,8 +881,8 @@ static void Font_Postprocess(ft2_font_t *fnt, unsigned char *imagedata, int pitc
 }
 
 static float Font_SearchSize(ft2_font_t *font, FT_Face fontface, float size);
-static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch, ft2_font_map_t **outmap);
-static qbool Font_LoadSize(ft2_font_t *font, float size, qbool check_only)
+static qboolean Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch, ft2_font_map_t **outmap);
+static qboolean Font_LoadSize(ft2_font_t *font, float size, qboolean check_only)
 {
 	int map_index;
 	ft2_font_map_t *fmap, temp;
@@ -928,14 +923,14 @@ static qbool Font_LoadSize(ft2_font_t *font, float size, qbool check_only)
 	memset(&temp, 0, sizeof(temp));
 	temp.size = size;
 	temp.glyphSize = size*2 + max(gpad_l + gpad_r, gpad_t + gpad_b);
-	if (!r_font_nonpoweroftwo.integer)
+	if (!(r_font_nonpoweroftwo.integer && vid.support.arb_texture_non_power_of_two))
 		temp.glyphSize = CeilPowerOf2(temp.glyphSize);
 	temp.sfx = (1.0/64.0)/(double)size;
 	temp.sfy = (1.0/64.0)/(double)size;
 	temp.intSize = -1; // negative value: LoadMap must search now :)
 	if (!Font_LoadMap(font, &temp, 0, &fmap))
 	{
-		Con_Printf(CON_ERROR "ERROR: can't load the first character map for %s\n"
+		Con_Printf("ERROR: can't load the first character map for %s\n"
 			   "This is fatal\n",
 			   font->name);
 		Font_UnloadFont(font);
@@ -1034,7 +1029,7 @@ ft2_font_map_t *Font_MapForIndex(ft2_font_t *font, int index)
 	return font->font_maps[index];
 }
 
-static qbool Font_SetSize(ft2_font_t *font, float w, float h)
+static qboolean Font_SetSize(ft2_font_t *font, float w, float h)
 {
 	if (font->currenth == h &&
 	    ((!w && (!font->currentw || font->currentw == font->currenth)) || // check if w==h when w is not set
@@ -1060,7 +1055,7 @@ static qbool Font_SetSize(ft2_font_t *font, float w, float h)
 	return true;
 }
 
-qbool Font_GetKerningForMap(ft2_font_t *font, int map_index, float w, float h, Uchar left, Uchar right, float *outx, float *outy)
+qboolean Font_GetKerningForMap(ft2_font_t *font, int map_index, float w, float h, Uchar left, Uchar right, float *outx, float *outy)
 {
 	ft2_font_map_t *fmap;
 	if (!font->has_kerning || !r_font_kerning.integer)
@@ -1103,7 +1098,7 @@ qbool Font_GetKerningForMap(ft2_font_t *font, int map_index, float w, float h, U
 		if (!Font_SetSize(font, fmap->intSize, fmap->intSize))
 		{
 			// this deserves an error message
-			Con_Printf(CON_ERROR "Failed to get kerning for %s\n", font->name);
+			Con_Printf("Failed to get kerning for %s\n", font->name);
 			return false;
 		}
 		ul = qFT_Get_Char_Index((FT_Face)font->face, left);
@@ -1118,7 +1113,7 @@ qbool Font_GetKerningForMap(ft2_font_t *font, int map_index, float w, float h, U
 	}
 }
 
-qbool Font_GetKerningForSize(ft2_font_t *font, float w, float h, Uchar left, Uchar right, float *outx, float *outy)
+qboolean Font_GetKerningForSize(ft2_font_t *font, float w, float h, Uchar left, Uchar right, float *outx, float *outy)
 {
 	return Font_GetKerningForMap(font, Font_IndexForSize(font, h, NULL, NULL), w, h, left, right, outx, outy);
 }
@@ -1186,21 +1181,21 @@ static float Font_SearchSize(ft2_font_t *font, FT_Face fontface, float size)
 	{
 		if (!Font_SetSize(font, intSize, intSize))
 		{
-			Con_Printf(CON_ERROR "ERROR: can't set size for font %s: %f ((%f))\n", font->name, size, intSize);
+			Con_Printf("ERROR: can't set size for font %s: %f ((%f))\n", font->name, size, intSize);
 			return -1;
 		}
 		if ((fontface->size->metrics.height>>6) <= size)
 			return intSize;
 		if (intSize < 2)
 		{
-			Con_Printf(CON_ERROR "ERROR: no appropriate size found for font %s: %f\n", font->name, size);
+			Con_Printf("ERROR: no appropriate size found for font %s: %f\n", font->name, size);
 			return -1;
 		}
 		--intSize;
 	}
 }
 
-static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch, ft2_font_map_t **outmap)
+static qboolean Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch, ft2_font_map_t **outmap)
 {
 	char map_identifier[MAX_QPATH];
 	unsigned long mapidx = _ch / FONT_CHARS_PER_MAP;
@@ -1304,14 +1299,14 @@ static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch,
 
 	if (!font->image_font && !Font_SetSize(font, mapstart->intSize, mapstart->intSize))
 	{
-		Con_Printf(CON_ERROR "ERROR: can't set sizes for font %s: %f\n", font->name, mapstart->size);
+		Con_Printf("ERROR: can't set sizes for font %s: %f\n", font->name, mapstart->size);
 		return false;
 	}
 
 	map = (ft2_font_map_t *)Mem_Alloc(font_mempool, sizeof(ft2_font_map_t));
 	if (!map)
 	{
-		Con_Printf(CON_ERROR "ERROR: Out of memory when loading fontmap for %s\n", font->name);
+		Con_Printf("ERROR: Out of memory when loading fontmap for %s\n", font->name);
 		return false;
 	}
 
@@ -1329,8 +1324,14 @@ static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch,
 		(unsigned) mapidx);
 
 	// create a cachepic_t from the data now, or reuse an existing one
+	map->pic = Draw_CachePic_Flags(map_identifier, CACHEPICFLAG_QUIET);
 	if (developer_font.integer)
-		Con_Printf("Generating font map %s (size: %.1f MB)\n", map_identifier, mapstart->glyphSize * (256 * 4 / 1048576.0) * mapstart->glyphSize);
+	{
+		if (map->pic->tex == r_texture_notexture)
+			Con_Printf("Generating font map %s (size: %.1f MB)\n", map_identifier, mapstart->glyphSize * (256 * 4 / 1048576.0) * mapstart->glyphSize);
+		else
+			Con_Printf("Using cached font map %s (size: %.1f MB)\n", map_identifier, mapstart->glyphSize * (256 * 4 / 1048576.0) * mapstart->glyphSize);
+	}
 
 	Font_Postprocess(font, NULL, 0, bytesPerPixel, mapstart->size*2, mapstart->size*2, &gpad_l, &gpad_r, &gpad_t, &gpad_b);
 
@@ -1342,24 +1343,27 @@ static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch,
 	map->sfy = mapstart->sfy;
 
 	pitch = map->glyphSize * FONT_CHARS_PER_LINE * bytesPerPixel;
-	data = (unsigned char *)Mem_Alloc(font_mempool, (FONT_CHAR_LINES * map->glyphSize) * pitch);
-	if (!data)
+	if (map->pic->tex == r_texture_notexture)
 	{
-		Con_Printf(CON_ERROR "ERROR: Failed to allocate memory for font %s size %g\n", font->name, map->size);
-		Mem_Free(map);
-		return false;
-	}
-	// initialize as white texture with zero alpha
-	tp = 0;
-	while (tp < (FONT_CHAR_LINES * map->glyphSize) * pitch)
-	{
-		if (bytesPerPixel == 4)
+		data = (unsigned char *)Mem_Alloc(font_mempool, (FONT_CHAR_LINES * map->glyphSize) * pitch);
+		if (!data)
 		{
-			data[tp++] = 0xFF;
-			data[tp++] = 0xFF;
-			data[tp++] = 0xFF;
+			Con_Printf("ERROR: Failed to allocate memory for font %s size %g\n", font->name, map->size);
+			Mem_Free(map);
+			return false;
 		}
-		data[tp++] = 0x00;
+		// initialize as white texture with zero alpha
+		tp = 0;
+		while (tp < (FONT_CHAR_LINES * map->glyphSize) * pitch)
+		{
+			if (bytesPerPixel == 4)
+			{
+				data[tp++] = 0xFF;
+				data[tp++] = 0xFF;
+				data[tp++] = 0xFF;
+			}
+			data[tp++] = 0x00;
+		}
 	}
 
 	memset(map->width_of, 0, sizeof(map->width_of));
@@ -1461,7 +1465,7 @@ static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch,
 		h = bmp->rows;
 
 		if (w > (map->glyphSize - gpad_l - gpad_r) || h > (map->glyphSize - gpad_t - gpad_b)) {
-			Con_Printf(CON_WARN "WARNING: Glyph %lu is too big in font %s, size %g: %i x %i\n", ch, font->name, map->size, w, h);
+			Con_Printf("WARNING: Glyph %lu is too big in font %s, size %g: %i x %i\n", ch, font->name, map->size, w, h);
 			if (w > map->glyphSize)
 				w = map->glyphSize - gpad_l - gpad_r;
 			if (h > map->glyphSize)
@@ -1492,7 +1496,7 @@ static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch,
 				if (developer_font.integer)
 					Con_DPrintf("glyphinfo:   Pixel Mode: Unknown: %i\n", bmp->pixel_mode);
 				Mem_Free(data);
-				Con_Printf(CON_ERROR "ERROR: Unrecognized pixel mode for font %s size %f: %i\n", font->name, mapstart->size, bmp->pixel_mode);
+				Con_Printf("ERROR: Unrecognized pixel mode for font %s size %f: %i\n", font->name, mapstart->size, bmp->pixel_mode);
 				return false;
 			}
 			for (y = 0; y < h; ++y)
@@ -1506,35 +1510,35 @@ static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch,
 					dst += bytesPerPixel - 1; // shift to alpha byte
 					for (x = 0; x < bmp->width; x += 8)
 					{
-						unsigned char c = *src++;
-						*dst = 255 * !!((c & 0x80) >> 7); dst += bytesPerPixel;
-						*dst = 255 * !!((c & 0x40) >> 6); dst += bytesPerPixel;
-						*dst = 255 * !!((c & 0x20) >> 5); dst += bytesPerPixel;
-						*dst = 255 * !!((c & 0x10) >> 4); dst += bytesPerPixel;
-						*dst = 255 * !!((c & 0x08) >> 3); dst += bytesPerPixel;
-						*dst = 255 * !!((c & 0x04) >> 2); dst += bytesPerPixel;
-						*dst = 255 * !!((c & 0x02) >> 1); dst += bytesPerPixel;
-						*dst = 255 * !!((c & 0x01) >> 0); dst += bytesPerPixel;
+						unsigned char ch = *src++;
+						*dst = 255 * !!((ch & 0x80) >> 7); dst += bytesPerPixel;
+						*dst = 255 * !!((ch & 0x40) >> 6); dst += bytesPerPixel;
+						*dst = 255 * !!((ch & 0x20) >> 5); dst += bytesPerPixel;
+						*dst = 255 * !!((ch & 0x10) >> 4); dst += bytesPerPixel;
+						*dst = 255 * !!((ch & 0x08) >> 3); dst += bytesPerPixel;
+						*dst = 255 * !!((ch & 0x04) >> 2); dst += bytesPerPixel;
+						*dst = 255 * !!((ch & 0x02) >> 1); dst += bytesPerPixel;
+						*dst = 255 * !!((ch & 0x01) >> 0); dst += bytesPerPixel;
 					}
 					break;
 				case FT_PIXEL_MODE_GRAY2:
 					dst += bytesPerPixel - 1; // shift to alpha byte
 					for (x = 0; x < bmp->width; x += 4)
 					{
-						unsigned char c = *src++;
-						*dst = ( ((c & 0xA0) >> 6) * 0x55 ); c <<= 2; dst += bytesPerPixel;
-						*dst = ( ((c & 0xA0) >> 6) * 0x55 ); c <<= 2; dst += bytesPerPixel;
-						*dst = ( ((c & 0xA0) >> 6) * 0x55 ); c <<= 2; dst += bytesPerPixel;
-						*dst = ( ((c & 0xA0) >> 6) * 0x55 ); c <<= 2; dst += bytesPerPixel;
+						unsigned char ch = *src++;
+						*dst = ( ((ch & 0xA0) >> 6) * 0x55 ); ch <<= 2; dst += bytesPerPixel;
+						*dst = ( ((ch & 0xA0) >> 6) * 0x55 ); ch <<= 2; dst += bytesPerPixel;
+						*dst = ( ((ch & 0xA0) >> 6) * 0x55 ); ch <<= 2; dst += bytesPerPixel;
+						*dst = ( ((ch & 0xA0) >> 6) * 0x55 ); ch <<= 2; dst += bytesPerPixel;
 					}
 					break;
 				case FT_PIXEL_MODE_GRAY4:
 					dst += bytesPerPixel - 1; // shift to alpha byte
 					for (x = 0; x < bmp->width; x += 2)
 					{
-						unsigned char c = *src++;
-						*dst = ( ((c & 0xF0) >> 4) * 0x11); dst += bytesPerPixel;
-						*dst = ( ((c & 0x0F) ) * 0x11); dst += bytesPerPixel;
+						unsigned char ch = *src++;
+						*dst = ( ((ch & 0xF0) >> 4) * 0x11); dst += bytesPerPixel;
+						*dst = ( ((ch & 0x0F) ) * 0x11); dst += bytesPerPixel;
 					}
 					break;
 				case FT_PIXEL_MODE_GRAY:
@@ -1615,11 +1619,16 @@ static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch,
 		map->glyphs[mapch].image = false;
 	}
 
+	if (map->pic->tex == r_texture_notexture)
 	{
 		int w = map->glyphSize * FONT_CHARS_PER_LINE;
 		int h = map->glyphSize * FONT_CHAR_LINES;
-		// update the pic returned by Draw_CachePic_Flags earlier to contain our texture
-		map->pic = Draw_NewPic(map_identifier, w, h, data, r_font_use_alpha_textures.integer ? TEXTYPE_ALPHA : TEXTYPE_RGBA, TEXF_ALPHA | TEXF_CLAMP | (r_font_compress.integer > 0 ? TEXF_COMPRESS : 0));
+		rtexture_t *tex;
+		// abuse the Draw_CachePic system to keep track of this texture
+		tex = R_LoadTexture2D(drawtexturepool, map_identifier, w, h, data, r_font_use_alpha_textures.integer ? TEXTYPE_ALPHA : TEXTYPE_RGBA, TEXF_ALPHA | (r_font_compress.integer > 0 ? TEXF_COMPRESS : 0), -1, NULL);
+		// if tex is NULL for any reason, the pic->tex will remain set to r_texture_notexture
+		if (tex)
+			map->pic->tex = tex;
 
 		if (r_font_diskcache.integer >= 1)
 		{
@@ -1635,8 +1644,8 @@ static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch,
 			}
 			Image_WriteTGABGRA(va(vabuf, sizeof(vabuf), "%s.tga", map_identifier), w, h, data);
 #ifndef USE_GLES2
-			if (r_font_compress.integer && Draw_IsPicLoaded(map->pic))
-				R_SaveTextureDDSFile(Draw_GetPicTexture(map->pic), va(vabuf, sizeof(vabuf), "dds/%s.dds", map_identifier), r_texture_dds_save.integer < 2, true);
+			if (r_font_compress.integer && qglGetCompressedTexImageARB && tex)
+				R_SaveTextureDDSFile(tex, va(vabuf, sizeof(vabuf), "dds/%s.dds", map_identifier), r_texture_dds_save.integer < 2, true);
 #endif
 		}
 	}
@@ -1644,13 +1653,13 @@ static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch,
 	if(data)
 		Mem_Free(data);
 
-	if (!Draw_IsPicLoaded(map->pic))
+	if (map->pic->tex == r_texture_notexture)
 	{
 		// if the first try isn't successful, keep it with a broken texture
 		// otherwise we retry to load it every single frame where ft2 rendering is used
 		// this would be bad...
 		// only `data' must be freed
-		Con_Printf(CON_ERROR "ERROR: Failed to generate texture for font %s size %f map %lu\n",
+		Con_Printf("ERROR: Failed to generate texture for font %s size %f map %lu\n",
 			   font->name, mapstart->size, mapidx);
 		return false;
 	}
@@ -1659,7 +1668,7 @@ static qbool Font_LoadMap(ft2_font_t *font, ft2_font_map_t *mapstart, Uchar _ch,
 	return true;
 }
 
-qbool Font_LoadMapForIndex(ft2_font_t *font, int map_index, Uchar _ch, ft2_font_map_t **outmap)
+qboolean Font_LoadMapForIndex(ft2_font_t *font, int map_index, Uchar _ch, ft2_font_map_t **outmap)
 {
 	if (map_index < 0 || map_index >= MAX_FONT_SIZES)
 		return false;

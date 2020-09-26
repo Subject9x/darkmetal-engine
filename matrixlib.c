@@ -4,8 +4,8 @@
 #include "matrixlib.h"
 
 #ifdef _MSC_VER
-#pragma warning(disable : 4244)     // LadyHavoc: MSVC++ 4 x86, double/float
-#pragma warning(disable : 4305)         // LadyHavoc: MSVC++ 6 x86, double/float
+#pragma warning(disable : 4244)     // LordHavoc: MSVC++ 4 x86, double/float
+#pragma warning(disable : 4305)         // LordHavoc: MSVC++ 6 x86, double/float
 #endif
 
 const matrix4x4_t identitymatrix =
@@ -890,54 +890,6 @@ void Matrix4x4_CreateFromQuakeEntity(matrix4x4_t *out, double x, double y, doubl
 	}
 }
 
-void Matrix4x4_QuakeToDuke3D(const matrix4x4_t *in, matrix4x4_t *out, double maxShearAngle)
-{
-	// Sorry - this isn't direct at all. We can't just use an alternative to
-	// Matrix4x4_CreateFromQuakeEntity as in some cases the input for
-	// generating the view matrix is generated externally.
-	vec3_t forward, left, up, angles;
-	double scaleforward, scaleleft, scaleup;
-#ifdef MATRIX4x4_OPENGLORIENTATION
-	VectorSet(forward, in->m[0][0], in->m[0][1], in->m[0][2]);
-	VectorSet(left, in->m[1][0], in->m[1][1], in->m[1][2]);
-	VectorSet(up, in->m[2][0], in->m[2][1], in->m[2][2]);
-#else
-	VectorSet(forward, in->m[0][0], in->m[1][0], in->m[2][0]);
-	VectorSet(left, in->m[0][1], in->m[1][1], in->m[2][1]);
-	VectorSet(up, in->m[0][2], in->m[1][2], in->m[2][2]);
-#endif
-	scaleforward = VectorNormalizeLength(forward);
-	scaleleft = VectorNormalizeLength(left);
-	scaleup = VectorNormalizeLength(up);
-	AnglesFromVectors(angles, forward, up, false);
-	AngleVectorsDuke3DFLU(angles, forward, left, up, maxShearAngle);
-	VectorScale(forward, scaleforward, forward);
-	VectorScale(left, scaleleft, left);
-	VectorScale(up, scaleup, up);
-	*out = *in;
-#ifdef MATRIX4x4_OPENGLORIENTATION
-	out->m[0][0] = forward[0];
-	out->m[1][0] = left[0];
-	out->m[2][0] = up[0];
-	out->m[0][1] = forward[1];
-	out->m[1][1] = left[1];
-	out->m[2][1] = up[1];
-	out->m[0][2] = forward[2];
-	out->m[1][2] = left[2];
-	out->m[2][2] = up[2];
-#else
-	out->m[0][0] = forward[0];
-	out->m[0][1] = left[0];
-	out->m[0][2] = up[0];
-	out->m[1][0] = forward[1];
-	out->m[1][1] = left[1];
-	out->m[1][2] = up[1];
-	out->m[2][0] = forward[2];
-	out->m[2][1] = left[2];
-	out->m[2][2] = up[2];
-#endif
-}
-
 void Matrix4x4_ToVectors(const matrix4x4_t *in, float vx[3], float vy[3], float vz[3], float t[3])
 {
 #ifdef MATRIX4x4_OPENGLORIENTATION
@@ -1579,7 +1531,7 @@ void Matrix4x4_ToOrigin3Quat4Float(const matrix4x4_t *m, float *origin, float *q
 #endif
 }
 
-// LadyHavoc: I got this code from:
+// LordHavoc: I got this code from:
 //http://www.doom3world.org/phpbb2/viewtopic.php?t=2884
 void Matrix4x4_FromDoom3Joint(matrix4x4_t *m, double ox, double oy, double oz, double x, double y, double z)
 {

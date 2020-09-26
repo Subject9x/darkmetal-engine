@@ -21,7 +21,7 @@
 		59 Temple Place - Suite 330
 		Boston, MA  02111-1307, USA
 
-	$Id$
+	$Id: keys.h 11463 2011-10-22 23:52:58Z havoc $
 */
 
 #ifndef __KEYS_H
@@ -357,7 +357,7 @@ typedef enum keydest_e { key_game, key_message, key_menu, key_menu_grabbed, key_
 
 extern	char		key_line[MAX_INPUTLINE];
 extern	int			key_linepos;
-extern	qbool	key_insert;	// insert key toggle (for editing)
+extern	qboolean	key_insert;	// insert key toggle (for editing)
 extern	keydest_t	key_dest;
 // key_consoleactive bits
 // user wants console (halfscreen)
@@ -369,25 +369,23 @@ extern	char		*keybindings[MAX_BINDMAPS][MAX_KEYS];
 
 extern int chat_mode; // 0 for say, 1 for say_team, -1 for command
 extern char chat_buffer[MAX_INPUTLINE];
-extern int	chat_bufferpos;
+extern unsigned int chat_bufferlen;
 
-int Key_ClearEditLine(qbool is_console);
+void Key_ClearEditLine(int edit_line);
 void Key_WriteBindings(qfile_t *f);
 void Key_Init(void);
 void Key_Shutdown(void);
 void Key_Init_Cvars(void);
-void Key_Event(int key, int ascii, qbool down);
+void Key_Event(int key, int ascii, qboolean down);
 void Key_ReleaseAll (void);
-void Key_ReleaseAll_f(cmd_state_t *cmd);
+void Key_ClearStates (void); // FIXME: should this function still exist? Or should Key_ReleaseAll be used instead when shutting down a vid driver?
 void Key_EventQueue_Block(void);
 void Key_EventQueue_Unblock(void);
-int Key_AddChar(int unicode, qbool is_console);
-int Key_Parse_CommonKeys(cmd_state_t *cmd, qbool is_console, int key, int unicode);
 
-qbool Key_SetBinding (int keynum, int bindmap, const char *binding);
+qboolean Key_SetBinding (int keynum, int bindmap, const char *binding);
 const char *Key_GetBind (int key, int bindmap);
 void Key_FindKeysForCommand (const char *command, int *keys, int numkeys, int bindmap);
-qbool Key_SetBindMap(int fg, int bg);
+qboolean Key_SetBindMap(int fg, int bg);
 void Key_GetBindMap(int *fg, int *bg);
 
 #endif // __KEYS_H

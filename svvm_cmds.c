@@ -8,230 +8,225 @@
 
 
 
-const char *vm_sv_extensions[] = {
-"BX_WAL_SUPPORT",
-"DP_BUTTONCHAT",
-"DP_BUTTONUSE",
-"DP_CL_LOADSKY",
-"DP_CON_ALIASPARAMETERS",
-"DP_CON_BESTWEAPON",
-"DP_CON_EXPANDCVAR",
-"DP_CON_SET",
-"DP_CON_SETA",
-"DP_CON_STARTMAP",
-"DP_COVERAGE",
-"DP_CRYPTO",
-"DP_CSQC_BINDMAPS",
-"DP_CSQC_ENTITYWORLDOBJECT",
-"DP_CSQC_ENTITYMODELLIGHT",
-"DP_CSQC_ENTITYTRANSPARENTSORTING_OFFSET",
-"DP_CSQC_MAINVIEW",
-"DP_CSQC_MINFPS_QUALITY",
-"DP_CSQC_MULTIFRAME_INTERPOLATION",
-"DP_CSQC_BOXPARTICLES",
-"DP_CSQC_SPAWNPARTICLE",
-"DP_CSQC_QUERYRENDERENTITY",
-"DP_CSQC_ROTATEMOVES",
-"DP_CSQC_SETPAUSE",
-"DP_CSQC_V_CALCREFDEF_WIP1",
-"DP_CSQC_V_CALCREFDEF_WIP2",
-"DP_EF_ADDITIVE",
-"DP_EF_BLUE",
-"DP_EF_DOUBLESIDED",
-"DP_EF_DYNAMICMODELLIGHT",
-"DP_EF_FLAME",
-"DP_EF_FULLBRIGHT",
-"DP_EF_NODEPTHTEST",
-"DP_EF_NODRAW",
-"DP_EF_NOGUNBOB",
-"DP_EF_NOSELFSHADOW",
-"DP_EF_NOSHADOW",
-"DP_EF_RED",
-"DP_EF_RESTARTANIM_BIT",
-"DP_EF_STARDUST",
-"DP_EF_TELEPORT_BIT",
-"DP_ENT_ALPHA",
-"DP_ENT_COLORMOD",
-"DP_ENT_CUSTOMCOLORMAP",
-"DP_ENT_EXTERIORMODELTOCLIENT",
-"DP_ENT_GLOW",
-"DP_ENT_GLOWMOD",
-"DP_ENT_LOWPRECISION",
-"DP_ENT_SCALE",
-"DP_ENT_TRAILEFFECTNUM",
-"DP_ENT_VIEWMODEL",
-"DP_GFX_EXTERNALTEXTURES",
-"DP_GFX_EXTERNALTEXTURES_PERMAP",
-"DP_GFX_FOG",
-"DP_GFX_MODEL_INTERPOLATION",
-"DP_GFX_QUAKE3MODELTAGS",
-"DP_GFX_SKINFILES",
-"DP_GFX_SKYBOX",
-"DP_GFX_FONTS",
-"DP_GFX_FONTS_FREETYPE",
-"DP_UTF8",
-"DP_FONT_VARIABLEWIDTH",
-"DP_HALFLIFE_MAP",
-"DP_HALFLIFE_MAP_CVAR",
-"DP_HALFLIFE_SPRITE",
-"DP_INPUTBUTTONS",
-"DP_LIGHTSTYLE_STATICVALUE",
-"DP_LITSPRITES",
-"DP_LITSUPPORT",
-"DP_MONSTERWALK",
-"DP_MOVETYPEBOUNCEMISSILE",
-"DP_MOVETYPEFLYWORLDONLY",
-"DP_MOVETYPEFOLLOW",
-"DP_NULL_MODEL",
-"DP_QC_ASINACOSATANATAN2TAN",
-"DP_QC_AUTOCVARS",
-"DP_QC_CHANGEPITCH",
-"DP_QC_CMD",
-"DP_QC_COPYENTITY",
-"DP_QC_CRC16",
-"DP_QC_CVAR_DEFSTRING",
-"DP_QC_CVAR_DESCRIPTION",
-"DP_QC_CVAR_STRING",
-"DP_QC_CVAR_TYPE",
-"DP_QC_DIGEST",
-"DP_QC_DIGEST_SHA256",
-"DP_QC_EDICT_NUM",
-"DP_QC_ENTITYDATA",
-"DP_QC_ENTITYSTRING",
-"DP_QC_ETOS",
-"DP_QC_EXTRESPONSEPACKET",
-"DP_QC_FINDCHAIN",
-"DP_QC_FINDCHAINFLAGS",
-"DP_QC_FINDCHAINFLOAT",
-"DP_QC_FINDCHAIN_TOFIELD",
-"DP_QC_FINDFLAGS",
-"DP_QC_FINDFLOAT",
-"DP_QC_FS_SEARCH",
-"DP_QC_GETLIGHT",
-"DP_QC_GETSURFACE",
-"DP_QC_GETSURFACETRIANGLE",
-"DP_QC_GETSURFACEPOINTATTRIBUTE",
-"DP_QC_GETTAGINFO",
-"DP_QC_GETTAGINFO_BONEPROPERTIES",
-"DP_QC_GETTIME",
-"DP_QC_GETTIME_CDTRACK",
-"DP_QC_I18N",
-"DP_QC_LOG",
-"DP_QC_MINMAXBOUND",
-"DP_QC_MULTIPLETEMPSTRINGS",
-"DP_QC_NUM_FOR_EDICT",
-"DP_QC_RANDOMVEC",
-"DP_QC_SINCOSSQRTPOW",
-"DP_QC_SPRINTF",
-"DP_QC_STRFTIME",
-"DP_QC_STRINGBUFFERS",
-"DP_QC_STRINGBUFFERS_CVARLIST",
-"DP_QC_STRINGBUFFERS_EXT_WIP",
-"DP_QC_STRINGCOLORFUNCTIONS",
-"DP_QC_STRING_CASE_FUNCTIONS",
-"DP_QC_STRREPLACE",
-"DP_QC_TOKENIZEBYSEPARATOR",
-"DP_QC_TOKENIZE_CONSOLE",
-"DP_QC_TRACEBOX",
-"DP_QC_TRACETOSS",
-"DP_QC_TRACE_MOVETYPE_HITMODEL",
-"DP_QC_TRACE_MOVETYPE_WORLDONLY",
-"DP_QC_UNLIMITEDTEMPSTRINGS",
-"DP_QC_URI_ESCAPE",
-"DP_QC_URI_GET",
-"DP_QC_URI_POST",
-"DP_QC_VECTOANGLES_WITH_ROLL",
-"DP_QC_VECTORVECTORS",
-"DP_QC_WHICHPACK",
-"DP_QUAKE2_MODEL",
-"DP_QUAKE2_SPRITE",
-"DP_QUAKE3_MAP",
-"DP_QUAKE3_MODEL",
-"DP_REGISTERCVAR",
-"DP_SKELETONOBJECTS",
-"DP_SND_DIRECTIONLESSATTNNONE",
-"DP_SND_FAKETRACKS",
-"DP_SND_SOUND7_WIP1",
-"DP_SND_SOUND7_WIP2",
-"DP_SND_OGGVORBIS",
-"DP_SND_SETPARAMS",
-"DP_SND_STEREOWAV",
-"DP_SND_GETSOUNDTIME",
-"DP_VIDEO_DPV",
-"DP_VIDEO_SUBTITLES",
-"DP_SOLIDCORPSE",
-"DP_SPRITE32",
-"DP_SV_BOTCLIENT",
-"DP_SV_BOUNCEFACTOR",
-"DP_SV_CLIENTCAMERA",
-"DP_SV_CLIENTCOLORS",
-"DP_SV_CLIENTNAME",
-"DP_SV_CMD",
-"DP_SV_CUSTOMIZEENTITYFORCLIENT",
-"DP_SV_DISABLECLIENTPREDICTION",
-"DP_SV_DISCARDABLEDEMO",
-"DP_SV_DRAWONLYTOCLIENT",
-"DP_SV_DROPCLIENT",
-"DP_SV_EFFECT",
-"DP_SV_ENTITYCONTENTSTRANSITION",
-"DP_SV_MODELFLAGS_AS_EFFECTS",
-"DP_SV_MOVETYPESTEP_LANDEVENT",
-"DP_SV_NETADDRESS",
-"DP_SV_NODRAWTOCLIENT",
-"DP_SV_ONENTITYNOSPAWNFUNCTION",
-"DP_SV_ONENTITYPREPOSTSPAWNFUNCTION",
-"DP_SV_PING",
-"DP_SV_PING_PACKETLOSS",
-"DP_SV_PLAYERPHYSICS",
-"DP_PHYSICS_ODE",
-"DP_SV_POINTPARTICLES",
-"DP_SV_POINTSOUND",
-"DP_SV_PRECACHEANYTIME",
-"DP_SV_PRINT",
-"DP_SV_PUNCHVECTOR",
-"DP_SV_QCSTATUS",
-"DP_SV_ROTATINGBMODEL",
-"DP_SV_SETCOLOR",
-"DP_SV_SHUTDOWN",
-"DP_SV_SLOWMO",
-"DP_SV_SPAWNFUNC_PREFIX",
-"DP_SV_WRITEPICTURE",
-"DP_SV_WRITEUNTERMINATEDSTRING",
-"DP_TE_BLOOD",
-"DP_TE_BLOODSHOWER",
-"DP_TE_CUSTOMFLASH",
-"DP_TE_EXPLOSIONRGB",
-"DP_TE_FLAMEJET",
-"DP_TE_PARTICLECUBE",
-"DP_TE_PARTICLERAIN",
-"DP_TE_PARTICLESNOW",
-"DP_TE_PLASMABURN",
-"DP_TE_QUADEFFECTS1",
-"DP_TE_SMALLFLASH",
-"DP_TE_SPARK",
-"DP_TE_STANDARDEFFECTBUILTINS",
-"DP_TRACE_HITCONTENTSMASK_SURFACEINFO"
-"DP_USERMOVETYPES",
-"DP_VIEWZOOM",
-"EXT_BITSHIFT",
-"FRIK_FILE",
-"FTE_CSQC_SKELETONOBJECTS",
-"FTE_QC_CHECKPVS",
-"FTE_STRINGS",
-"KRIMZON_SV_PARSECLIENTCOMMAND",
-"NEH_CMD_PLAY2",
-"NEH_RESTOREGAME",
-"NEXUIZ_PLAYERMODEL",
-"NXQ_GFX_LETTERBOX",
-"PRYDON_CLIENTCURSOR",
-"TENEBRAE_GFX_DLIGHTS",
-"TW_SV_STEPCONTROL",
-"ZQ_PAUSE",
-"DP_RM_CLIPGROUP",
-"DP_QC_FS_SEARCH_PACKFILE",
-NULL
-//"EXT_CSQC" // not ready yet
-};
+const char *vm_sv_extensions =
+"BX_WAL_SUPPORT "
+"DP_BUTTONCHAT "
+"DP_BUTTONUSE "
+"DP_CL_LOADSKY "
+"DP_CON_ALIASPARAMETERS "
+"DP_CON_BESTWEAPON "
+"DP_CON_EXPANDCVAR "
+"DP_CON_SET "
+"DP_CON_SETA "
+"DP_CON_STARTMAP "
+"DP_COVERAGE "
+"DP_CRYPTO "
+"DP_CSQC_BINDMAPS "
+"DP_CSQC_ENTITYWORLDOBJECT "
+"DP_CSQC_ENTITYMODELLIGHT "
+"DP_CSQC_ENTITYTRANSPARENTSORTING_OFFSET "
+"DP_CSQC_MAINVIEW "
+"DP_CSQC_MINFPS_QUALITY "
+"DP_CSQC_MULTIFRAME_INTERPOLATION "
+"DP_CSQC_BOXPARTICLES "
+"DP_CSQC_SPAWNPARTICLE "
+"DP_CSQC_QUERYRENDERENTITY "
+"DP_CSQC_ROTATEMOVES "
+"DP_CSQC_SETPAUSE "
+"DP_CSQC_V_CALCREFDEF_WIP1 "
+"DP_CSQC_V_CALCREFDEF_WIP2 "
+"DP_EF_ADDITIVE "
+"DP_EF_BLUE "
+"DP_EF_DOUBLESIDED "
+"DP_EF_DYNAMICMODELLIGHT "
+"DP_EF_FLAME "
+"DP_EF_FULLBRIGHT "
+"DP_EF_NODEPTHTEST "
+"DP_EF_NODRAW "
+"DP_EF_NOGUNBOB "
+"DP_EF_NOSELFSHADOW "
+"DP_EF_NOSHADOW "
+"DP_EF_RED "
+"DP_EF_RESTARTANIM_BIT "
+"DP_EF_STARDUST "
+"DP_EF_TELEPORT_BIT "
+"DP_ENT_ALPHA "
+"DP_ENT_COLORMOD "
+"DP_ENT_CUSTOMCOLORMAP "
+"DP_ENT_EXTERIORMODELTOCLIENT "
+"DP_ENT_GLOW "
+"DP_ENT_GLOWMOD "
+"DP_ENT_LOWPRECISION "
+"DP_ENT_SCALE "
+"DP_ENT_TRAILEFFECTNUM "
+"DP_ENT_VIEWMODEL "
+"DP_GFX_EXTERNALTEXTURES "
+"DP_GFX_EXTERNALTEXTURES_PERMAP "
+"DP_GFX_FOG "
+"DP_GFX_MODEL_INTERPOLATION "
+"DP_GFX_QUAKE3MODELTAGS "
+"DP_GFX_SKINFILES "
+"DP_GFX_SKYBOX "
+"DP_GFX_FONTS "
+"DP_GFX_FONTS_FREETYPE "
+"DP_UTF8 "
+"DP_FONT_VARIABLEWIDTH "
+"DP_HALFLIFE_MAP "
+"DP_HALFLIFE_MAP_CVAR "
+"DP_HALFLIFE_SPRITE "
+"DP_INPUTBUTTONS "
+"DP_LIGHTSTYLE_STATICVALUE "
+"DP_LITSPRITES "
+"DP_LITSUPPORT "
+"DP_MONSTERWALK "
+"DP_MOVETYPEBOUNCEMISSILE "
+"DP_MOVETYPEFLYWORLDONLY "
+"DP_MOVETYPEFOLLOW "
+"DP_NULL_MODEL "
+"DP_QC_ASINACOSATANATAN2TAN "
+"DP_QC_AUTOCVARS "
+"DP_QC_CHANGEPITCH "
+"DP_QC_CMD "
+"DP_QC_COPYENTITY "
+"DP_QC_CRC16 "
+"DP_QC_CVAR_DEFSTRING "
+"DP_QC_CVAR_DESCRIPTION "
+"DP_QC_CVAR_STRING "
+"DP_QC_CVAR_TYPE "
+"DP_QC_DIGEST "
+"DP_QC_DIGEST_SHA256 "
+"DP_QC_EDICT_NUM "
+"DP_QC_ENTITYDATA "
+"DP_QC_ENTITYSTRING "
+"DP_QC_ETOS "
+"DP_QC_EXTRESPONSEPACKET "
+"DP_QC_FINDCHAIN "
+"DP_QC_FINDCHAINFLAGS "
+"DP_QC_FINDCHAINFLOAT "
+"DP_QC_FINDCHAIN_TOFIELD "
+"DP_QC_FINDFLAGS "
+"DP_QC_FINDFLOAT "
+"DP_QC_FS_SEARCH "
+"DP_QC_GETLIGHT "
+"DP_QC_GETSURFACE "
+"DP_QC_GETSURFACETRIANGLE "
+"DP_QC_GETSURFACEPOINTATTRIBUTE "
+"DP_QC_GETTAGINFO "
+"DP_QC_GETTAGINFO_BONEPROPERTIES "
+"DP_QC_GETTIME "
+"DP_QC_GETTIME_CDTRACK "
+"DP_QC_I18N "
+"DP_QC_LOG "
+"DP_QC_MINMAXBOUND "
+"DP_QC_MULTIPLETEMPSTRINGS "
+"DP_QC_NUM_FOR_EDICT "
+"DP_QC_RANDOMVEC "
+"DP_QC_SINCOSSQRTPOW "
+"DP_QC_SPRINTF "
+"DP_QC_STRFTIME "
+"DP_QC_STRINGBUFFERS "
+"DP_QC_STRINGBUFFERS_CVARLIST "
+"DP_QC_STRINGBUFFERS_EXT_WIP "
+"DP_QC_STRINGCOLORFUNCTIONS "
+"DP_QC_STRING_CASE_FUNCTIONS "
+"DP_QC_STRREPLACE "
+"DP_QC_TOKENIZEBYSEPARATOR "
+"DP_QC_TOKENIZE_CONSOLE "
+"DP_QC_TRACEBOX "
+"DP_QC_TRACETOSS "
+"DP_QC_TRACE_MOVETYPE_HITMODEL "
+"DP_QC_TRACE_MOVETYPE_WORLDONLY "
+"DP_QC_UNLIMITEDTEMPSTRINGS "
+"DP_QC_URI_ESCAPE "
+"DP_QC_URI_GET "
+"DP_QC_URI_POST "
+"DP_QC_VECTOANGLES_WITH_ROLL "
+"DP_QC_VECTORVECTORS "
+"DP_QC_WHICHPACK "
+"DP_QUAKE2_MODEL "
+"DP_QUAKE2_SPRITE "
+"DP_QUAKE3_MAP "
+"DP_QUAKE3_MODEL "
+"DP_REGISTERCVAR "
+"DP_SKELETONOBJECTS "
+"DP_SND_DIRECTIONLESSATTNNONE "
+"DP_SND_FAKETRACKS "
+"DP_SND_SOUND7_WIP1 "
+"DP_SND_SOUND7_WIP2 "
+"DP_SND_OGGVORBIS "
+"DP_SND_SETPARAMS "
+"DP_SND_STEREOWAV "
+"DP_SND_GETSOUNDTIME "
+"DP_VIDEO_DPV "
+"DP_VIDEO_SUBTITLES "
+"DP_SOLIDCORPSE "
+"DP_SPRITE32 "
+"DP_SV_BOTCLIENT "
+"DP_SV_BOUNCEFACTOR "
+"DP_SV_CLIENTCAMERA "
+"DP_SV_CLIENTCOLORS "
+"DP_SV_CLIENTNAME "
+"DP_SV_CMD "
+"DP_SV_CUSTOMIZEENTITYFORCLIENT "
+"DP_SV_DISCARDABLEDEMO "
+"DP_SV_DRAWONLYTOCLIENT "
+"DP_SV_DROPCLIENT "
+"DP_SV_EFFECT "
+"DP_SV_ENTITYCONTENTSTRANSITION "
+"DP_SV_MODELFLAGS_AS_EFFECTS "
+"DP_SV_MOVETYPESTEP_LANDEVENT "
+"DP_SV_NETADDRESS "
+"DP_SV_NODRAWTOCLIENT "
+"DP_SV_ONENTITYNOSPAWNFUNCTION "
+"DP_SV_ONENTITYPREPOSTSPAWNFUNCTION "
+"DP_SV_PING "
+"DP_SV_PING_PACKETLOSS "
+"DP_SV_PLAYERPHYSICS "
+"DP_PHYSICS_ODE "
+"DP_SV_POINTPARTICLES "
+"DP_SV_POINTSOUND "
+"DP_SV_PRECACHEANYTIME "
+"DP_SV_PRINT "
+"DP_SV_PUNCHVECTOR "
+"DP_SV_QCSTATUS "
+"DP_SV_ROTATINGBMODEL "
+"DP_SV_SETCOLOR "
+"DP_SV_SHUTDOWN "
+"DP_SV_SLOWMO "
+"DP_SV_SPAWNFUNC_PREFIX "
+"DP_SV_WRITEPICTURE "
+"DP_SV_WRITEUNTERMINATEDSTRING "
+"DP_TE_BLOOD "
+"DP_TE_BLOODSHOWER "
+"DP_TE_CUSTOMFLASH "
+"DP_TE_EXPLOSIONRGB "
+"DP_TE_FLAMEJET "
+"DP_TE_PARTICLECUBE "
+"DP_TE_PARTICLERAIN "
+"DP_TE_PARTICLESNOW "
+"DP_TE_PLASMABURN "
+"DP_TE_QUADEFFECTS1 "
+"DP_TE_SMALLFLASH "
+"DP_TE_SPARK "
+"DP_TE_STANDARDEFFECTBUILTINS "
+"DP_TRACE_HITCONTENTSMASK_SURFACEINFO "
+"DP_VIEWZOOM "
+"EXT_BITSHIFT "
+"FRIK_FILE "
+"FTE_CSQC_SKELETONOBJECTS "
+"FTE_QC_CHECKPVS "
+"FTE_STRINGS "
+"KRIMZON_SV_PARSECLIENTCOMMAND "
+"NEH_CMD_PLAY2 "
+"NEH_RESTOREGAME "
+"NEXUIZ_PLAYERMODEL "
+"NXQ_GFX_LETTERBOX "
+"PRYDON_CLIENTCURSOR "
+"TENEBRAE_GFX_DLIGHTS "
+"TW_SV_STEPCONTROL "
+"ZQ_PAUSE "
+//"EXT_CSQC " // not ready yet
+;
 
 /*
 =================
@@ -246,7 +241,7 @@ static void VM_SV_setorigin(prvm_prog_t *prog)
 {
 	prvm_edict_t	*e;
 
-	VM_SAFEPARMCOUNT(2, VM_SV_setorigin);
+	VM_SAFEPARMCOUNT(2, VM_setorigin);
 
 	e = PRVM_G_EDICT(OFS_PARM0);
 	if (e == prog->edicts)
@@ -266,7 +261,7 @@ static void VM_SV_setorigin(prvm_prog_t *prog)
 }
 
 // TODO: rotate param isnt used.. could be a bug. please check this and remove it if possible [1/10/2008 Black]
-static void SetMinMaxSize (prvm_prog_t *prog, prvm_edict_t *e, float *min, float *max, qbool rotate)
+static void SetMinMaxSize (prvm_prog_t *prog, prvm_edict_t *e, float *min, float *max, qboolean rotate)
 {
 	int		i;
 
@@ -287,7 +282,7 @@ static void SetMinMaxSize (prvm_prog_t *prog, prvm_edict_t *e, float *min, float
 VM_SV_setsize
 
 the size box is rotated by the current angle
-LadyHavoc: no it isn't...
+LordHavoc: no it isn't...
 
 setsize (entity, minvector, maxvector)
 =================
@@ -297,7 +292,7 @@ static void VM_SV_setsize(prvm_prog_t *prog)
 	prvm_edict_t	*e;
 	vec3_t mins, maxs;
 
-	VM_SAFEPARMCOUNT(3, VM_SV_setsize);
+	VM_SAFEPARMCOUNT(3, VM_setsize);
 
 	e = PRVM_G_EDICT(OFS_PARM0);
 	if (e == prog->edicts)
@@ -330,7 +325,7 @@ static void VM_SV_setmodel(prvm_prog_t *prog)
 	dp_model_t	*mod;
 	int		i;
 
-	VM_SAFEPARMCOUNT(2, VM_SV_setmodel);
+	VM_SAFEPARMCOUNT(2, VM_setmodel);
 
 	e = PRVM_G_EDICT(OFS_PARM0);
 	if (e == prog->edicts)
@@ -380,7 +375,7 @@ static void VM_SV_sprint(prvm_prog_t *prog)
 	VM_VarString(prog, 1, string, sizeof(string));
 
 	entnum = PRVM_G_EDICTNUM(OFS_PARM0);
-	// LadyHavoc: div0 requested that sprintto world  operate like print
+	// LordHavoc: div0 requested that sprintto world  operate like print
 	if (entnum == 0)
 	{
 		Con_Print(string);
@@ -520,7 +515,6 @@ already running on that entity/channel pair.
 An attenuation of 0 will play full volume everywhere in the level.
 Larger attenuations will drop off.
 
-void(entity e, float chan, string samp, float volume[, float atten[, float pitchchange[, float flags]]]) sound (QUAKE)
 =================
 */
 static void VM_SV_sound(prvm_prog_t *prog)
@@ -528,7 +522,7 @@ static void VM_SV_sound(prvm_prog_t *prog)
 	const char	*sample;
 	int			channel;
 	prvm_edict_t		*entity;
-	int 		nvolume;
+	int 		volume;
 	int flags;
 	float attenuation;
 	float pitchchange;
@@ -538,7 +532,7 @@ static void VM_SV_sound(prvm_prog_t *prog)
 	entity = PRVM_G_EDICT(OFS_PARM0);
 	channel = (int)PRVM_G_FLOAT(OFS_PARM1);
 	sample = PRVM_G_STRING(OFS_PARM2);
-	nvolume = (int)(PRVM_G_FLOAT(OFS_PARM3) * 255);
+	volume = (int)(PRVM_G_FLOAT(OFS_PARM3) * 255);
 	if (prog->argc < 5)
 	{
 		Con_DPrintf("VM_SV_sound: given only 4 parameters, expected 5, assuming attenuation = ATTN_NORMAL\n");
@@ -562,11 +556,11 @@ static void VM_SV_sound(prvm_prog_t *prog)
 	}
 	else
 	{
-		// LadyHavoc: we only let the qc set certain flags, others are off-limits
-		flags = (int)PRVM_G_FLOAT(OFS_PARM6) & (CHANNELFLAG_RELIABLE | CHANNELFLAG_FORCELOOP | CHANNELFLAG_PAUSED | CHANNELFLAG_FULLVOLUME);
+		// LordHavoc: we only let the qc set certain flags, others are off-limits
+		flags = (int)PRVM_G_FLOAT(OFS_PARM6) & (CHANNELFLAG_RELIABLE | CHANNELFLAG_FORCELOOP | CHANNELFLAG_PAUSED);
 	}
 
-	if (nvolume < 0 || nvolume > 255)
+	if (volume < 0 || volume > 255)
 	{
 		VM_Warning(prog, "SV_StartSound: volume must be in range 0-1\n");
 		return;
@@ -586,7 +580,7 @@ static void VM_SV_sound(prvm_prog_t *prog)
 		return;
 	}
 
-	SV_StartSound (entity, channel, sample, nvolume, attenuation, flags & CHANNELFLAG_RELIABLE, pitchchange);
+	SV_StartSound (entity, channel, sample, volume, attenuation, flags & CHANNELFLAG_RELIABLE, pitchchange);
 }
 
 /*
@@ -602,7 +596,7 @@ is omitted (since no entity is being tracked).
 static void VM_SV_pointsound(prvm_prog_t *prog)
 {
 	const char	*sample;
-	int 		nvolume;
+	int 		volume;
 	float		attenuation;
 	float		pitchchange;
 	vec3_t		org;
@@ -611,11 +605,11 @@ static void VM_SV_pointsound(prvm_prog_t *prog)
 
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), org);
 	sample = PRVM_G_STRING(OFS_PARM1);
-	nvolume = (int)(PRVM_G_FLOAT(OFS_PARM2) * 255);
+	volume = (int)(PRVM_G_FLOAT(OFS_PARM2) * 255);
 	attenuation = PRVM_G_FLOAT(OFS_PARM3);
 	pitchchange = prog->argc < 5 ? 0 : PRVM_G_FLOAT(OFS_PARM4) * 0.01f;
 
-	if (nvolume < 0 || nvolume > 255)
+	if (volume < 0 || volume > 255)
 	{
 		VM_Warning(prog, "SV_StartPointSound: volume must be in range 0-1\n");
 		return;
@@ -627,7 +621,7 @@ static void VM_SV_pointsound(prvm_prog_t *prog)
 		return;
 	}
 
-	SV_StartPointSound (org, sample, nvolume, attenuation, pitchchange);
+	SV_StartPointSound (org, sample, volume, attenuation, pitchchange);
 }
 
 /*
@@ -660,7 +654,7 @@ static void VM_SV_traceline(prvm_prog_t *prog)
 	if (VEC_IS_NAN(v1[0]) || VEC_IS_NAN(v1[1]) || VEC_IS_NAN(v1[2]) || VEC_IS_NAN(v2[0]) || VEC_IS_NAN(v2[1]) || VEC_IS_NAN(v2[2]))
 		prog->error_cmd("%s: NAN errors detected in traceline('%f %f %f', '%f %f %f', %i, entity %i)\n", prog->name, v1[0], v1[1], v1[2], v2[0], v2[1], v2[2], move, PRVM_EDICT_TO_PROG(ent));
 
-	trace = SV_TraceLine(v1, v2, move, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendtracelinelength.value);
+	trace = SV_TraceLine(v1, v2, move, ent, SV_GenericHitSuperContentsMask(ent), collision_extendtracelinelength.value);
 
 	VM_SetTraceGlobals(prog, &trace);
 }
@@ -677,7 +671,7 @@ if the tryents flag is set.
 tracebox (vector1, vector mins, vector maxs, vector2, tryents)
 =================
 */
-// LadyHavoc: added this for my own use, VERY useful, similar to traceline
+// LordHavoc: added this for my own use, VERY useful, similar to traceline
 static void VM_SV_tracebox(prvm_prog_t *prog)
 {
 	vec3_t v1, v2, m1, m2;
@@ -699,7 +693,7 @@ static void VM_SV_tracebox(prvm_prog_t *prog)
 	if (VEC_IS_NAN(v1[0]) || VEC_IS_NAN(v1[1]) || VEC_IS_NAN(v1[2]) || VEC_IS_NAN(v2[0]) || VEC_IS_NAN(v2[1]) || VEC_IS_NAN(v2[2]))
 		prog->error_cmd("%s: NAN errors detected in tracebox('%f %f %f', '%f %f %f', '%f %f %f', '%f %f %f', %i, entity %i)\n", prog->name, v1[0], v1[1], v1[2], m1[0], m1[1], m1[2], m2[0], m2[1], m2[2], v2[0], v2[1], v2[2], move, PRVM_EDICT_TO_PROG(ent));
 
-	trace = SV_TraceBox(v1, m1, m2, v2, move, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendtraceboxlength.value);
+	trace = SV_TraceBox(v1, m1, m2, v2, move, ent, SV_GenericHitSuperContentsMask(ent), collision_extendtraceboxlength.value);
 
 	VM_SetTraceGlobals(prog, &trace);
 }
@@ -725,7 +719,7 @@ static trace_t SV_Trace_Toss(prvm_prog_t *prog, prvm_edict_t *tossent, prvm_edic
 		gravity = 1.0f;
 	gravity *= sv_gravity.value * 0.025;
 
-	for (i = 0;i < 200;i++) // LadyHavoc: sanity check; never trace more than 10 seconds
+	for (i = 0;i < 200;i++) // LordHavoc: sanity check; never trace more than 10 seconds
 	{
 		SV_CheckVelocity (tossent);
 		PRVM_serveredictvector(tossent, velocity)[2] -= gravity;
@@ -735,7 +729,7 @@ static trace_t SV_Trace_Toss(prvm_prog_t *prog, prvm_edict_t *tossent, prvm_edic
 		VectorCopy(PRVM_serveredictvector(tossent, origin), tossentorigin);
 		VectorCopy(PRVM_serveredictvector(tossent, mins), tossentmins);
 		VectorCopy(PRVM_serveredictvector(tossent, maxs), tossentmaxs);
-		trace = SV_TraceBox(tossentorigin, tossentmins, tossentmaxs, end, MOVE_NORMAL, tossent, SV_GenericHitSuperContentsMask(tossent), 0, 0, collision_extendmovelength.value);
+		trace = SV_TraceBox(tossentorigin, tossentmins, tossentmaxs, end, MOVE_NORMAL, tossent, SV_GenericHitSuperContentsMask(tossent), collision_extendmovelength.value);
 		VectorCopy (trace.endpos, PRVM_serveredictvector(tossent, origin));
 		PRVM_serveredictvector(tossent, velocity)[2] -= gravity;
 
@@ -972,7 +966,7 @@ static void VM_SV_stuffcmd(prvm_prog_t *prog)
 
 	old = host_client;
 	host_client = svs.clients + entnum-1;
-	SV_ClientCommands ("%s", string);
+	Host_ClientCommands ("%s", string);
 	host_client = old;
 }
 
@@ -1031,7 +1025,7 @@ static void VM_SV_findradius(prvm_prog_t *prog)
 		// (note: this is the reason you can't blow up fallen zombies)
 		if (PRVM_serveredictfloat(ent, solid) == SOLID_NOT && !sv_gameplayfix_blowupfallenzombies.integer)
 			continue;
-		// LadyHavoc: compare against bounding box rather than center so it
+		// LordHavoc: compare against bounding box rather than center so it
 		// doesn't miss large objects, and use DotProduct instead of Length
 		// for a major speedup
 		VectorSubtract(org, PRVM_serveredictvector(ent, origin), eorg);
@@ -1080,7 +1074,7 @@ static void VM_SV_walkmove(prvm_prog_t *prog)
 	vec3_t	move;
 	mfunction_t	*oldf;
 	int 	oldself;
-	qbool	settrace;
+	qboolean	settrace;
 
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_SV_walkmove);
 
@@ -1163,13 +1157,13 @@ static void VM_SV_droptofloor(prvm_prog_t *prog)
 	VectorCopy(PRVM_serveredictvector(ent, origin), entorigin);
 	VectorCopy(PRVM_serveredictvector(ent, mins), entmins);
 	VectorCopy(PRVM_serveredictvector(ent, maxs), entmaxs);
-	trace = SV_TraceBox(entorigin, entmins, entmaxs, end, MOVE_NORMAL, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value);
+	trace = SV_TraceBox(entorigin, entmins, entmaxs, end, MOVE_NORMAL, ent, SV_GenericHitSuperContentsMask(ent), collision_extendmovelength.value);
 	if (trace.startsolid && sv_gameplayfix_droptofloorstartsolid.integer)
 	{
 		vec3_t offset, org;
 		VectorSet(offset, 0.5f * (PRVM_serveredictvector(ent, mins)[0] + PRVM_serveredictvector(ent, maxs)[0]), 0.5f * (PRVM_serveredictvector(ent, mins)[1] + PRVM_serveredictvector(ent, maxs)[1]), PRVM_serveredictvector(ent, mins)[2]);
 		VectorAdd(PRVM_serveredictvector(ent, origin), offset, org);
-		trace = SV_TraceLine(org, end, MOVE_NORMAL, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value);
+		trace = SV_TraceLine(org, end, MOVE_NORMAL, ent, SV_GenericHitSuperContentsMask(ent), collision_extendmovelength.value);
 		VectorSubtract(trace.endpos, offset, trace.endpos);
 		if (trace.startsolid)
 		{
@@ -1270,7 +1264,7 @@ static void VM_SV_pointcontents(prvm_prog_t *prog)
 	vec3_t point;
 	VM_SAFEPARMCOUNT(1, VM_SV_pointcontents);
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), point);
-	PRVM_G_FLOAT(OFS_RETURN) = Mod_Q1BSP_NativeContentsFromSuperContents(SV_PointSuperContents(point));
+	PRVM_G_FLOAT(OFS_RETURN) = Mod_Q1BSP_NativeContentsFromSuperContents(NULL, SV_PointSuperContents(point));
 }
 
 /*
@@ -1317,7 +1311,7 @@ static void VM_SV_aim(prvm_prog_t *prog)
 // try sending a trace straight
 	VectorCopy (PRVM_serverglobalvector(v_forward), dir);
 	VectorMA (start, 2048, dir, end);
-	tr = SV_TraceLine(start, end, MOVE_NORMAL, ent, SUPERCONTENTS_SOLID | SUPERCONTENTS_BODY, 0, 0, collision_extendmovelength.value);
+	tr = SV_TraceLine(start, end, MOVE_NORMAL, ent, SUPERCONTENTS_SOLID | SUPERCONTENTS_BODY, collision_extendmovelength.value);
 	if (tr.ent && PRVM_serveredictfloat(((prvm_edict_t *)tr.ent), takedamage) == DAMAGE_AIM
 	&& (!teamplay.integer || PRVM_serveredictfloat(ent, team) <=0 || PRVM_serveredictfloat(ent, team) != PRVM_serveredictfloat(((prvm_edict_t *)tr.ent), team)) )
 	{
@@ -1349,7 +1343,7 @@ static void VM_SV_aim(prvm_prog_t *prog)
 		dist = DotProduct (dir, PRVM_serverglobalvector(v_forward));
 		if (dist < bestdist)
 			continue;	// to far to turn
-		tr = SV_TraceLine(start, end, MOVE_NORMAL, ent, SUPERCONTENTS_SOLID | SUPERCONTENTS_BODY, 0, 0, collision_extendmovelength.value);
+		tr = SV_TraceLine(start, end, MOVE_NORMAL, ent, SUPERCONTENTS_SOLID | SUPERCONTENTS_BODY, collision_extendmovelength.value);
 		if (tr.ent == check)
 		{	// can shoot at this one
 			bestdist = dist;
@@ -1502,8 +1496,8 @@ static void VM_SV_WritePicture(prvm_prog_t *prog)
 	if(Image_Compress(imgname, size, &buf, &size))
 	{
 		// actual picture
-		MSG_WriteShort(WriteDest(prog), (int)size);
-		SZ_Write(WriteDest(prog), (unsigned char *) buf, (int)size);
+		MSG_WriteShort(WriteDest(prog), size);
+		SZ_Write(WriteDest(prog), (unsigned char *) buf, size);
 	}
 	else
 	{
@@ -1630,17 +1624,21 @@ static void VM_SV_getlight(prvm_prog_t *prog)
 
 typedef struct
 {
-	unsigned char	type;	// 1/2/8 or 0 to indicate unused
+	unsigned char	type;	// 1/2/8 or other value if isn't used
 	int		fieldoffset;
 }customstat_t;
 
-static customstat_t vm_customstats[MAX_CL_STATS]; // matches the regular stat numbers, but only MIN_VM_STAT to MAX_VM_STAT range is used if things are working properly (can register stats from MAX_VM_STAT to MAX_CL_STATS but will warn)
+static customstat_t *vm_customstats = NULL;	//[515]: it starts from 0, not 32
 static int vm_customstats_last;
 
 void VM_CustomStats_Clear (void)
 {
-	memset(vm_customstats, 0, sizeof(vm_customstats));
-	vm_customstats_last = -1;
+	if(vm_customstats)
+	{
+		Z_Free(vm_customstats);
+		vm_customstats = NULL;
+		vm_customstats_last = -1;
+	}
 }
 
 void VM_SV_UpdateCustomStats (client_t *client, prvm_edict_t *ent, sizebuf_t *msg, int *stats)
@@ -1648,12 +1646,11 @@ void VM_SV_UpdateCustomStats (client_t *client, prvm_edict_t *ent, sizebuf_t *ms
 	prvm_prog_t *prog = SVVM_prog;
 	int			i;
 	char		s[17];
-	union {
-		int i;
-		float f;
-	} u;
 
-	for(i=MIN_VM_STAT; i<=vm_customstats_last ;i++)
+	if(!vm_customstats)
+		return;
+
+	for(i=0; i<vm_customstats_last+1 ;i++)
 	{
 		if(!vm_customstats[i].type)
 			continue;
@@ -1663,28 +1660,24 @@ void VM_SV_UpdateCustomStats (client_t *client, prvm_edict_t *ent, sizebuf_t *ms
 		case 1:
 			memset(s, 0, 17);
 			strlcpy(s, PRVM_E_STRING(ent, vm_customstats[i].fieldoffset), 16);
-			stats[i] = s[ 0] + s[ 1] * 256 + s[ 2] * 65536 + s[ 3] * 16777216;
-			stats[i+1] = s[ 4] + s[ 5] * 256 + s[ 6] * 65536 + s[ 7] * 16777216;
-			stats[i+2] = s[ 8] + s[ 9] * 256 + s[10] * 65536 + s[11] * 16777216;
-			stats[i+3] = s[12] + s[13] * 256 + s[14] * 65536 + s[15] * 16777216;
+			stats[i+32] = s[ 0] + s[ 1] * 256 + s[ 2] * 65536 + s[ 3] * 16777216;
+			stats[i+33] = s[ 4] + s[ 5] * 256 + s[ 6] * 65536 + s[ 7] * 16777216;
+			stats[i+34] = s[ 8] + s[ 9] * 256 + s[10] * 65536 + s[11] * 16777216;
+			stats[i+35] = s[12] + s[13] * 256 + s[14] * 65536 + s[15] * 16777216;
 			break;
 		//float field sent as-is
 		case 8:
-			// can't directly use PRVM_E_INT on the field because it may be PRVM_64 and a double is not the representation we want to send
-			u.f = PRVM_E_FLOAT(ent, vm_customstats[i].fieldoffset);
-			stats[i] = u.i;
+			stats[i+32] = PRVM_E_INT(ent, vm_customstats[i].fieldoffset);
 			break;
 		//integer value of float field
 		case 2:
-			stats[i] = (int)PRVM_E_FLOAT(ent, vm_customstats[i].fieldoffset);
+			stats[i+32] = (int)PRVM_E_FLOAT(ent, vm_customstats[i].fieldoffset);
 			break;
 		default:
 			break;
 		}
 	}
 }
-
-extern cvar_t sv_gameplayfix_customstats;
 
 // void(float index, float type, .void field) SV_AddStat = #232;
 // Set up an auto-sent player stat.
@@ -1695,51 +1688,40 @@ extern cvar_t sv_gameplayfix_customstats;
 //          8: integer (one stat, not converted to an int, so this can be used to transport floats as floats - what a unique idea!)
 static void VM_SV_AddStat(prvm_prog_t *prog)
 {
-	int		off, i, type;
+	int		off, i;
+	unsigned char	type;
 
 	VM_SAFEPARMCOUNT(3, VM_SV_AddStat);
 
+	if(!vm_customstats)
+	{
+		vm_customstats = (customstat_t *)Z_Malloc((MAX_CL_STATS-32) * sizeof(customstat_t));
+		if(!vm_customstats)
+		{
+			VM_Warning(prog, "PF_SV_AddStat: not enough memory\n");
+			return;
+		}
+	}
 	i		= (int)PRVM_G_FLOAT(OFS_PARM0);
 	type	= (int)PRVM_G_FLOAT(OFS_PARM1);
 	off		= PRVM_G_INT  (OFS_PARM2);
+	i -= 32;
 
-	switch (type)
+	if(i < 0)
 	{
-	case 1:
-	case 2:
-	case 8:
-		break;
-	default:
-		VM_Warning(prog, "PF_SV_AddStat: unrecognized type %i - supported types are 1 (string up to 16 bytes, takes 4 stat slots), 2 (truncate to int32), 8 (send as float)", type);
+		VM_Warning(prog, "PF_SV_AddStat: index may not be less than 32\n");
 		return;
 	}
-
-	if (i < 0)
+	if(i >= (MAX_CL_STATS-32))
 	{
-		VM_Warning(prog, "PF_SV_AddStat: index (%i) may not be less than %i\n", i, MIN_VM_STAT);
+		VM_Warning(prog, "PF_SV_AddStat: index >= MAX_CL_STATS\n");
 		return;
 	}
-
-	if (i >= MAX_CL_STATS)
+	if(i > (MAX_CL_STATS-32-4) && type == 1)
 	{
-		VM_Warning(prog, "PF_SV_AddStat: index (%i) >= MAX_CL_STATS (%i), not supported by protocol, and AddStat beyond MAX_VM_STAT (%i) conflicts with engine MOVEVARS\n", i, MAX_CL_STATS, MAX_VM_STAT);
+		VM_Warning(prog, "PF_SV_AddStat: index > (MAX_CL_STATS-4) with string\n");
 		return;
 	}
-
-	if (i > (MAX_CL_STATS - 4) && type == 1)
-	{
-		VM_Warning(prog, "PF_SV_AddStat: index (%i) > (MAX_CL_STATS (%i) - 4) with string type won't fit in the protocol, and AddStat beyond MAX_VM_STAT conflicts with engine MOVEVARS\n", i, MAX_CL_STATS);
-		return;
-	}
-
-	// these are hazardous to override but sort of allowed if one wants to be adventurous...  and enjoys warnings.
-	if (i < MIN_VM_STAT)
-		VM_Warning(prog, "PF_SV_AddStat: index (%i) < MIN_VM_STAT (%i) may conflict with engine stats - allowed, but this may break things\n", i, MIN_VM_STAT);
-	else if (i >= MAX_VM_STAT && !sv_gameplayfix_customstats.integer)
-		VM_Warning(prog, "PF_SV_AddStat: index (%i) >= MAX_VM_STAT (%i) conflicts with engine stats - allowed, but this may break slowmo and stuff\n", i, MAX_VM_STAT);
-	else if (i > (MAX_VM_STAT - 4) && type == 1 && !sv_gameplayfix_customstats.integer)
-		VM_Warning(prog, "PF_SV_AddStat: index (%i) >= MAX_VM_STAT (%i) - 4 with string type won't fit within MAX_VM_STAT, thus conflicting with engine stats - allowed, but this may break slowmo and stuff\n", i, MAX_VM_STAT);
-
 	vm_customstats[i].type		= type;
 	vm_customstats[i].fieldoffset	= off;
 	if(vm_customstats_last < i)
@@ -1782,8 +1764,6 @@ static void VM_SV_copyentity(prvm_prog_t *prog)
 		return;
 	}
 	memcpy(out->fields.fp, in->fields.fp, prog->entityfields * sizeof(prvm_vec_t));
-	if (VectorCompare(PRVM_serveredictvector(out, absmin), PRVM_serveredictvector(out, absmax)))
-		return;
 	SV_LinkEdict(out);
 }
 
@@ -2339,7 +2319,7 @@ static void VM_SV_te_flamejet(prvm_prog_t *prog)
 }
 
 //void(entity e, string s) clientcommand = #440; // executes a command string as if it came from the specified client
-//this function originally written by KrimZon, made shorter by LadyHavoc
+//this function originally written by KrimZon, made shorter by LordHavoc
 static void VM_SV_clientcommand(prvm_prog_t *prog)
 {
 	client_t *temp_client;
@@ -2356,7 +2336,7 @@ static void VM_SV_clientcommand(prvm_prog_t *prog)
 
 	temp_client = host_client;
 	host_client = svs.clients + i;
-	Cmd_ExecuteString(&cmd_serverfromclient, PRVM_G_STRING(OFS_PARM1), src_client, true);
+	Cmd_ExecuteString (PRVM_G_STRING(OFS_PARM1), src_client, true);
 	host_client = temp_client;
 }
 
@@ -2439,7 +2419,7 @@ static int SV_GetExtendedTagInfo (prvm_prog_t *prog, prvm_edict_t *e, int tagind
 	return 1;
 }
 
-void SV_GetEntityMatrix (prvm_prog_t *prog, prvm_edict_t *ent, matrix4x4_t *out, qbool viewmatrix)
+void SV_GetEntityMatrix (prvm_prog_t *prog, prvm_edict_t *ent, matrix4x4_t *out, qboolean viewmatrix)
 {
 	float scale;
 	float pitchsign = 1;
@@ -2545,9 +2525,9 @@ static int SV_GetTagMatrix (prvm_prog_t *prog, matrix4x4_t *out, prvm_edict_t *e
 		if (PRVM_serveredictfloat(ent, health) > 0 && cl_bob.value && cl_bobcycle.value)
 		{
 			double bob, cycle;
-			// LadyHavoc: this code is *weird*, but not replacable (I think it
+			// LordHavoc: this code is *weird*, but not replacable (I think it
 			// should be done in QC on the server, but oh well, quake is quake)
-			// LadyHavoc: figured out bobup: the time at which the sin is at 180
+			// LordHavoc: figured out bobup: the time at which the sin is at 180
 			// degrees (which allows lengthening or squishing the peak or valley)
 			cycle = sv.time/cl_bobcycle.value;
 			cycle -= (int)cycle;
@@ -2879,7 +2859,7 @@ static void VM_SV_setpause(prvm_prog_t *prog) {
 	pauseValue = (int)PRVM_G_FLOAT(OFS_PARM0);
 	if (pauseValue != 0) { //pause the game
 		sv.paused = 1;
-		sv.pausedstart = host.realtime;
+		sv.pausedstart = realtime;
 	} else { //disable pause, in case it was enabled
 		if (sv.paused != 0) {
 			sv.paused = 0;
@@ -3207,7 +3187,7 @@ VM_SV_setsize,					// #4 void(entity e, vector min, vector max) setsize (QUAKE)
 NULL,							// #5 void(entity e, vector min, vector max) setabssize (QUAKE)
 VM_break,						// #6 void() break (QUAKE)
 VM_random,						// #7 float() random (QUAKE)
-VM_SV_sound,					// #8 void(entity e, float chan, string samp, float volume[, float atten[, float pitchchange[, float flags]]]) sound (QUAKE)
+VM_SV_sound,					// #8 void(entity e, float chan, string samp) sound (QUAKE)
 VM_normalize,					// #9 vector(vector v) normalize (QUAKE)
 VM_error,						// #10 void(string e) error (QUAKE)
 VM_objerror,					// #11 void(string e) objerror (QUAKE)
@@ -3245,7 +3225,7 @@ NULL,							// #42 (QUAKE)
 VM_fabs,						// #43 float(float f) fabs (QUAKE)
 VM_SV_aim,						// #44 vector(entity e, float speed) aim (QUAKE)
 VM_cvar,						// #45 float(string s) cvar (QUAKE)
-VM_localcmd_server,				// #46 void(string s) localcmd (QUAKE)
+VM_localcmd,					// #46 void(string s) localcmd (QUAKE)
 VM_nextent,						// #47 entity(entity e) nextent (QUAKE)
 VM_SV_particle,					// #48 void(vector o, vector d, float color, float count) particle (QUAKE)
 VM_changeyaw,					// #49 void() ChangeYaw (QUAKE)
@@ -3602,7 +3582,7 @@ NULL,							// #396
 NULL,							// #397
 NULL,							// #398
 NULL,							// #399
-// LadyHavoc's range #400-#499
+// LordHavoc's range #400-#499
 VM_SV_copyentity,				// #400 void(entity from, entity to) copyentity (DP_QC_COPYENTITY)
 VM_SV_setcolor,					// #401 void(entity ent, float colors) setcolor (DP_QC_SETCOLOR)
 VM_findchain,					// #402 entity(.string fld, string match) findchain (DP_QC_FINDCHAIN)

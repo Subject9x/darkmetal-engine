@@ -133,7 +133,7 @@ float noise4f(float x, float y, float z, float w)
 	float v[4];
 	static float noisetable[NOISE_SIZE];
 	static int r[NOISE_SIZE];
-	// LadyHavoc: this is inspired by code I saw in Quake3, however I think my
+	// LordHavoc: this is inspired by code I saw in Quake3, however I think my
 	// version is much cleaner and substantially faster as well
 	//
 	// the following changes were made:

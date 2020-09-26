@@ -325,8 +325,8 @@ static void Portal_RecursiveFlow (portalrecursioninfo_t *info, mleaf_t *leaf, in
 			msurface_t *surface = info->model->data_surfaces + surfaceindex;
 			if (BoxesOverlap(surface->mins, surface->maxs, info->boxmins, info->boxmaxs))
 			{
-				qbool insidebox = BoxInsideBox(surface->mins, surface->maxs, info->boxmins, info->boxmaxs);
-				qbool addedtris = false;
+				qboolean insidebox = BoxInsideBox(surface->mins, surface->maxs, info->boxmins, info->boxmaxs);
+				qboolean addedtris = false;
 				int t, tend;
 				const int *elements;
 				const float *vertex3f;

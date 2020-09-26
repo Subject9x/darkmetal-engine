@@ -21,6 +21,7 @@
 //4 feature darkplaces csqc: add builtins to clientside qc for gl calls
 
 extern cvar_t v_flipped;
+extern cvar_t r_equalize_entities_fullbright;
 
 r_refdef_view_t csqc_original_r_refdef_view;
 r_refdef_view_t csqc_main_r_refdef_view;
@@ -128,7 +129,7 @@ static void VM_CL_setmodel (prvm_prog_t *prog)
 
 	if( mod ) {
 		// TODO: check if this breaks needed consistency and maybe add a cvar for it too?? [1/10/2008 Black]
-		// LadyHavoc: erm you broke it by commenting this out - setmodel must do setsize or else the qc can't find out the model size, and ssqc does this by necessity, consistency.
+		// LordHavoc: erm you broke it by commenting this out - setmodel must do setsize or else the qc can't find out the model size, and ssqc does this by necessity, consistency.
 		SetMinMaxSize (prog, e, mod->normalmins, mod->normalmaxs);
 	}
 	else
@@ -170,7 +171,7 @@ static void VM_CL_sound (prvm_prog_t *prog)
 	const char			*sample;
 	int					channel;
 	prvm_edict_t		*entity;
-	float 				fvolume;
+	float 				volume;
 	float				attenuation;
 	float pitchchange;
 	float				startposition;
@@ -182,10 +183,10 @@ static void VM_CL_sound (prvm_prog_t *prog)
 	entity = PRVM_G_EDICT(OFS_PARM0);
 	channel = (int)PRVM_G_FLOAT(OFS_PARM1);
 	sample = PRVM_G_STRING(OFS_PARM2);
-	fvolume = PRVM_G_FLOAT(OFS_PARM3);
+	volume = PRVM_G_FLOAT(OFS_PARM3);
 	attenuation = PRVM_G_FLOAT(OFS_PARM4);
 
-	if (fvolume < 0 || fvolume > 1)
+	if (volume < 0 || volume > 1)
 	{
 		VM_Warning(prog, "VM_CL_sound: volume must be in range 0-1\n");
 		return;
@@ -206,8 +207,8 @@ static void VM_CL_sound (prvm_prog_t *prog)
 		flags = 0;
 	else
 	{
-		// LadyHavoc: we only let the qc set certain flags, others are off-limits
-		flags = (int)PRVM_G_FLOAT(OFS_PARM6) & (CHANNELFLAG_RELIABLE | CHANNELFLAG_FORCELOOP | CHANNELFLAG_PAUSED | CHANNELFLAG_FULLVOLUME);
+		// LordHavoc: we only let the qc set certain flags, others are off-limits
+		flags = (int)PRVM_G_FLOAT(OFS_PARM6) & (CHANNELFLAG_RELIABLE | CHANNELFLAG_FORCELOOP | CHANNELFLAG_PAUSED);
 	}
 
 	// sound_starttime exists instead of sound_startposition because in a
@@ -219,6 +220,8 @@ static void VM_CL_sound (prvm_prog_t *prog)
 	else
 		startposition = 0;
 
+	channel = CHAN_USER2ENGINE(channel);
+
 	if (!IS_CHAN(channel))
 	{
 		VM_Warning(prog, "VM_CL_sound: channel must be in range 0-127\n");
@@ -226,14 +229,14 @@ static void VM_CL_sound (prvm_prog_t *prog)
 	}
 
 	CL_VM_GetEntitySoundOrigin(MAX_EDICTS + PRVM_NUM_FOR_EDICT(entity), org);
-	S_StartSound_StartPosition_Flags(MAX_EDICTS + PRVM_NUM_FOR_EDICT(entity), channel, S_FindName(sample), org, fvolume, attenuation, startposition, flags, pitchchange > 0.0f ? pitchchange * 0.01f : 1.0f);
+	S_StartSound_StartPosition_Flags(MAX_EDICTS + PRVM_NUM_FOR_EDICT(entity), channel, S_FindName(sample), org, volume, attenuation, startposition, flags, pitchchange > 0.0f ? pitchchange * 0.01f : 1.0f);
 }
 
 // #483 void(vector origin, string sample, float volume, float attenuation) pointsound
 static void VM_CL_pointsound(prvm_prog_t *prog)
 {
 	const char			*sample;
-	float 				fvolume;
+	float 				volume;
 	float				attenuation;
 	vec3_t				org;
 
@@ -241,10 +244,10 @@ static void VM_CL_pointsound(prvm_prog_t *prog)
 
 	VectorCopy( PRVM_G_VECTOR(OFS_PARM0), org);
 	sample = PRVM_G_STRING(OFS_PARM1);
-	fvolume = PRVM_G_FLOAT(OFS_PARM2);
+	volume = PRVM_G_FLOAT(OFS_PARM2);
 	attenuation = PRVM_G_FLOAT(OFS_PARM3);
 
-	if (fvolume < 0 || fvolume > 1)
+	if (volume < 0 || volume > 1)
 	{
 		VM_Warning(prog, "VM_CL_pointsound: volume must be in range 0-1\n");
 		return;
@@ -257,7 +260,7 @@ static void VM_CL_pointsound(prvm_prog_t *prog)
 	}
 
 	// Send World Entity as Entity to Play Sound (for CSQC, that is MAX_EDICTS)
-	S_StartSound(MAX_EDICTS, 0, S_FindName(sample), org, fvolume, attenuation);
+	S_StartSound(MAX_EDICTS, 0, S_FindName(sample), org, volume, attenuation);
 }
 
 // #14 entity() spawn
@@ -299,7 +302,7 @@ static void VM_CL_traceline (prvm_prog_t *prog)
 	if (VEC_IS_NAN(v1[0]) || VEC_IS_NAN(v1[1]) || VEC_IS_NAN(v1[2]) || VEC_IS_NAN(v2[0]) || VEC_IS_NAN(v2[1]) || VEC_IS_NAN(v2[2]))
 		prog->error_cmd("%s: NAN errors detected in traceline('%f %f %f', '%f %f %f', %i, entity %i)\n", prog->name, v1[0], v1[1], v1[2], v2[0], v2[1], v2[2], move, PRVM_EDICT_TO_PROG(ent));
 
-	trace = CL_TraceLine(v1, v2, move, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendtracelinelength.value, CL_HitNetworkBrushModels(move), CL_HitNetworkPlayers(move), &svent, true, false);
+	trace = CL_TraceLine(v1, v2, move, ent, CL_GenericHitSuperContentsMask(ent), collision_extendtracelinelength.value, CL_HitNetworkBrushModels(move), CL_HitNetworkPlayers(move), &svent, true, false);
 
 	CL_VM_SetTraceGlobals(prog, &trace, svent);
 //	R_TimeReport("traceline");
@@ -316,7 +319,7 @@ if the tryents flag is set.
 tracebox (vector1, vector mins, vector maxs, vector2, tryents)
 =================
 */
-// LadyHavoc: added this for my own use, VERY useful, similar to traceline
+// LordHavoc: added this for my own use, VERY useful, similar to traceline
 static void VM_CL_tracebox (prvm_prog_t *prog)
 {
 	vec3_t	v1, v2, m1, m2;
@@ -339,7 +342,7 @@ static void VM_CL_tracebox (prvm_prog_t *prog)
 	if (VEC_IS_NAN(v1[0]) || VEC_IS_NAN(v1[1]) || VEC_IS_NAN(v1[2]) || VEC_IS_NAN(v2[0]) || VEC_IS_NAN(v2[1]) || VEC_IS_NAN(v2[2]))
 		prog->error_cmd("%s: NAN errors detected in tracebox('%f %f %f', '%f %f %f', '%f %f %f', '%f %f %f', %i, entity %i)\n", prog->name, v1[0], v1[1], v1[2], m1[0], m1[1], m1[2], m2[0], m2[1], m2[2], v2[0], v2[1], v2[2], move, PRVM_EDICT_TO_PROG(ent));
 
-	trace = CL_TraceBox(v1, m1, m2, v2, move, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendtraceboxlength.value, CL_HitNetworkBrushModels(move), CL_HitNetworkPlayers(move), &svent, true);
+	trace = CL_TraceBox(v1, m1, m2, v2, move, ent, CL_GenericHitSuperContentsMask(ent), collision_extendtraceboxlength.value, CL_HitNetworkBrushModels(move), CL_HitNetworkPlayers(move), &svent, true);
 
 	CL_VM_SetTraceGlobals(prog, &trace, svent);
 //	R_TimeReport("tracebox");
@@ -366,7 +369,7 @@ static trace_t CL_Trace_Toss (prvm_prog_t *prog, prvm_edict_t *tossent, prvm_edi
 		gravity = 1.0f;
 	gravity *= cl.movevars_gravity * 0.05;
 
-	for (i = 0;i < 200;i++) // LadyHavoc: sanity check; never trace more than 10 seconds
+	for (i = 0;i < 200;i++) // LordHavoc: sanity check; never trace more than 10 seconds
 	{
 		PRVM_clientedictvector(tossent, velocity)[2] -= gravity;
 		VectorMA (PRVM_clientedictvector(tossent, angles), 0.05, PRVM_clientedictvector(tossent, avelocity), PRVM_clientedictvector(tossent, angles));
@@ -375,7 +378,7 @@ static trace_t CL_Trace_Toss (prvm_prog_t *prog, prvm_edict_t *tossent, prvm_edi
 		VectorCopy(PRVM_clientedictvector(tossent, origin), start);
 		VectorCopy(PRVM_clientedictvector(tossent, mins), mins);
 		VectorCopy(PRVM_clientedictvector(tossent, maxs), maxs);
-		trace = CL_TraceBox(start, mins, maxs, end, MOVE_NORMAL, tossent, CL_GenericHitSuperContentsMask(tossent), 0, 0, collision_extendmovelength.value, true, true, NULL, true);
+		trace = CL_TraceBox(start, mins, maxs, end, MOVE_NORMAL, tossent, CL_GenericHitSuperContentsMask(tossent), collision_extendmovelength.value, true, true, NULL, true);
 		VectorCopy (trace.endpos, PRVM_clientedictvector(tossent, origin));
 
 		if (trace.fraction < 1)
@@ -497,7 +500,7 @@ static void VM_CL_findradius (prvm_prog_t *prog)
 		// (note: this is the reason you can't blow up fallen zombies)
 		if (PRVM_clientedictfloat(ent, solid) == SOLID_NOT && !sv_gameplayfix_blowupfallenzombies.integer)
 			continue;
-		// LadyHavoc: compare against bounding box rather than center so it
+		// LordHavoc: compare against bounding box rather than center so it
 		// doesn't miss large objects, and use DotProduct instead of Length
 		// for a major speedup
 		VectorSubtract(org, PRVM_clientedictvector(ent, origin), eorg);
@@ -549,7 +552,7 @@ static void VM_CL_droptofloor (prvm_prog_t *prog)
 	VectorCopy(PRVM_clientedictvector(ent, origin), end);
 	end[2] -= 256;
 
-	trace = CL_TraceBox(start, mins, maxs, end, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, true, NULL, true);
+	trace = CL_TraceBox(start, mins, maxs, end, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), collision_extendmovelength.value, true, true, NULL, true);
 
 	if (trace.fraction != 1)
 	{
@@ -627,7 +630,7 @@ realcheck:
 	start[0] = stop[0] = (mins[0] + maxs[0])*0.5;
 	start[1] = stop[1] = (mins[1] + maxs[1])*0.5;
 	stop[2] = start[2] - 2*sv_stepheight.value;
-	trace = CL_TraceLine(start, stop, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, true, NULL, true, false);
+	trace = CL_TraceLine(start, stop, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), collision_extendmovelength.value, true, true, NULL, true, false);
 
 	if (trace.fraction == 1.0)
 		return;
@@ -641,7 +644,7 @@ realcheck:
 			start[0] = stop[0] = x ? maxs[0] : mins[0];
 			start[1] = stop[1] = y ? maxs[1] : mins[1];
 
-			trace = CL_TraceLine(start, stop, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, true, NULL, true, false);
+			trace = CL_TraceLine(start, stop, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), collision_extendmovelength.value, true, true, NULL, true, false);
 
 			if (trace.fraction != 1.0 && trace.endpos[2] > bottom)
 				bottom = trace.endpos[2];
@@ -659,7 +662,7 @@ static void VM_CL_pointcontents (prvm_prog_t *prog)
 	vec3_t point;
 	VM_SAFEPARMCOUNT(1, VM_CL_pointcontents);
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), point);
-	PRVM_G_FLOAT(OFS_RETURN) = Mod_Q1BSP_NativeContentsFromSuperContents(CL_PointSuperContents(point));
+	PRVM_G_FLOAT(OFS_RETURN) = Mod_Q1BSP_NativeContentsFromSuperContents(NULL, CL_PointSuperContents(point));
 }
 
 // #48 void(vector o, vector d, float color, float count) particle
@@ -683,8 +686,8 @@ static void VM_CL_ambientsound (prvm_prog_t *prog)
 	vec3_t f;
 	sfx_t	*s;
 	VM_SAFEPARMCOUNT(4, VM_CL_ambientsound);
-	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), f);
-	s = S_FindName(PRVM_G_STRING(OFS_PARM1));
+	s = S_FindName(PRVM_G_STRING(OFS_PARM0));
+	VectorCopy(PRVM_G_VECTOR(OFS_PARM1), f);
 	S_StaticSound (s, f, PRVM_G_FLOAT(OFS_PARM2), PRVM_G_FLOAT(OFS_PARM3)*64);
 }
 
@@ -693,12 +696,17 @@ static void VM_CL_getlight (prvm_prog_t *prog)
 {
 	vec3_t ambientcolor, diffusecolor, diffusenormal;
 	vec3_t p;
-	int flags = prog->argc >= 2 ? PRVM_G_FLOAT(OFS_PARM1) : LP_LIGHTMAP;
 
 	VM_SAFEPARMCOUNTRANGE(1, 3, VM_CL_getlight);
 
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), p);
-	R_CompleteLightPoint(ambientcolor, diffusecolor, diffusenormal, p, flags, r_refdef.scene.lightmapintensity, r_refdef.scene.ambientintensity);
+	VectorClear(ambientcolor);
+	VectorClear(diffusecolor);
+	VectorClear(diffusenormal);
+	if (prog->argc >= 2)
+		R_CompleteLightPoint(ambientcolor, diffusecolor, diffusenormal, p, PRVM_G_FLOAT(OFS_PARM1));
+	else if (cl.worldmodel && cl.worldmodel->brush.LightPoint)
+		cl.worldmodel->brush.LightPoint(cl.worldmodel, p, ambientcolor, diffusecolor, diffusenormal);
 	VectorMA(ambientcolor, 0.5, diffusecolor, PRVM_G_VECTOR(OFS_RETURN));
 	if (PRVM_clientglobalvector(getlight_ambient))
 		VectorCopy(ambientcolor, PRVM_clientglobalvector(getlight_ambient));
@@ -711,14 +719,11 @@ static void VM_CL_getlight (prvm_prog_t *prog)
 //============================================================================
 //[515]: SCENE MANAGER builtins
 
-extern cvar_t v_yshearing;
 void CSQC_R_RecalcView (void)
 {
 	extern matrix4x4_t viewmodelmatrix_nobob;
 	extern matrix4x4_t viewmodelmatrix_withbob;
 	Matrix4x4_CreateFromQuakeEntity(&r_refdef.view.matrix, cl.csqc_vieworigin[0], cl.csqc_vieworigin[1], cl.csqc_vieworigin[2], cl.csqc_viewangles[0], cl.csqc_viewangles[1], cl.csqc_viewangles[2], 1);
-	if (v_yshearing.value > 0)
-		Matrix4x4_QuakeToDuke3D(&r_refdef.view.matrix, &r_refdef.view.matrix, v_yshearing.value);
 	Matrix4x4_Copy(&viewmodelmatrix_nobob, &r_refdef.view.matrix);
 	Matrix4x4_ConcatScale(&viewmodelmatrix_nobob, cl_viewmodel_scale.value);
 	Matrix4x4_Concat(&viewmodelmatrix_withbob, &r_refdef.view.matrix, &cl.csqc_viewmodelmatrixfromengine);
@@ -733,16 +738,12 @@ static void VM_CL_R_ClearScene (prvm_prog_t *prog)
 	r_refdef.scene.numlights = 0;
 	// restore the view settings to the values that VM_CL_UpdateView received from the client code
 	r_refdef.view = csqc_original_r_refdef_view;
-	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = false;
 	VectorCopy(cl.csqc_vieworiginfromengine, cl.csqc_vieworigin);
 	VectorCopy(cl.csqc_viewanglesfromengine, cl.csqc_viewangles);
 	cl.csqc_vidvars.drawworld = r_drawworld.integer != 0;
 	cl.csqc_vidvars.drawenginesbar = false;
 	cl.csqc_vidvars.drawcrosshair = false;
 	CSQC_R_RecalcView();
-	// clear the CL_Mesh_Scene() used for CSQC polygons and engine effects, they will be added by CSQC_RelinkAllEntities and manually created by CSQC
-	CL_MeshEntities_Scene_Clear();
 }
 
 //#301 void(float mask) addentities (EXT_CSQC)
@@ -754,6 +755,7 @@ static void VM_CL_R_AddEntities (prvm_prog_t *prog)
 	VM_SAFEPARMCOUNT(1, VM_CL_R_AddEntities);
 	drawmask = (int)PRVM_G_FLOAT(OFS_PARM0);
 	CSQC_RelinkAllEntities(drawmask);
+	CL_RelinkLightFlashes();
 
 	PRVM_clientglobalfloat(time) = cl.time;
 	for(i=1;i<prog->num_edicts;i++)
@@ -1103,7 +1105,7 @@ static void VM_CL_R_AddDynamicLight (prvm_prog_t *prog)
 	int pflags = PFLAGS_CORONA | PFLAGS_FULLDYNAMIC;
 	float coronaintensity = 1;
 	float coronasizescale = 0.25;
-	qbool castshadow = true;
+	qboolean castshadow = true;
 	float ambientscale = 0;
 	float diffusescale = 1;
 	float specularscale = 1;
@@ -1175,7 +1177,7 @@ static void VM_CL_project (prvm_prog_t *prog)
 
 	VM_SAFEPARMCOUNT(1, VM_CL_project);
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), f);
-	Matrix4x4_Invert_Full(&m, &r_refdef.view.matrix);
+	Matrix4x4_Invert_Simple(&m, &r_refdef.view.matrix);
 	Matrix4x4_Transform(&m, f, v);
 	if(v_flipped.integer)
 		v[1] = -v[1];
@@ -1362,7 +1364,7 @@ static void VM_CL_boxparticles (prvm_prog_t *prog)
 	vec3_t origin_from, origin_to, dir_from, dir_to;
 	float count;
 	int flags;
-	qbool istrail;
+	qboolean istrail;
 	float tintmins[4], tintmaxs[4], fade;
 	VM_SAFEPARMCOUNTRANGE(7, 8, VM_CL_boxparticles);
 
@@ -1414,13 +1416,10 @@ static void VM_CL_boxparticles (prvm_prog_t *prog)
 static void VM_CL_setpause(prvm_prog_t *prog)
 {
 	VM_SAFEPARMCOUNT(1, VM_CL_setpause);
-	if(cl.islocalgame)
-	{
-		if ((int)PRVM_G_FLOAT(OFS_PARM0) != 0)
-			host.paused = true;
-		else
-			host.paused = false;
-	}
+	if ((int)PRVM_G_FLOAT(OFS_PARM0) != 0)
+		cl.csqc_paused = true;
+	else
+		cl.csqc_paused = false;
 }
 
 //#343 void(float usecursor) setcursormode (DP_CSQC)
@@ -1447,9 +1446,9 @@ static void VM_CL_getmousepos(prvm_prog_t *prog)
 //#345 float(float framenum) getinputstate (EXT_CSQC)
 static void VM_CL_getinputstate (prvm_prog_t *prog)
 {
-	unsigned int i, frame;
+	int i, frame;
 	VM_SAFEPARMCOUNT(1, VM_CL_getinputstate);
-	frame = (unsigned int)PRVM_G_FLOAT(OFS_PARM0);
+	frame = (int)PRVM_G_FLOAT(OFS_PARM0);
 	PRVM_G_FLOAT(OFS_RETURN) = false;
 	for (i = 0;i < CL_MAX_USERCMDS;i++)
 	{
@@ -1626,9 +1625,20 @@ static void VM_CL_setlistener (prvm_prog_t *prog)
 //#352 void(string cmdname) registercommand (EXT_CSQC)
 static void VM_CL_registercmd (prvm_prog_t *prog)
 {
+	char *t;
 	VM_SAFEPARMCOUNT(1, VM_CL_registercmd);
-	if(!Cmd_Exists(&cmd_client, PRVM_G_STRING(OFS_PARM0)))
-		Cmd_AddCommand(CF_CLIENT, PRVM_G_STRING(OFS_PARM0), NULL, "console command created by QuakeC");
+	if(!Cmd_Exists(PRVM_G_STRING(OFS_PARM0)))
+	{
+		size_t alloclen;
+
+		alloclen = strlen(PRVM_G_STRING(OFS_PARM0)) + 1;
+		t = (char *)Z_Malloc(alloclen);
+		memcpy(t, PRVM_G_STRING(OFS_PARM0), alloclen);
+		Cmd_AddCommand(t, NULL, "console command created by QuakeC");
+	}
+	else
+		Cmd_AddCommand(PRVM_G_STRING(OFS_PARM0), NULL, "console command created by QuakeC");
+
 }
 
 //#360 float() readbyte (EXT_CSQC)
@@ -1707,11 +1717,13 @@ static void VM_CL_ReadPicture (prvm_prog_t *prog)
 	// if yes, it is used and the data is discarded
 	// if not, the (low quality) data is used to build a new texture, whose name will get returned
 
-	pic = Draw_CachePic_Flags(name, CACHEPICFLAG_NOTPERSISTENT | CACHEPICFLAG_FAILONMISSING);
+	pic = Draw_CachePic_Flags (name, CACHEPICFLAG_NOTPERSISTENT);
 
 	if(size)
 	{
-		if (Draw_IsPicLoaded(pic) && !cl_readpicture_force.integer)
+		if(pic->tex == r_texture_notexture)
+			pic->tex = NULL; // don't overwrite the notexture by Draw_NewPic
+		if(pic->tex && !cl_readpicture_force.integer)
 		{
 			// texture found and loaded
 			// skip over the jpeg as we don't need it
@@ -1726,7 +1738,7 @@ static void VM_CL_ReadPicture (prvm_prog_t *prog)
 			MSG_ReadBytes(&cl_message, size, buf);
 			data = JPEG_LoadImage_BGRA(buf, size, NULL);
 			Mem_Free(buf);
-			Draw_NewPic(name, image_width, image_height, data, TEXTYPE_BGRA, TEXF_CLAMP);
+			Draw_NewPic(name, image_width, image_height, false, data);
 			Mem_Free(data);
 		}
 	}
@@ -1802,6 +1814,8 @@ static void VM_CL_makestatic (prvm_prog_t *prog)
 		{
 			if (!(staticent->render.effects & EF_FULLBRIGHT))
 				staticent->render.flags |= RENDER_LIGHT;
+			else if(r_equalize_entities_fullbright.integer)
+				staticent->render.flags |= RENDER_LIGHT | RENDER_EQUALIZE;
 		}
 		// turn off shadows from transparent objects
 		if (!(staticent->render.effects & (EF_NOSHADOW | EF_ADDITIVE | EF_NODEPTHTEST)) && (staticent->render.alpha >= 1))
@@ -1861,9 +1875,6 @@ static void VM_CL_copyentity (prvm_prog_t *prog)
 		return;
 	}
 	memcpy(out->fields.fp, in->fields.fp, prog->entityfields * sizeof(prvm_vec_t));
-
-	if (VectorCompare(PRVM_clientedictvector(out, absmin), PRVM_clientedictvector(out, absmax)))
-		return;
 	CL_LinkEdict(out);
 }
 
@@ -1872,16 +1883,14 @@ static void VM_CL_copyentity (prvm_prog_t *prog)
 // #404 void(vector org, string modelname, float startframe, float endframe, float framerate) effect (DP_SV_EFFECT)
 static void VM_CL_effect (prvm_prog_t *prog)
 {
-	dp_model_t *model;
+#if 1
+	Con_Printf("WARNING: VM_CL_effect not implemented\n"); // FIXME: this needs to take modelname not modelindex, the csqc defs has it as string and so it shall be
+#else
 	vec3_t org;
 	VM_SAFEPARMCOUNT(5, VM_CL_effect);
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), org);
-
-	model = Mod_FindName(PRVM_G_STRING(OFS_PARM1), NULL);
-	if(model->loaded)
-		CL_Effect(org, model, (int)PRVM_G_FLOAT(OFS_PARM2), (int)PRVM_G_FLOAT(OFS_PARM3), PRVM_G_FLOAT(OFS_PARM4));
-	else
-		Con_Printf(CON_ERROR "VM_CL_effect: Could not load model '%s'\n", PRVM_G_STRING(OFS_PARM1));
+	CL_Effect(org, (int)PRVM_G_FLOAT(OFS_PARM1), (int)PRVM_G_FLOAT(OFS_PARM2), (int)PRVM_G_FLOAT(OFS_PARM3), PRVM_G_FLOAT(OFS_PARM4));
+#endif
 }
 
 // #405 void(vector org, vector velocity, float howmany) te_blood (DP_TE_BLOOD)
@@ -1928,7 +1937,7 @@ static void VM_CL_te_explosionrgb (prvm_prog_t *prog)
 	CL_FindNonSolidLocation(pos, pos2, 10);
 	CL_ParticleExplosion(pos2);
 	Matrix4x4_CreateTranslate(&tempmatrix, pos2[0], pos2[1], pos2[2]);
-	CL_AllocLightFlash(NULL, &tempmatrix, 350, PRVM_G_VECTOR(OFS_PARM1)[0], PRVM_G_VECTOR(OFS_PARM1)[1], PRVM_G_VECTOR(OFS_PARM1)[2], 700, 0.5, NULL, -1, true, 1, 0.25, 0.25, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
+	CL_AllocLightFlash(NULL, &tempmatrix, 350, PRVM_G_VECTOR(OFS_PARM1)[0], PRVM_G_VECTOR(OFS_PARM1)[1], PRVM_G_VECTOR(OFS_PARM1)[2], 700, 0.5, 0, -1, true, 1, 0.25, 0.25, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
 }
 
 // #408 void(vector mincorner, vector maxcorner, vector vel, float howmany, float color, float gravityflag, float randomveljitter) te_particlecube (DP_TE_PARTICLECUBE)
@@ -2073,7 +2082,7 @@ static void VM_CL_te_customflash (prvm_prog_t *prog)
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), pos);
 	CL_FindNonSolidLocation(pos, pos2, 4);
 	Matrix4x4_CreateTranslate(&tempmatrix, pos2[0], pos2[1], pos2[2]);
-	CL_AllocLightFlash(NULL, &tempmatrix, PRVM_G_FLOAT(OFS_PARM1), PRVM_G_VECTOR(OFS_PARM3)[0], PRVM_G_VECTOR(OFS_PARM3)[1], PRVM_G_VECTOR(OFS_PARM3)[2], PRVM_G_FLOAT(OFS_PARM1) / PRVM_G_FLOAT(OFS_PARM2), PRVM_G_FLOAT(OFS_PARM2), NULL, -1, true, 1, 0.25, 1, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
+	CL_AllocLightFlash(NULL, &tempmatrix, PRVM_G_FLOAT(OFS_PARM1), PRVM_G_VECTOR(OFS_PARM3)[0], PRVM_G_VECTOR(OFS_PARM3)[1], PRVM_G_VECTOR(OFS_PARM3)[2], PRVM_G_FLOAT(OFS_PARM1) / PRVM_G_FLOAT(OFS_PARM2), PRVM_G_FLOAT(OFS_PARM2), 0, -1, true, 1, 0.25, 1, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
 }
 
 // #418 void(vector org) te_gunshot (DP_TE_STANDARDEFFECTBUILTINS)
@@ -2224,7 +2233,7 @@ static void VM_CL_te_explosion2 (prvm_prog_t *prog)
 	color[1] = tempcolor[1] * (2.0f / 255.0f);
 	color[2] = tempcolor[2] * (2.0f / 255.0f);
 	Matrix4x4_CreateTranslate(&tempmatrix, pos2[0], pos2[1], pos2[2]);
-	CL_AllocLightFlash(NULL, &tempmatrix, 350, color[0], color[1], color[2], 700, 0.5, NULL, -1, true, 1, 0.25, 0.25, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
+	CL_AllocLightFlash(NULL, &tempmatrix, 350, color[0], color[1], color[2], 700, 0.5, 0, -1, true, 1, 0.25, 0.25, 1, 1, LIGHTFLAG_NORMALMODE | LIGHTFLAG_REALTIMEMODE);
 	S_StartSound(-1, 0, cl.sfx_r_exp3, pos2, 1, 1);
 }
 
@@ -2386,7 +2395,7 @@ int CL_GetPitchSign(prvm_prog_t *prog, prvm_edict_t *ent)
 	return 1;
 }
 
-void CL_GetEntityMatrix (prvm_prog_t *prog, prvm_edict_t *ent, matrix4x4_t *out, qbool viewmatrix)
+void CL_GetEntityMatrix (prvm_prog_t *prog, prvm_edict_t *ent, matrix4x4_t *out, qboolean viewmatrix)
 {
 	float scale;
 	float pitchsign = 1;
@@ -2442,13 +2451,12 @@ static int CL_GetEntityLocalTagMatrix(prvm_prog_t *prog, prvm_edict_t *ent, int 
 extern cvar_t cl_bob;
 extern cvar_t cl_bobcycle;
 extern cvar_t cl_bobup;
-int CL_GetTagMatrix (prvm_prog_t *prog, matrix4x4_t *out, prvm_edict_t *ent, int tagindex, prvm_vec_t *returnshadingorigin)
+int CL_GetTagMatrix (prvm_prog_t *prog, matrix4x4_t *out, prvm_edict_t *ent, int tagindex)
 {
 	int ret;
 	int attachloop;
 	matrix4x4_t entitymatrix, tagmatrix, attachmatrix;
 	dp_model_t *model;
-	vec3_t shadingorigin;
 
 	*out = identitymatrix; // warnings and errors return identical matrix
 
@@ -2499,9 +2507,9 @@ int CL_GetTagMatrix (prvm_prog_t *prog, matrix4x4_t *out, prvm_edict_t *ent, int
 		if (PRVM_clientedictfloat(ent, health) > 0 && cl_bob.value && cl_bobcycle.value)
 		{
 			double bob, cycle;
-			// LadyHavoc: this code is *weird*, but not replacable (I think it
+			// LordHavoc: this code is *weird*, but not replacable (I think it
 			// should be done in QC on the server, but oh well, quake is quake)
-			// LadyHavoc: figured out bobup: the time at which the sin is at 180
+			// LordHavoc: figured out bobup: the time at which the sin is at 180
 			// degrees (which allows lengthening or squishing the peak or valley)
 			cycle = cl.time/cl_bobcycle.value;
 			cycle -= (int)cycle;
@@ -2516,17 +2524,7 @@ int CL_GetTagMatrix (prvm_prog_t *prog, matrix4x4_t *out, prvm_edict_t *ent, int
 			Matrix4x4_AdjustOrigin(out, 0, 0, bound(-7, bob, 4));
 		}
 		*/
-
-		// return the origin of the view
-		Matrix4x4_OriginFromMatrix(&r_refdef.view.matrix, shadingorigin);
 	}
-	else
-	{
-		// return the origin of the root entity in the chain
-		Matrix4x4_OriginFromMatrix(out, shadingorigin);
-	}
-	if (returnshadingorigin)
-		VectorCopy(shadingorigin, returnshadingorigin);
 	return 0;
 }
 
@@ -2582,7 +2580,7 @@ static void VM_CL_gettaginfo (prvm_prog_t *prog)
 
 	e = PRVM_G_EDICT(OFS_PARM0);
 	tagindex = (int)PRVM_G_FLOAT(OFS_PARM1);
-	returncode = CL_GetTagMatrix(prog, &tag_matrix, e, tagindex, NULL);
+	returncode = CL_GetTagMatrix(prog, &tag_matrix, e, tagindex);
 	Matrix4x4_ToVectors(&tag_matrix, forward, left, up, origin);
 	VectorCopy(forward, PRVM_clientglobalvector(v_forward));
 	VectorScale(left, -1, PRVM_clientglobalvector(v_right));
@@ -2633,7 +2631,7 @@ static void VM_CL_gettaginfo (prvm_prog_t *prog)
 typedef struct vmparticletheme_s
 {
 	unsigned short typeindex;
-	qbool initialized;
+	qboolean initialized;
 	pblend_t blendmode;
 	porientation_t orientation;
 	int color1;
@@ -2649,7 +2647,7 @@ typedef struct vmparticletheme_s
 	float liquidfriction;
 	float originjitter;
 	float velocityjitter;
-	qbool qualityreduction;
+	qboolean qualityreduction;
 	float lifetime;
 	float stretch;
 	int staincolor1;
@@ -2667,8 +2665,8 @@ typedef struct vmparticletheme_s
 typedef struct vmparticlespawner_s
 {
 	mempool_t			*pool;
-	qbool			initialized;
-	qbool			verified;
+	qboolean			initialized;
+	qboolean			verified;
 	vmparticletheme_t	*themes;
 	int					max_themes;
 }vmparticlespawner_t;
@@ -2927,7 +2925,7 @@ static void VM_CL_SpawnParticle (prvm_prog_t *prog)
 	particle_t *part;
 	int themenum;
 
-	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_SpawnParticle);
+	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_SpawnParticle2);
 	if (vmpartspawner.verified == false)
 	{
 		VM_Warning(prog, "VM_CL_SpawnParticle: particle spawner not initialized\n");
@@ -3049,10 +3047,10 @@ static void VM_CL_SpawnParticleDelayed (prvm_prog_t *prog)
 	particle_t *part;
 	int themenum;
 
-	VM_SAFEPARMCOUNTRANGE(4, 5, VM_CL_SpawnParticleDelayed);
+	VM_SAFEPARMCOUNTRANGE(4, 5, VM_CL_SpawnParticle2);
 	if (vmpartspawner.verified == false)
 	{
-		VM_Warning(prog, "VM_CL_SpawnParticleDelayed: particle spawner not initialized\n");
+		VM_Warning(prog, "VM_CL_SpawnParticle: particle spawner not initialized\n");
 		PRVM_G_FLOAT(OFS_RETURN) = 0; 
 		return;
 	}
@@ -3098,7 +3096,7 @@ static void VM_CL_SpawnParticleDelayed (prvm_prog_t *prog)
 		themenum = (int)PRVM_G_FLOAT(OFS_PARM4);
 		if (themenum <= 0 || themenum >= vmpartspawner.max_themes)
 		{
-			VM_Warning(prog, "VM_CL_SpawnParticleDelayed: bad theme number %i\n", themenum);
+			VM_Warning(prog, "VM_CL_SpawnParticle: bad theme number %i\n", themenum);
 			PRVM_G_FLOAT(OFS_RETURN) = 0;  
 			return;
 		}
@@ -3160,7 +3158,7 @@ static void VM_CL_GetEntity (prvm_prog_t *prog)
 {
 	int entnum, fieldnum;
 	vec3_t forward, left, up, org;
-	VM_SAFEPARMCOUNT(2, VM_CL_GetEntity);
+	VM_SAFEPARMCOUNT(2, VM_CL_GetEntityVec);
 
 	entnum = PRVM_G_FLOAT(OFS_PARM0);
 	if (entnum < 0 || entnum >= cl.num_entities)
@@ -3230,7 +3228,7 @@ static void VM_CL_GetEntity (prvm_prog_t *prog)
 			VectorAdd(cl.entities[entnum].render.maxs, org, PRVM_G_VECTOR(OFS_RETURN));		
 			break;
 		case 16: // light
-			VectorMA(cl.entities[entnum].render.render_modellight_ambient, 0.5, cl.entities[entnum].render.render_modellight_diffuse, PRVM_G_VECTOR(OFS_RETURN));
+			VectorMA(cl.entities[entnum].render.modellight_ambient, 0.5, cl.entities[entnum].render.modellight_diffuse, PRVM_G_VECTOR(OFS_RETURN));
 			break;	
 		default:
 			PRVM_G_FLOAT(OFS_RETURN) = 0;
@@ -3248,176 +3246,350 @@ static void VM_CL_GetEntity (prvm_prog_t *prog)
 // --blub
 static void VM_CL_R_RenderScene (prvm_prog_t *prog)
 {
-	qbool ismain = r_refdef.view.ismain;
 	double t = Sys_DirtyTime();
+	vmpolygons_t *polys = &prog->vmpolygons;
 	VM_SAFEPARMCOUNT(0, VM_CL_R_RenderScene);
 
 	// update the views
-	if(ismain)
+	if(r_refdef.view.ismain)
 	{
 		// set the main view
 		csqc_main_r_refdef_view = r_refdef.view;
-	}
 
-	// now after all of the predraw we know the geometry in the scene mesh and can finalize it for rendering
-	CL_MeshEntities_Scene_FinalizeRenderEntity();
-
-	// we need to update any RENDER_VIEWMODEL entities at this point because
-	// csqc supplies its own view matrix
-	CL_UpdateViewEntities();
-	CL_UpdateEntityShading();
-
-	// now draw stuff!
-	R_RenderView(0, NULL, NULL, r_refdef.view.x, r_refdef.view.y, r_refdef.view.width, r_refdef.view.height);
-
-	// callprofile fixing hack: do not include this time in what is counted for CSQC_UpdateView
-	t = Sys_DirtyTime() - t;if (t < 0 || t >= 1800) t = 0;
-	prog->functions[PRVM_clientfunction(CSQC_UpdateView)].totaltime -= t;
-
-	// polygonbegin without draw2d arg has to guess
-	prog->polygonbegin_guess2d = false;
-
-	// update the views
-	if (ismain)
-	{
 		// clear the flags so no other view becomes "main" unless CSQC sets VF_MAINVIEW
 		r_refdef.view.ismain = false;
 		csqc_original_r_refdef_view.ismain = false;
 	}
+
+	// we need to update any RENDER_VIEWMODEL entities at this point because
+	// csqc supplies its own view matrix
+	CL_UpdateViewEntities();
+
+	// now draw stuff!
+	R_RenderView();
+
+	polys->num_vertices = polys->num_triangles = 0;
+
+	// callprofile fixing hack: do not include this time in what is counted for CSQC_UpdateView
+	t = Sys_DirtyTime() - t;if (t < 0 || t >= 1800) t = 0;
+	prog->functions[PRVM_clientfunction(CSQC_UpdateView)].totaltime -= t;
+}
+
+static void VM_ResizePolygons(vmpolygons_t *polys)
+{
+	float *oldvertex3f = polys->data_vertex3f;
+	float *oldcolor4f = polys->data_color4f;
+	float *oldtexcoord2f = polys->data_texcoord2f;
+	vmpolygons_triangle_t *oldtriangles = polys->data_triangles;
+	unsigned short *oldsortedelement3s = polys->data_sortedelement3s;
+	polys->max_vertices = min(polys->max_triangles*3, 65536);
+	polys->data_vertex3f = (float *)Mem_Alloc(polys->pool, polys->max_vertices*sizeof(float[3]));
+	polys->data_color4f = (float *)Mem_Alloc(polys->pool, polys->max_vertices*sizeof(float[4]));
+	polys->data_texcoord2f = (float *)Mem_Alloc(polys->pool, polys->max_vertices*sizeof(float[2]));
+	polys->data_triangles = (vmpolygons_triangle_t *)Mem_Alloc(polys->pool, polys->max_triangles*sizeof(vmpolygons_triangle_t));
+	polys->data_sortedelement3s = (unsigned short *)Mem_Alloc(polys->pool, polys->max_triangles*sizeof(unsigned short[3]));
+	if (polys->num_vertices)
+	{
+		memcpy(polys->data_vertex3f, oldvertex3f, polys->num_vertices*sizeof(float[3]));
+		memcpy(polys->data_color4f, oldcolor4f, polys->num_vertices*sizeof(float[4]));
+		memcpy(polys->data_texcoord2f, oldtexcoord2f, polys->num_vertices*sizeof(float[2]));
+	}
+	if (polys->num_triangles)
+	{
+		memcpy(polys->data_triangles, oldtriangles, polys->num_triangles*sizeof(vmpolygons_triangle_t));
+		memcpy(polys->data_sortedelement3s, oldsortedelement3s, polys->num_triangles*sizeof(unsigned short[3]));
+	}
+	if (oldvertex3f)
+		Mem_Free(oldvertex3f);
+	if (oldcolor4f)
+		Mem_Free(oldcolor4f);
+	if (oldtexcoord2f)
+		Mem_Free(oldtexcoord2f);
+	if (oldtriangles)
+		Mem_Free(oldtriangles);
+	if (oldsortedelement3s)
+		Mem_Free(oldsortedelement3s);
+}
+
+static void VM_InitPolygons (vmpolygons_t* polys)
+{
+	memset(polys, 0, sizeof(*polys));
+	polys->pool = Mem_AllocPool("VMPOLY", 0, NULL);
+	polys->max_triangles = 1024;
+	VM_ResizePolygons(polys);
+	polys->initialized = true;
+}
+
+static void VM_DrawPolygonCallback (const entity_render_t *ent, const rtlight_t *rtlight, int numsurfaces, int *surfacelist)
+{
+	int surfacelistindex;
+	vmpolygons_t *polys = (vmpolygons_t *)ent;
+//	R_Mesh_ResetTextureState();
+	R_EntityMatrix(&identitymatrix);
+	GL_CullFace(GL_NONE);
+	GL_DepthTest(true); // polys in 3D space shall always have depth test
+	GL_DepthRange(0, 1);
+	R_Mesh_PrepareVertices_Generic_Arrays(polys->num_vertices, polys->data_vertex3f, polys->data_color4f, polys->data_texcoord2f);
+
+	for (surfacelistindex = 0;surfacelistindex < numsurfaces;)
+	{
+		int numtriangles = 0;
+		rtexture_t *tex = polys->data_triangles[surfacelist[surfacelistindex]].texture;
+		int drawflag = polys->data_triangles[surfacelist[surfacelistindex]].drawflag;
+		DrawQ_ProcessDrawFlag(drawflag, polys->data_triangles[surfacelist[surfacelistindex]].hasalpha);
+		R_SetupShader_Generic(tex, NULL, GL_MODULATE, 1, false, false, false);
+		numtriangles = 0;
+		for (;surfacelistindex < numsurfaces;surfacelistindex++)
+		{
+			if (polys->data_triangles[surfacelist[surfacelistindex]].texture != tex || polys->data_triangles[surfacelist[surfacelistindex]].drawflag != drawflag)
+				break;
+			VectorCopy(polys->data_triangles[surfacelist[surfacelistindex]].elements, polys->data_sortedelement3s + 3*numtriangles);
+			numtriangles++;
+		}
+		R_Mesh_Draw(0, polys->num_vertices, 0, numtriangles, NULL, NULL, 0, polys->data_sortedelement3s, NULL, 0);
+	}
+}
+
+static void VMPolygons_Store(vmpolygons_t *polys)
+{
+	qboolean hasalpha;
+	int i;
+
+	// detect if we have alpha
+	hasalpha = polys->begin_texture_hasalpha;
+	for(i = 0; !hasalpha && (i < polys->begin_vertices); ++i)
+		if(polys->begin_color[i][3] < 1)
+			hasalpha = true;
+
+	if (polys->begin_draw2d)
+	{
+		// draw the polygon as 2D immediately
+		drawqueuemesh_t mesh;
+		mesh.texture = polys->begin_texture;
+		mesh.num_vertices = polys->begin_vertices;
+		mesh.num_triangles = polys->begin_vertices-2;
+		mesh.data_element3i = polygonelement3i;
+		mesh.data_element3s = polygonelement3s;
+		mesh.data_vertex3f = polys->begin_vertex[0];
+		mesh.data_color4f = polys->begin_color[0];
+		mesh.data_texcoord2f = polys->begin_texcoord[0];
+		DrawQ_Mesh(&mesh, polys->begin_drawflag, hasalpha);
+	}
+	else
+	{
+		// queue the polygon as 3D for sorted transparent rendering later
+		int i;
+		if (polys->max_triangles < polys->num_triangles + polys->begin_vertices-2)
+		{
+			while (polys->max_triangles < polys->num_triangles + polys->begin_vertices-2)
+				polys->max_triangles *= 2;
+			VM_ResizePolygons(polys);
+		}
+		if (polys->num_vertices + polys->begin_vertices <= polys->max_vertices)
+		{
+			// needle in a haystack!
+			// polys->num_vertices was used for copying where we actually want to copy begin_vertices
+			// that also caused it to not render the first polygon that is added
+			// --blub
+			memcpy(polys->data_vertex3f + polys->num_vertices * 3, polys->begin_vertex[0], polys->begin_vertices * sizeof(float[3]));
+			memcpy(polys->data_color4f + polys->num_vertices * 4, polys->begin_color[0], polys->begin_vertices * sizeof(float[4]));
+			memcpy(polys->data_texcoord2f + polys->num_vertices * 2, polys->begin_texcoord[0], polys->begin_vertices * sizeof(float[2]));
+			for (i = 0;i < polys->begin_vertices-2;i++)
+			{
+				polys->data_triangles[polys->num_triangles].texture = polys->begin_texture;
+				polys->data_triangles[polys->num_triangles].drawflag = polys->begin_drawflag;
+				polys->data_triangles[polys->num_triangles].elements[0] = polys->num_vertices;
+				polys->data_triangles[polys->num_triangles].elements[1] = polys->num_vertices + i+1;
+				polys->data_triangles[polys->num_triangles].elements[2] = polys->num_vertices + i+2;
+				polys->data_triangles[polys->num_triangles].hasalpha = hasalpha;
+				polys->num_triangles++;
+			}
+			polys->num_vertices += polys->begin_vertices;
+		}
+	}
+	polys->begin_active = false;
+}
+
+// TODO: move this into the client code and clean-up everything else, too! [1/6/2008 Black]
+// LordHavoc: agreed, this is a mess
+void VM_CL_AddPolygonsToMeshQueue (prvm_prog_t *prog)
+{
+	int i;
+	vmpolygons_t *polys = &prog->vmpolygons;
+	vec3_t center;
+
+	// only add polygons of the currently active prog to the queue - if there is none, we're done
+	if( !prog )
+		return;
+
+	if (!polys->num_triangles)
+		return;
+
+	for (i = 0;i < polys->num_triangles;i++)
+	{
+		VectorMAMAM(1.0f / 3.0f, polys->data_vertex3f + 3*polys->data_triangles[i].elements[0], 1.0f / 3.0f, polys->data_vertex3f + 3*polys->data_triangles[i].elements[1], 1.0f / 3.0f, polys->data_vertex3f + 3*polys->data_triangles[i].elements[2], center);
+		R_MeshQueue_AddTransparent(TRANSPARENTSORT_DISTANCE, center, VM_DrawPolygonCallback, (entity_render_t *)polys, i, NULL);
+	}
+
+	/*polys->num_triangles = 0; // now done after rendering the scene,
+	  polys->num_vertices = 0;  // otherwise it's not rendered at all and prints an error message --blub */
 }
 
 //void(string texturename, float flag[, float is2d]) R_BeginPolygon
 static void VM_CL_R_PolygonBegin (prvm_prog_t *prog)
 {
-	const char *texname;
-	int drawflags;
-	qbool draw2d;
-	dp_model_t *mod;
+	const char		*picname;
+	skinframe_t     *sf;
+	vmpolygons_t *polys = &prog->vmpolygons;
+	int tf;
+
+	// TODO instead of using skinframes here (which provides the benefit of
+	// better management of flags, and is more suited for 3D rendering), what
+	// about supporting Q3 shaders?
 
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_R_PolygonBegin);
 
-	texname = PRVM_G_STRING(OFS_PARM0);
-	drawflags = (int)PRVM_G_FLOAT(OFS_PARM1);
-	if (prog->argc >= 3)
-		draw2d = PRVM_G_FLOAT(OFS_PARM2) != 0;
-	else
+	if (!polys->initialized)
+		VM_InitPolygons(polys);
+	if (polys->begin_active)
 	{
-		// weird hacky way to figure out if this is a 2D HUD polygon or a scene
-		// polygon, for compatibility with mods aimed at old darkplaces versions
-		// - polygonbegin_guess2d is 0 if the most recent major call was
-		// clearscene, 1 if the most recent major call was drawpic (and similar)
-		// or renderscene
-		draw2d = prog->polygonbegin_guess2d;
+		VM_Warning(prog, "VM_CL_R_PolygonBegin: called twice without VM_CL_R_PolygonBegin after first\n");
+		return;
+	}
+	picname = PRVM_G_STRING(OFS_PARM0);
+
+	sf = NULL;
+	if(*picname)
+	{
+		tf = TEXF_ALPHA;
+		if((int)PRVM_G_FLOAT(OFS_PARM1) & DRAWFLAG_MIPMAP)
+			tf |= TEXF_MIPMAP;
+
+		do
+		{
+			sf = R_SkinFrame_FindNextByName(sf, picname);
+		}
+		while(sf && sf->textureflags != tf);
+
+		if(!sf || !sf->base)
+			sf = R_SkinFrame_LoadExternal(picname, tf, true);
+
+		if(sf)
+			R_SkinFrame_MarkUsed(sf);
 	}
 
-	// we need to remember whether this is a 2D or 3D mesh we're adding to
-	mod = draw2d ? CL_Mesh_UI() : CL_Mesh_Scene();
-	prog->polygonbegin_model = mod;
-	if (texname == NULL || texname[0] == 0)
-		texname = "$whiteimage";
-	strlcpy(prog->polygonbegin_texname, texname, sizeof(prog->polygonbegin_texname));
-	prog->polygonbegin_drawflags = drawflags;
-	prog->polygonbegin_numvertices = 0;
+	polys->begin_texture = (sf && sf->base) ? sf->base : r_texture_white;
+	polys->begin_texture_hasalpha = (sf && sf->base) ? sf->hasalpha : false;
+	polys->begin_drawflag = (int)PRVM_G_FLOAT(OFS_PARM1) & DRAWFLAG_MASK;
+	polys->begin_vertices = 0;
+	polys->begin_active = true;
+	polys->begin_draw2d = (prog->argc >= 3 ? (int)PRVM_G_FLOAT(OFS_PARM2) : r_refdef.draw2dstage);
 }
 
 //void(vector org, vector texcoords, vector rgb, float alpha) R_PolygonVertex
 static void VM_CL_R_PolygonVertex (prvm_prog_t *prog)
 {
-	const prvm_vec_t *v = PRVM_G_VECTOR(OFS_PARM0);
-	const prvm_vec_t *tc = PRVM_G_VECTOR(OFS_PARM1);
-	const prvm_vec_t *c = PRVM_G_VECTOR(OFS_PARM2);
-	const prvm_vec_t a = PRVM_G_FLOAT(OFS_PARM3);
-	float *o;
-	dp_model_t *mod = prog->polygonbegin_model;
+	vmpolygons_t *polys = &prog->vmpolygons;
 
 	VM_SAFEPARMCOUNT(4, VM_CL_R_PolygonVertex);
 
-	if (!mod)
+	if (!polys->begin_active)
 	{
 		VM_Warning(prog, "VM_CL_R_PolygonVertex: VM_CL_R_PolygonBegin wasn't called\n");
 		return;
 	}
 
-	if (prog->polygonbegin_maxvertices <= prog->polygonbegin_numvertices)
+	if (polys->begin_vertices >= VMPOLYGONS_MAXPOINTS)
 	{
-		prog->polygonbegin_maxvertices = max(16, prog->polygonbegin_maxvertices * 2);
-		prog->polygonbegin_vertexdata = (float *)Mem_Realloc(prog->progs_mempool, prog->polygonbegin_vertexdata, prog->polygonbegin_maxvertices * sizeof(float[10]));
+		VM_Warning(prog, "VM_CL_R_PolygonVertex: may have %i vertices max\n", VMPOLYGONS_MAXPOINTS);
+		return;
 	}
-	o = prog->polygonbegin_vertexdata + prog->polygonbegin_numvertices++ * 10;
 
-	o[0] = v[0];
-	o[1] = v[1];
-	o[2] = v[2];
-	o[3] = tc[0];
-	o[4] = tc[1];
-	o[5] = tc[2];
-	o[6] = c[0];
-	o[7] = c[1];
-	o[8] = c[2];
-	o[9] = a;
+	polys->begin_vertex[polys->begin_vertices][0] = PRVM_G_VECTOR(OFS_PARM0)[0];
+	polys->begin_vertex[polys->begin_vertices][1] = PRVM_G_VECTOR(OFS_PARM0)[1];
+	polys->begin_vertex[polys->begin_vertices][2] = PRVM_G_VECTOR(OFS_PARM0)[2];
+	polys->begin_texcoord[polys->begin_vertices][0] = PRVM_G_VECTOR(OFS_PARM1)[0];
+	polys->begin_texcoord[polys->begin_vertices][1] = PRVM_G_VECTOR(OFS_PARM1)[1];
+	polys->begin_color[polys->begin_vertices][0] = PRVM_G_VECTOR(OFS_PARM2)[0];
+	polys->begin_color[polys->begin_vertices][1] = PRVM_G_VECTOR(OFS_PARM2)[1];
+	polys->begin_color[polys->begin_vertices][2] = PRVM_G_VECTOR(OFS_PARM2)[2];
+	polys->begin_color[polys->begin_vertices][3] = PRVM_G_FLOAT(OFS_PARM3);
+	polys->begin_vertices++;
 }
 
 //void() R_EndPolygon
 static void VM_CL_R_PolygonEnd (prvm_prog_t *prog)
 {
-	int i;
-	qbool hascolor;
-	qbool hasalpha;
-	int e0 = 0, e1 = 0, e2 = 0;
-	float *o;
-	dp_model_t *mod = prog->polygonbegin_model;
-	msurface_t *surf;
-	texture_t *tex;
-	int materialflags;
+	vmpolygons_t *polys = &prog->vmpolygons;
 
 	VM_SAFEPARMCOUNT(0, VM_CL_R_PolygonEnd);
-	if (!mod)
+	if (!polys->begin_active)
 	{
 		VM_Warning(prog, "VM_CL_R_PolygonEnd: VM_CL_R_PolygonBegin wasn't called\n");
 		return;
 	}
+	polys->begin_active = false;
+	if (polys->begin_vertices >= 3)
+		VMPolygons_Store(polys);
+	else
+		VM_Warning(prog, "VM_CL_R_PolygonEnd: %i vertices isn't a good choice\n", polys->begin_vertices);
+}
 
-	// determine if vertex alpha is being used so we can provide that hint to GetTexture...
-	hascolor = false;
-	hasalpha = false;
-	for (i = 0; i < prog->polygonbegin_numvertices; i++)
+static vmpolygons_t debugPolys;
+
+void Debug_PolygonBegin(const char *picname, int drawflag)
+{
+	if(!debugPolys.initialized)
+		VM_InitPolygons(&debugPolys);
+	if(debugPolys.begin_active)
 	{
-		o = prog->polygonbegin_vertexdata + 10 * i;
-		if (o[6] != 1.0f || o[7] != 1.0f || o[8] != 1.0f)
-			hascolor = true;
-		if (o[9] != 1.0f)
-			hasalpha = true;
+		Con_Printf("Debug_PolygonBegin: called twice without Debug_PolygonEnd after first\n");
+		return;
+	}
+	debugPolys.begin_texture = picname[0] ? Draw_CachePic_Flags (picname, CACHEPICFLAG_NOTPERSISTENT)->tex : r_texture_white;
+	debugPolys.begin_drawflag = drawflag;
+	debugPolys.begin_vertices = 0;
+	debugPolys.begin_active = true;
+}
+
+void Debug_PolygonVertex(float x, float y, float z, float s, float t, float r, float g, float b, float a)
+{
+	if(!debugPolys.begin_active)
+	{
+		Con_Printf("Debug_PolygonVertex: Debug_PolygonBegin wasn't called\n");
+		return;
 	}
 
-	// create the surface, looking up the best matching texture/shader
-	materialflags = MATERIALFLAG_WALL;
-	if (csqc_polygons_defaultmaterial_nocullface.integer)
-		materialflags |= MATERIALFLAG_NOCULLFACE;
-	if (hascolor)
-		materialflags |= MATERIALFLAG_VERTEXCOLOR;
-	if (hasalpha)
-		materialflags |= MATERIALFLAG_ALPHAGEN_VERTEX | MATERIALFLAG_ALPHA | MATERIALFLAG_BLENDED | MATERIALFLAG_NOSHADOW;
-	tex = Mod_Mesh_GetTexture(mod, prog->polygonbegin_texname, prog->polygonbegin_drawflags, TEXF_ALPHA, materialflags);
-	surf = Mod_Mesh_AddSurface(mod, tex, false);
-	// create triangle fan
-	for (i = 0; i < prog->polygonbegin_numvertices; i++)
+	if(debugPolys.begin_vertices > VMPOLYGONS_MAXPOINTS)
 	{
-		o = prog->polygonbegin_vertexdata + 10 * i;
-		e2 = Mod_Mesh_IndexForVertex(mod, surf, o[0], o[1], o[2], 0, 0, 0, o[3], o[4], 0, 0, o[6], o[7], o[8], o[9]);
-		if (i >= 2)
-			Mod_Mesh_AddTriangle(mod, surf, e0, e1, e2);
-		else if (i == 0)
-			e0 = e2;
-		e1 = e2;
+		Con_Printf("Debug_PolygonVertex: may have %i vertices max\n", VMPOLYGONS_MAXPOINTS);
+		return;
 	}
-	// build normals (since they are not provided)
-	Mod_BuildNormals(surf->num_firstvertex, surf->num_vertices, surf->num_triangles, mod->surfmesh.data_vertex3f, mod->surfmesh.data_element3i + 3 * surf->num_firsttriangle, mod->surfmesh.data_normal3f, true);
 
-	// reset state
-	prog->polygonbegin_model = NULL;
-	prog->polygonbegin_texname[0] = 0;
-	prog->polygonbegin_drawflags = 0;
-	prog->polygonbegin_numvertices = 0;
+	debugPolys.begin_vertex[debugPolys.begin_vertices][0] = x;
+	debugPolys.begin_vertex[debugPolys.begin_vertices][1] = y;
+	debugPolys.begin_vertex[debugPolys.begin_vertices][2] = z;
+	debugPolys.begin_texcoord[debugPolys.begin_vertices][0] = s;
+	debugPolys.begin_texcoord[debugPolys.begin_vertices][1] = t;
+	debugPolys.begin_color[debugPolys.begin_vertices][0] = r;
+	debugPolys.begin_color[debugPolys.begin_vertices][1] = g;
+	debugPolys.begin_color[debugPolys.begin_vertices][2] = b;
+	debugPolys.begin_color[debugPolys.begin_vertices][3] = a;
+	debugPolys.begin_vertices++;
+}
+
+void Debug_PolygonEnd(void)
+{
+	if (!debugPolys.begin_active)
+	{
+		Con_Printf("Debug_PolygonEnd: Debug_PolygonBegin wasn't called\n");
+		return;
+	}
+	debugPolys.begin_active = false;
+	if (debugPolys.begin_vertices >= 3)
+		VMPolygons_Store(&debugPolys);
+	else
+		Con_Printf("Debug_PolygonEnd: %i vertices isn't a good choice\n", debugPolys.begin_vertices);
 }
 
 /*
@@ -3429,7 +3601,7 @@ is not a staircase.
 
 =============
 */
-static qbool CL_CheckBottom (prvm_edict_t *ent)
+static qboolean CL_CheckBottom (prvm_edict_t *ent)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	vec3_t	mins, maxs, start, stop;
@@ -3465,7 +3637,7 @@ realcheck:
 	start[0] = stop[0] = (mins[0] + maxs[0])*0.5;
 	start[1] = stop[1] = (mins[1] + maxs[1])*0.5;
 	stop[2] = start[2] - 2*sv_stepheight.value;
-	trace = CL_TraceLine(start, stop, MOVE_NOMONSTERS, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, false, NULL, true, false);
+	trace = CL_TraceLine(start, stop, MOVE_NOMONSTERS, ent, CL_GenericHitSuperContentsMask(ent), collision_extendmovelength.value, true, false, NULL, true, false);
 
 	if (trace.fraction == 1.0)
 		return false;
@@ -3478,7 +3650,7 @@ realcheck:
 			start[0] = stop[0] = x ? maxs[0] : mins[0];
 			start[1] = stop[1] = y ? maxs[1] : mins[1];
 
-			trace = CL_TraceLine(start, stop, MOVE_NOMONSTERS, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, false, NULL, true, false);
+			trace = CL_TraceLine(start, stop, MOVE_NOMONSTERS, ent, CL_GenericHitSuperContentsMask(ent), collision_extendmovelength.value, true, false, NULL, true, false);
 
 			if (trace.fraction != 1.0 && trace.endpos[2] > bottom)
 				bottom = trace.endpos[2];
@@ -3498,7 +3670,7 @@ The move will be adjusted for slopes and stairs, but if the move isn't
 possible, no move is done and false is returned
 =============
 */
-static qbool CL_movestep (prvm_edict_t *ent, vec3_t move, qbool relink, qbool noenemy, qbool settrace)
+static qboolean CL_movestep (prvm_edict_t *ent, vec3_t move, qboolean relink, qboolean noenemy, qboolean settrace)
 {
 	prvm_prog_t *prog = CLVM_prog;
 	float		dz;
@@ -3531,7 +3703,7 @@ static qbool CL_movestep (prvm_edict_t *ent, vec3_t move, qbool relink, qbool no
 					neworg[2] += 8;
 			}
 			VectorCopy(PRVM_clientedictvector(ent, origin), start);
-			trace = CL_TraceBox(start, mins, maxs, neworg, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, true, &svent, true);
+			trace = CL_TraceBox(start, mins, maxs, neworg, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), collision_extendmovelength.value, true, true, &svent, true);
 			if (settrace)
 				CL_VM_SetTraceGlobals(prog, &trace, svent);
 
@@ -3559,14 +3731,14 @@ static qbool CL_movestep (prvm_edict_t *ent, vec3_t move, qbool relink, qbool no
 	VectorCopy (neworg, end);
 	end[2] -= sv_stepheight.value*2;
 
-	trace = CL_TraceBox(neworg, mins, maxs, end, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, true, &svent, true);
+	trace = CL_TraceBox(neworg, mins, maxs, end, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), collision_extendmovelength.value, true, true, &svent, true);
 	if (settrace)
 		CL_VM_SetTraceGlobals(prog, &trace, svent);
 
 	if (trace.startsolid)
 	{
 		neworg[2] -= sv_stepheight.value;
-		trace = CL_TraceBox(neworg, mins, maxs, end, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value, true, true, &svent, true);
+		trace = CL_TraceBox(neworg, mins, maxs, end, MOVE_NORMAL, ent, CL_GenericHitSuperContentsMask(ent), collision_extendmovelength.value, true, true, &svent, true);
 		if (settrace)
 			CL_VM_SetTraceGlobals(prog, &trace, svent);
 		if (trace.startsolid)
@@ -3628,7 +3800,7 @@ static void VM_CL_walkmove (prvm_prog_t *prog)
 	vec3_t	move;
 	mfunction_t	*oldf;
 	int 	oldself;
-	qbool	settrace;
+	qboolean	settrace;
 
 	VM_SAFEPARMCOUNTRANGE(2, 3, VM_CL_walkmove);
 
@@ -3708,7 +3880,7 @@ static void VM_CL_checkpvs (prvm_prog_t *prog)
 	unsigned char fatpvs[MAX_MAP_LEAFS/8];
 #endif
 
-	VM_SAFEPARMCOUNT(2, VM_CL_checkpvs);
+	VM_SAFEPARMCOUNT(2, VM_SV_checkpvs);
 	VectorCopy(PRVM_G_VECTOR(OFS_PARM0), viewpos);
 	viewee = PRVM_G_EDICT(OFS_PARM1);
 
@@ -4120,11 +4292,11 @@ static void VM_CL_V_CalcRefdef(prvm_prog_t *prog)
 	matrix4x4_t entrendermatrix;
 	vec3_t clviewangles;
 	vec3_t clvelocity;
-	qbool teleported;
-	qbool clonground;
-	qbool clcmdjump;
-	qbool cldead;
-	qbool clintermission;
+	qboolean teleported;
+	qboolean clonground;
+	qboolean clcmdjump;
+	qboolean cldead;
+	qboolean clintermission;
 	float clstatsviewheight;
 	prvm_edict_t *ent;
 	int flags;
@@ -4134,7 +4306,7 @@ static void VM_CL_V_CalcRefdef(prvm_prog_t *prog)
 	flags = PRVM_G_FLOAT(OFS_PARM1);
 
 	// use the CL_GetTagMatrix function on self to ensure consistent behavior (duplicate code would be bad)
-	CL_GetTagMatrix(prog, &entrendermatrix, ent, 0, NULL);
+	CL_GetTagMatrix(prog, &entrendermatrix, ent, 0);
 
 	VectorCopy(cl.csqc_viewangles, clviewangles);
 	teleported = (flags & REFDEFFLAG_TELEPORTED) != 0;
@@ -4170,7 +4342,7 @@ VM_CL_setsize,					// #4 void(entity e, vector min, vector max) setsize (QUAKE)
 NULL,							// #5 void(entity e, vector min, vector max) setabssize (QUAKE)
 VM_break,						// #6 void() break (QUAKE)
 VM_random,						// #7 float() random (QUAKE)
-VM_CL_sound,					// #8 void(entity e, float chan, string samp, float volume, float atten[, float pitchchange[, float flags]]) sound (QUAKE)
+VM_CL_sound,					// #8 void(entity e, float chan, string samp) sound (QUAKE)
 VM_normalize,					// #9 vector(vector v) normalize (QUAKE)
 VM_error,						// #10 void(string e) error (QUAKE)
 VM_objerror,					// #11 void(string e) objerror (QUAKE)
@@ -4208,7 +4380,7 @@ NULL,							// #42 (QUAKE)
 VM_fabs,						// #43 float(float f) fabs (QUAKE)
 NULL,							// #44 vector(entity e, float speed) aim (QUAKE)
 VM_cvar,						// #45 float(string s) cvar (QUAKE)
-VM_localcmd_client,				// #46 void(string s) localcmd (QUAKE)
+VM_localcmd,					// #46 void(string s) localcmd (QUAKE)
 VM_nextent,						// #47 entity(entity e) nextent (QUAKE)
 VM_CL_particle,					// #48 void(vector o, vector d, float color, float count) particle (QUAKE)
 VM_changeyaw,					// #49 void() ChangeYaw (QUAKE)
@@ -4565,7 +4737,7 @@ NULL,							// #396
 NULL,							// #397
 NULL,							// #398
 NULL,							// #399
-// LadyHavoc's range #400-#499
+// LordHavoc's range #400-#499
 VM_CL_copyentity,				// #400 void(entity from, entity to) copyentity (DP_QC_COPYENTITY)
 NULL,							// #401 void(entity ent, float colors) setcolor (DP_QC_SETCOLOR)
 VM_findchain,					// #402 entity(.string fld, string match) findchain (DP_QC_FINDCHAIN)
@@ -4814,17 +4986,27 @@ NULL
 
 const int vm_cl_numbuiltins = sizeof(vm_cl_builtins) / sizeof(prvm_builtin_t);
 
+void VM_Polygons_Reset(prvm_prog_t *prog)
+{
+	vmpolygons_t *polys = &prog->vmpolygons;
+
+	// TODO: replace vm_polygons stuff with a more general debugging polygon system, and make vm_polygons functions use that system
+	if(polys->initialized)
+	{
+		Mem_FreePool(&polys->pool);
+		polys->initialized = false;
+	}
+}
+
 void CLVM_init_cmd(prvm_prog_t *prog)
 {
 	VM_Cmd_Init(prog);
-	prog->polygonbegin_model = NULL;
-	prog->polygonbegin_guess2d = 0;
+	VM_Polygons_Reset(prog);
 }
 
 void CLVM_reset_cmd(prvm_prog_t *prog)
 {
 	World_End(&cl.world);
 	VM_Cmd_Reset(prog);
-	prog->polygonbegin_model = NULL;
-	prog->polygonbegin_guess2d = 0;
+	VM_Polygons_Reset(prog);
 }

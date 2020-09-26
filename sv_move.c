@@ -33,7 +33,7 @@ is not a staircase.
 */
 int c_yes, c_no;
 
-qbool SV_CheckBottom (prvm_edict_t *ent)
+qboolean SV_CheckBottom (prvm_edict_t *ent)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	vec3_t	mins, maxs, start, stop;
@@ -71,7 +71,7 @@ realcheck:
 	start[0] = stop[0] = (mins[0] + maxs[0])*0.5;
 	start[1] = stop[1] = (mins[1] + maxs[1])*0.5;
 	stop[2] = start[2] - 2*sv_stepheight.value;
-	trace = SV_TraceLine(start, stop, MOVE_NOMONSTERS, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value);
+	trace = SV_TraceLine(start, stop, MOVE_NOMONSTERS, ent, SV_GenericHitSuperContentsMask(ent), collision_extendmovelength.value);
 
 	if (trace.fraction == 1.0)
 		return false;
@@ -84,7 +84,7 @@ realcheck:
 			start[0] = stop[0] = x ? maxs[0] : mins[0];
 			start[1] = stop[1] = y ? maxs[1] : mins[1];
 
-			trace = SV_TraceLine(start, stop, MOVE_NOMONSTERS, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value);
+			trace = SV_TraceLine(start, stop, MOVE_NOMONSTERS, ent, SV_GenericHitSuperContentsMask(ent), collision_extendmovelength.value);
 
 			if (trace.fraction != 1.0 && trace.endpos[2] > bottom)
 				bottom = trace.endpos[2];
@@ -106,7 +106,7 @@ The move will be adjusted for slopes and stairs, but if the move isn't
 possible, no move is done and false is returned
 =============
 */
-qbool SV_movestep (prvm_edict_t *ent, vec3_t move, qbool relink, qbool noenemy, qbool settrace)
+qboolean SV_movestep (prvm_edict_t *ent, vec3_t move, qboolean relink, qboolean noenemy, qboolean settrace)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	float		dz;
@@ -143,7 +143,7 @@ qbool SV_movestep (prvm_edict_t *ent, vec3_t move, qbool relink, qbool noenemy, 
 				}
 			}
 			VectorCopy(PRVM_serveredictvector(ent, origin), entorigin);
-			trace = SV_TraceBox(entorigin, entmins, entmaxs, neworg, MOVE_NORMAL, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value);
+			trace = SV_TraceBox(entorigin, entmins, entmaxs, neworg, MOVE_NORMAL, ent, SV_GenericHitSuperContentsMask(ent), collision_extendmovelength.value);
 
 			if (trace.fraction == 1)
 			{
@@ -172,12 +172,12 @@ qbool SV_movestep (prvm_edict_t *ent, vec3_t move, qbool relink, qbool noenemy, 
 	VectorCopy (neworg, end);
 	end[2] -= sv_stepheight.value*2;
 
-	trace = SV_TraceBox(neworg, entmins, entmaxs, end, MOVE_NORMAL, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value);
+	trace = SV_TraceBox(neworg, entmins, entmaxs, end, MOVE_NORMAL, ent, SV_GenericHitSuperContentsMask(ent), collision_extendmovelength.value);
 
 	if (trace.startsolid)
 	{
 		neworg[2] -= sv_stepheight.value;
-		trace = SV_TraceBox(neworg, entmins, entmaxs, end, MOVE_NORMAL, ent, SV_GenericHitSuperContentsMask(ent), 0, 0, collision_extendmovelength.value);
+		trace = SV_TraceBox(neworg, entmins, entmaxs, end, MOVE_NORMAL, ent, SV_GenericHitSuperContentsMask(ent), collision_extendmovelength.value);
 		if (trace.startsolid)
 			return false;
 	}
@@ -254,7 +254,7 @@ facing it.
 
 ======================
 */
-static qbool SV_StepDirection (prvm_edict_t *ent, float yaw, float dist)
+static qboolean SV_StepDirection (prvm_edict_t *ent, float yaw, float dist)
 {
 	prvm_prog_t *prog = SVVM_prog;
 	vec3_t		move, oldorigin;
@@ -397,7 +397,7 @@ SV_CloseEnough
 
 ======================
 */
-static qbool SV_CloseEnough (prvm_edict_t *ent, prvm_edict_t *goal, float dist)
+static qboolean SV_CloseEnough (prvm_edict_t *ent, prvm_edict_t *goal, float dist)
 {
 	int		i;
 
@@ -413,7 +413,7 @@ static qbool SV_CloseEnough (prvm_edict_t *ent, prvm_edict_t *goal, float dist)
 
 /*
 ======================
-VM_SV_MoveToGoal
+SV_MoveToGoal
 
 ======================
 */
@@ -422,7 +422,7 @@ void VM_SV_MoveToGoal(prvm_prog_t *prog)
 	prvm_edict_t		*ent, *goal;
 	float		dist;
 
-	VM_SAFEPARMCOUNT(1, VM_SV_MoveToGoal);
+	VM_SAFEPARMCOUNT(1, SV_MoveToGoal);
 
 	ent = PRVM_PROG_TO_EDICT(PRVM_serverglobaledict(self));
 	goal = PRVM_PROG_TO_EDICT(PRVM_serveredictedict(ent, goalentity));

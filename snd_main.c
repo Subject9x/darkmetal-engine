@@ -23,12 +23,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "snd_main.h"
 #include "snd_ogg.h"
-#ifdef USEXMP
-#include "snd_xmp.h"
-#endif
 #include "csprogs.h"
 #include "cl_collision.h"
+#ifdef CONFIG_CD
 #include "cdaudio.h"
+#endif
 
 
 #define SND_MIN_SPEED 8000
@@ -52,24 +51,24 @@ static const speakerlayout_t snd_speakerlayouts[] =
 	{
 		"surround71", 8,
 		{
-			{0, 45, 0.2f, 0.2f, 0.5f}, // front left
-			{1, 315, 0.2f, 0.2f, 0.5f}, // front right
-			{2, 135, 0.2f, 0.2f, 0.5f}, // rear left
-			{3, 225, 0.2f, 0.2f, 0.5f}, // rear right
-			{4, 0, 0.2f, 0.2f, 0.5f}, // front center
+			{0, 45, 0.2, 0.2, 0.5}, // front left
+			{1, 315, 0.2, 0.2, 0.5}, // front right
+			{2, 135, 0.2, 0.2, 0.5}, // rear left
+			{3, 225, 0.2, 0.2, 0.5}, // rear right
+			{4, 0, 0.2, 0.2, 0.5}, // front center
 			{5, 0, 0, 0, 0}, // lfe (we don't have any good lfe sound sources and it would take some filtering work to generate them (and they'd probably still be wrong), so...  no lfe)
-			{6, 90, 0.2f, 0.2f, 0.5f}, // side left
-			{7, 180, 0.2f, 0.2f, 0.5f}, // side right
+			{6, 90, 0.2, 0.2, 0.5}, // side left
+			{7, 180, 0.2, 0.2, 0.5}, // side right
 		}
 	},
 	{
 		"surround51", 6,
 		{
-			{0, 45, 0.2f, 0.2f, 0.5f}, // front left
-			{1, 315, 0.2f, 0.2f, 0.5f}, // front right
-			{2, 135, 0.2f, 0.2f, 0.5f}, // rear left
-			{3, 225, 0.2f, 0.2f, 0.5f}, // rear right
-			{4, 0, 0.2f, 0.2f, 0.5f}, // front center
+			{0, 45, 0.2, 0.2, 0.5}, // front left
+			{1, 315, 0.2, 0.2, 0.5}, // front right
+			{2, 135, 0.2, 0.2, 0.5}, // rear left
+			{3, 225, 0.2, 0.2, 0.5}, // rear right
+			{4, 0, 0.2, 0.2, 0.5}, // front center
 			{5, 0, 0, 0, 0}, // lfe (we don't have any good lfe sound sources and it would take some filtering work to generate them (and they'd probably still be wrong), so...  no lfe)
 			{0, 0, 0, 0, 0},
 			{0, 0, 0, 0, 0},
@@ -80,10 +79,10 @@ static const speakerlayout_t snd_speakerlayouts[] =
 		// channel of its own
 		"surround40", 4,
 		{
-			{0, 45, 0.3f, 0.3f, 0.8f}, // front left
-			{1, 315, 0.3f, 0.3f, 0.8f}, // front right
-			{2, 135, 0.3f, 0.3f, 0.8f}, // rear left
-			{3, 225, 0.3f, 0.3f, 0.8f}, // rear right
+			{0, 45, 0.3, 0.3, 0.8}, // front left
+			{1, 315, 0.3, 0.3, 0.8}, // front right
+			{2, 135, 0.3, 0.3, 0.8}, // rear left
+			{3, 225, 0.3, 0.3, 0.8}, // rear right
 			{0, 0, 0, 0, 0},
 			{0, 0, 0, 0, 0},
 			{0, 0, 0, 0, 0},
@@ -95,8 +94,8 @@ static const speakerlayout_t snd_speakerlayouts[] =
 		// channel of its own
 		"stereo", 2,
 		{
-			{0, 90, 0.5f, 0.5f, 1}, // side left
-			{1, 270, 0.5f, 0.5f, 1}, // side right
+			{0, 90, 0.5, 0.5, 1}, // side left
+			{1, 270, 0.5, 0.5, 1}, // side right
 			{0, 0, 0, 0, 0},
 			{0, 0, 0, 0, 0},
 			{0, 0, 0, 0, 0},
@@ -133,8 +132,8 @@ static unsigned int soundtime = 0;
 static unsigned int oldpaintedtime = 0;
 static unsigned int extrasoundtime = 0;
 static double snd_starttime = 0.0;
-qbool snd_threaded = false;
-qbool snd_usethreadedmixing = false;
+qboolean snd_threaded = false;
+qboolean snd_usethreadedmixing = false;
 
 vec3_t listener_origin;
 matrix4x4_t listener_basematrix;
@@ -146,13 +145,11 @@ mempool_t *snd_mempool;
 // Linked list of known sfx
 static sfx_t *known_sfx = NULL;
 
-static qbool sound_spatialized = false;
+static qboolean sound_spatialized = false;
 
-qbool simsound = false;
+qboolean simsound = false;
 
-#ifdef CONFIG_VIDEO_CAPTURE
-static qbool recording_sound = false;
-#endif
+static qboolean recording_sound = false;
 
 int snd_blocked = 0;
 static int current_swapstereo = false;
@@ -164,96 +161,96 @@ typedef enum { SPATIAL_NONE, SPATIAL_LOG, SPATIAL_POW, SPATIAL_THRESH } spatialm
 spatialmethod_t spatialmethod;
 
 // Cvars declared in sound.h (part of the sound API)
-cvar_t bgmvolume = {CF_CLIENT | CF_ARCHIVE, "bgmvolume", "1", "volume of background music (such as CD music or replacement files such as sound/cdtracks/track002.ogg)"};
-cvar_t mastervolume = {CF_CLIENT | CF_ARCHIVE, "mastervolume", "0.7", "master volume"};
-cvar_t volume = {CF_CLIENT | CF_ARCHIVE, "volume", "0.7", "volume of sound effects"};
-cvar_t snd_initialized = {CF_CLIENT | CF_READONLY, "snd_initialized", "0", "indicates the sound subsystem is active"};
-cvar_t snd_staticvolume = {CF_CLIENT | CF_ARCHIVE, "snd_staticvolume", "1", "volume of ambient sound effects (such as swampy sounds at the start of e1m2)"};
-cvar_t snd_soundradius = {CF_CLIENT | CF_ARCHIVE, "snd_soundradius", "1200", "radius of weapon sounds and other standard sound effects (monster idle noises are half this radius and flickering light noises are one third of this radius)"};
-cvar_t snd_attenuation_exponent = {CF_CLIENT | CF_ARCHIVE, "snd_attenuation_exponent", "1", "Exponent of (1-radius) in sound attenuation formula"};
-cvar_t snd_attenuation_decibel = {CF_CLIENT | CF_ARCHIVE, "snd_attenuation_decibel", "0", "Decibel sound attenuation per sound radius distance"};
-cvar_t snd_spatialization_min_radius = {CF_CLIENT | CF_ARCHIVE, "snd_spatialization_min_radius", "10000", "use minimum spatialization above to this radius"};
-cvar_t snd_spatialization_max_radius = {CF_CLIENT | CF_ARCHIVE, "snd_spatialization_max_radius", "100", "use maximum spatialization below this radius"};
-cvar_t snd_spatialization_min = {CF_CLIENT | CF_ARCHIVE, "snd_spatialization_min", "0.70", "minimum spatializazion of sounds"};
-cvar_t snd_spatialization_max = {CF_CLIENT | CF_ARCHIVE, "snd_spatialization_max", "0.95", "maximum spatialization of sounds"};
-cvar_t snd_spatialization_power = {CF_CLIENT | CF_ARCHIVE, "snd_spatialization_power", "0", "exponent of the spatialization falloff curve (0: logarithmic)"};
-cvar_t snd_spatialization_control = {CF_CLIENT | CF_ARCHIVE, "snd_spatialization_control", "0", "enable spatialization control (headphone friendly mode)"};
-cvar_t snd_spatialization_prologic = {CF_CLIENT | CF_ARCHIVE, "snd_spatialization_prologic", "0", "use dolby prologic (I, II or IIx) encoding (snd_channels must be 2)"};
-cvar_t snd_spatialization_prologic_frontangle = {CF_CLIENT | CF_ARCHIVE, "snd_spatialization_prologic_frontangle", "30", "the angle between the front speakers and the center speaker"};
-cvar_t snd_spatialization_occlusion = {CF_CLIENT | CF_ARCHIVE, "snd_spatialization_occlusion", "1", "enable occlusion testing on spatialized sounds, which simply quiets sounds that are blocked by the world; 1 enables PVS method, 2 enables LineOfSight method, 3 enables both"};
+cvar_t bgmvolume = {CVAR_SAVE, "bgmvolume", "1", "volume of background music (such as CD music or replacement files such as sound/cdtracks/track002.ogg)"};
+cvar_t mastervolume = {CVAR_SAVE, "mastervolume", "0.7", "master volume"};
+cvar_t volume = {CVAR_SAVE, "volume", "0.7", "volume of sound effects"};
+cvar_t snd_initialized = { CVAR_READONLY, "snd_initialized", "0", "indicates the sound subsystem is active"};
+cvar_t snd_staticvolume = {CVAR_SAVE, "snd_staticvolume", "1", "volume of ambient sound effects (such as swampy sounds at the start of e1m2)"};
+cvar_t snd_soundradius = {CVAR_SAVE, "snd_soundradius", "1200", "radius of weapon sounds and other standard sound effects (monster idle noises are half this radius and flickering light noises are one third of this radius)"};
+cvar_t snd_attenuation_exponent = {CVAR_SAVE, "snd_attenuation_exponent", "1", "Exponent of (1-radius) in sound attenuation formula"};
+cvar_t snd_attenuation_decibel = {CVAR_SAVE, "snd_attenuation_decibel", "0", "Decibel sound attenuation per sound radius distance"};
+cvar_t snd_spatialization_min_radius = {CVAR_SAVE, "snd_spatialization_min_radius", "10000", "use minimum spatialization above to this radius"};
+cvar_t snd_spatialization_max_radius = {CVAR_SAVE, "snd_spatialization_max_radius", "100", "use maximum spatialization below this radius"};
+cvar_t snd_spatialization_min = {CVAR_SAVE, "snd_spatialization_min", "0.70", "minimum spatializazion of sounds"};
+cvar_t snd_spatialization_max = {CVAR_SAVE, "snd_spatialization_max", "0.95", "maximum spatialization of sounds"};
+cvar_t snd_spatialization_power = {CVAR_SAVE, "snd_spatialization_power", "0", "exponent of the spatialization falloff curve (0: logarithmic)"};
+cvar_t snd_spatialization_control = {CVAR_SAVE, "snd_spatialization_control", "0", "enable spatialization control (headphone friendly mode)"};
+cvar_t snd_spatialization_prologic = {CVAR_SAVE, "snd_spatialization_prologic", "0", "use dolby prologic (I, II or IIx) encoding (snd_channels must be 2)"};
+cvar_t snd_spatialization_prologic_frontangle = {CVAR_SAVE, "snd_spatialization_prologic_frontangle", "30", "the angle between the front speakers and the center speaker"};
+cvar_t snd_spatialization_occlusion = {CVAR_SAVE, "snd_spatialization_occlusion", "1", "enable occlusion testing on spatialized sounds, which simply quiets sounds that are blocked by the world; 1 enables PVS method, 2 enables LineOfSight method, 3 enables both"};
 
 // Cvars declared in snd_main.h (shared with other snd_*.c files)
-cvar_t _snd_mixahead = {CF_CLIENT | CF_ARCHIVE, "_snd_mixahead", "0.15", "how much sound to mix ahead of time"};
-cvar_t snd_streaming = {CF_CLIENT | CF_ARCHIVE, "snd_streaming", "1", "enables keeping compressed ogg sound files compressed, decompressing them only as needed, otherwise they will be decompressed completely at load (may use a lot of memory); when set to 2, streaming is performed even if this would waste memory"};
-cvar_t snd_streaming_length = {CF_CLIENT | CF_ARCHIVE, "snd_streaming_length", "1", "decompress sounds completely if they are less than this play time when snd_streaming is 1"};
-cvar_t snd_swapstereo = {CF_CLIENT | CF_ARCHIVE, "snd_swapstereo", "0", "swaps left/right speakers for old ISA soundblaster cards"};
+cvar_t _snd_mixahead = {CVAR_SAVE, "_snd_mixahead", "0.15", "how much sound to mix ahead of time"};
+cvar_t snd_streaming = { CVAR_SAVE, "snd_streaming", "1", "enables keeping compressed ogg sound files compressed, decompressing them only as needed, otherwise they will be decompressed completely at load (may use a lot of memory); when set to 2, streaming is performed even if this would waste memory"};
+cvar_t snd_streaming_length = { CVAR_SAVE, "snd_streaming_length", "1", "decompress sounds completely if they are less than this play time when snd_streaming is 1"};
+cvar_t snd_swapstereo = {CVAR_SAVE, "snd_swapstereo", "0", "swaps left/right speakers for old ISA soundblaster cards"};
 extern cvar_t v_flipped;
-cvar_t snd_channellayout = {CF_CLIENT, "snd_channellayout", "0", "channel layout. Can be 0 (auto - snd_restart needed), 1 (standard layout), or 2 (ALSA layout)"};
-cvar_t snd_mutewhenidle = {CF_CLIENT | CF_ARCHIVE, "snd_mutewhenidle", "1", "whether to disable sound output when game window is inactive"};
-cvar_t snd_maxchannelvolume = {CF_CLIENT | CF_ARCHIVE, "snd_maxchannelvolume", "10", "maximum volume of a single sound"};
-cvar_t snd_softclip = {CF_CLIENT | CF_ARCHIVE, "snd_softclip", "0", "Use soft-clipping. Soft-clipping can make the sound more smooth if very high volume levels are used. Enable this option if the dynamic range of the loudspeakers is very low. WARNING: This feature creates distortion and should be considered a last resort."};
-//cvar_t snd_softclip = {CF_CLIENT | CF_ARCHIVE, "snd_softclip", "0", "Use soft-clipping (when set to 2, use it even if output is floating point). Soft-clipping can make the sound more smooth if very high volume levels are used. Enable this option if the dynamic range of the loudspeakers is very low. WARNING: This feature creates distortion and should be considered a last resort."};
-cvar_t snd_entchannel0volume = {CF_CLIENT | CF_ARCHIVE, "snd_entchannel0volume", "1", "volume multiplier of the auto-allocate entity channel of regular entities (DEPRECATED)"};
-cvar_t snd_entchannel1volume = {CF_CLIENT | CF_ARCHIVE, "snd_entchannel1volume", "1", "volume multiplier of the 1st entity channel of regular entities (DEPRECATED)"};
-cvar_t snd_entchannel2volume = {CF_CLIENT | CF_ARCHIVE, "snd_entchannel2volume", "1", "volume multiplier of the 2nd entity channel of regular entities (DEPRECATED)"};
-cvar_t snd_entchannel3volume = {CF_CLIENT | CF_ARCHIVE, "snd_entchannel3volume", "1", "volume multiplier of the 3rd entity channel of regular entities (DEPRECATED)"};
-cvar_t snd_entchannel4volume = {CF_CLIENT | CF_ARCHIVE, "snd_entchannel4volume", "1", "volume multiplier of the 4th entity channel of regular entities (DEPRECATED)"};
-cvar_t snd_entchannel5volume = {CF_CLIENT | CF_ARCHIVE, "snd_entchannel5volume", "1", "volume multiplier of the 5th entity channel of regular entities (DEPRECATED)"};
-cvar_t snd_entchannel6volume = {CF_CLIENT | CF_ARCHIVE, "snd_entchannel6volume", "1", "volume multiplier of the 6th entity channel of regular entities (DEPRECATED)"};
-cvar_t snd_entchannel7volume = {CF_CLIENT | CF_ARCHIVE, "snd_entchannel7volume", "1", "volume multiplier of the 7th entity channel of regular entities (DEPRECATED)"};
-cvar_t snd_playerchannel0volume = {CF_CLIENT | CF_ARCHIVE, "snd_playerchannel0volume", "1", "volume multiplier of the auto-allocate entity channel of player entities (DEPRECATED)"};
-cvar_t snd_playerchannel1volume = {CF_CLIENT | CF_ARCHIVE, "snd_playerchannel1volume", "1", "volume multiplier of the 1st entity channel of player entities (DEPRECATED)"};
-cvar_t snd_playerchannel2volume = {CF_CLIENT | CF_ARCHIVE, "snd_playerchannel2volume", "1", "volume multiplier of the 2nd entity channel of player entities (DEPRECATED)"};
-cvar_t snd_playerchannel3volume = {CF_CLIENT | CF_ARCHIVE, "snd_playerchannel3volume", "1", "volume multiplier of the 3rd entity channel of player entities (DEPRECATED)"};
-cvar_t snd_playerchannel4volume = {CF_CLIENT | CF_ARCHIVE, "snd_playerchannel4volume", "1", "volume multiplier of the 4th entity channel of player entities (DEPRECATED)"};
-cvar_t snd_playerchannel5volume = {CF_CLIENT | CF_ARCHIVE, "snd_playerchannel5volume", "1", "volume multiplier of the 5th entity channel of player entities (DEPRECATED)"};
-cvar_t snd_playerchannel6volume = {CF_CLIENT | CF_ARCHIVE, "snd_playerchannel6volume", "1", "volume multiplier of the 6th entity channel of player entities (DEPRECATED)"};
-cvar_t snd_playerchannel7volume = {CF_CLIENT | CF_ARCHIVE, "snd_playerchannel7volume", "1", "volume multiplier of the 7th entity channel of player entities (DEPRECATED)"};
-cvar_t snd_worldchannel0volume = {CF_CLIENT | CF_ARCHIVE, "snd_worldchannel0volume", "1", "volume multiplier of the auto-allocate entity channel of the world entity (DEPRECATED)"};
-cvar_t snd_worldchannel1volume = {CF_CLIENT | CF_ARCHIVE, "snd_worldchannel1volume", "1", "volume multiplier of the 1st entity channel of the world entity (DEPRECATED)"};
-cvar_t snd_worldchannel2volume = {CF_CLIENT | CF_ARCHIVE, "snd_worldchannel2volume", "1", "volume multiplier of the 2nd entity channel of the world entity (DEPRECATED)"};
-cvar_t snd_worldchannel3volume = {CF_CLIENT | CF_ARCHIVE, "snd_worldchannel3volume", "1", "volume multiplier of the 3rd entity channel of the world entity (DEPRECATED)"};
-cvar_t snd_worldchannel4volume = {CF_CLIENT | CF_ARCHIVE, "snd_worldchannel4volume", "1", "volume multiplier of the 4th entity channel of the world entity (DEPRECATED)"};
-cvar_t snd_worldchannel5volume = {CF_CLIENT | CF_ARCHIVE, "snd_worldchannel5volume", "1", "volume multiplier of the 5th entity channel of the world entity (DEPRECATED)"};
-cvar_t snd_worldchannel6volume = {CF_CLIENT | CF_ARCHIVE, "snd_worldchannel6volume", "1", "volume multiplier of the 6th entity channel of the world entity (DEPRECATED)"};
-cvar_t snd_worldchannel7volume = {CF_CLIENT | CF_ARCHIVE, "snd_worldchannel7volume", "1", "volume multiplier of the 7th entity channel of the world entity (DEPRECATED)"};
-cvar_t snd_csqcchannel0volume = {CF_CLIENT | CF_ARCHIVE, "snd_csqcchannel0volume", "1", "volume multiplier of the auto-allocate entity channel CSQC entities (DEPRECATED)"};
-cvar_t snd_csqcchannel1volume = {CF_CLIENT | CF_ARCHIVE, "snd_csqcchannel1volume", "1", "volume multiplier of the 1st entity channel of CSQC entities (DEPRECATED)"};
-cvar_t snd_csqcchannel2volume = {CF_CLIENT | CF_ARCHIVE, "snd_csqcchannel2volume", "1", "volume multiplier of the 2nd entity channel of CSQC entities (DEPRECATED)"};
-cvar_t snd_csqcchannel3volume = {CF_CLIENT | CF_ARCHIVE, "snd_csqcchannel3volume", "1", "volume multiplier of the 3rd entity channel of CSQC entities (DEPRECATED)"};
-cvar_t snd_csqcchannel4volume = {CF_CLIENT | CF_ARCHIVE, "snd_csqcchannel4volume", "1", "volume multiplier of the 4th entity channel of CSQC entities (DEPRECATED)"};
-cvar_t snd_csqcchannel5volume = {CF_CLIENT | CF_ARCHIVE, "snd_csqcchannel5volume", "1", "volume multiplier of the 5th entity channel of CSQC entities (DEPRECATED)"};
-cvar_t snd_csqcchannel6volume = {CF_CLIENT | CF_ARCHIVE, "snd_csqcchannel6volume", "1", "volume multiplier of the 6th entity channel of CSQC entities (DEPRECATED)"};
-cvar_t snd_csqcchannel7volume = {CF_CLIENT | CF_ARCHIVE, "snd_csqcchannel7volume", "1", "volume multiplier of the 7th entity channel of CSQC entities (DEPRECATED)"};
-cvar_t snd_channel0volume = {CF_CLIENT | CF_ARCHIVE, "snd_channel0volume", "1", "volume multiplier of the auto-allocate entity channel"};
-cvar_t snd_channel1volume = {CF_CLIENT | CF_ARCHIVE, "snd_channel1volume", "1", "volume multiplier of the 1st entity channel"};
-cvar_t snd_channel2volume = {CF_CLIENT | CF_ARCHIVE, "snd_channel2volume", "1", "volume multiplier of the 2nd entity channel"};
-cvar_t snd_channel3volume = {CF_CLIENT | CF_ARCHIVE, "snd_channel3volume", "1", "volume multiplier of the 3rd entity channel"};
-cvar_t snd_channel4volume = {CF_CLIENT | CF_ARCHIVE, "snd_channel4volume", "1", "volume multiplier of the 4th entity channel"};
-cvar_t snd_channel5volume = {CF_CLIENT | CF_ARCHIVE, "snd_channel5volume", "1", "volume multiplier of the 5th entity channel"};
-cvar_t snd_channel6volume = {CF_CLIENT | CF_ARCHIVE, "snd_channel6volume", "1", "volume multiplier of the 6th entity channel"};
-cvar_t snd_channel7volume = {CF_CLIENT | CF_ARCHIVE, "snd_channel7volume", "1", "volume multiplier of the 7th entity channel"};
+cvar_t snd_channellayout = {0, "snd_channellayout", "0", "channel layout. Can be 0 (auto - snd_restart needed), 1 (standard layout), or 2 (ALSA layout)"};
+cvar_t snd_mutewhenidle = {CVAR_SAVE, "snd_mutewhenidle", "1", "whether to disable sound output when game window is inactive"};
+cvar_t snd_maxchannelvolume = {CVAR_SAVE, "snd_maxchannelvolume", "10", "maximum volume of a single sound"};
+cvar_t snd_softclip = {CVAR_SAVE, "snd_softclip", "0", "Use soft-clipping. Soft-clipping can make the sound more smooth if very high volume levels are used. Enable this option if the dynamic range of the loudspeakers is very low. WARNING: This feature creates distortion and should be considered a last resort."};
+//cvar_t snd_softclip = {CVAR_SAVE, "snd_softclip", "0", "Use soft-clipping (when set to 2, use it even if output is floating point). Soft-clipping can make the sound more smooth if very high volume levels are used. Enable this option if the dynamic range of the loudspeakers is very low. WARNING: This feature creates distortion and should be considered a last resort."};
+cvar_t snd_entchannel0volume = {CVAR_SAVE, "snd_entchannel0volume", "1", "volume multiplier of the auto-allocate entity channel of regular entities (DEPRECATED)"};
+cvar_t snd_entchannel1volume = {CVAR_SAVE, "snd_entchannel1volume", "1", "volume multiplier of the 1st entity channel of regular entities (DEPRECATED)"};
+cvar_t snd_entchannel2volume = {CVAR_SAVE, "snd_entchannel2volume", "1", "volume multiplier of the 2nd entity channel of regular entities (DEPRECATED)"};
+cvar_t snd_entchannel3volume = {CVAR_SAVE, "snd_entchannel3volume", "1", "volume multiplier of the 3rd entity channel of regular entities (DEPRECATED)"};
+cvar_t snd_entchannel4volume = {CVAR_SAVE, "snd_entchannel4volume", "1", "volume multiplier of the 4th entity channel of regular entities (DEPRECATED)"};
+cvar_t snd_entchannel5volume = {CVAR_SAVE, "snd_entchannel5volume", "1", "volume multiplier of the 5th entity channel of regular entities (DEPRECATED)"};
+cvar_t snd_entchannel6volume = {CVAR_SAVE, "snd_entchannel6volume", "1", "volume multiplier of the 6th entity channel of regular entities (DEPRECATED)"};
+cvar_t snd_entchannel7volume = {CVAR_SAVE, "snd_entchannel7volume", "1", "volume multiplier of the 7th entity channel of regular entities (DEPRECATED)"};
+cvar_t snd_playerchannel0volume = {CVAR_SAVE, "snd_playerchannel0volume", "1", "volume multiplier of the auto-allocate entity channel of player entities (DEPRECATED)"};
+cvar_t snd_playerchannel1volume = {CVAR_SAVE, "snd_playerchannel1volume", "1", "volume multiplier of the 1st entity channel of player entities (DEPRECATED)"};
+cvar_t snd_playerchannel2volume = {CVAR_SAVE, "snd_playerchannel2volume", "1", "volume multiplier of the 2nd entity channel of player entities (DEPRECATED)"};
+cvar_t snd_playerchannel3volume = {CVAR_SAVE, "snd_playerchannel3volume", "1", "volume multiplier of the 3rd entity channel of player entities (DEPRECATED)"};
+cvar_t snd_playerchannel4volume = {CVAR_SAVE, "snd_playerchannel4volume", "1", "volume multiplier of the 4th entity channel of player entities (DEPRECATED)"};
+cvar_t snd_playerchannel5volume = {CVAR_SAVE, "snd_playerchannel5volume", "1", "volume multiplier of the 5th entity channel of player entities (DEPRECATED)"};
+cvar_t snd_playerchannel6volume = {CVAR_SAVE, "snd_playerchannel6volume", "1", "volume multiplier of the 6th entity channel of player entities (DEPRECATED)"};
+cvar_t snd_playerchannel7volume = {CVAR_SAVE, "snd_playerchannel7volume", "1", "volume multiplier of the 7th entity channel of player entities (DEPRECATED)"};
+cvar_t snd_worldchannel0volume = {CVAR_SAVE, "snd_worldchannel0volume", "1", "volume multiplier of the auto-allocate entity channel of the world entity (DEPRECATED)"};
+cvar_t snd_worldchannel1volume = {CVAR_SAVE, "snd_worldchannel1volume", "1", "volume multiplier of the 1st entity channel of the world entity (DEPRECATED)"};
+cvar_t snd_worldchannel2volume = {CVAR_SAVE, "snd_worldchannel2volume", "1", "volume multiplier of the 2nd entity channel of the world entity (DEPRECATED)"};
+cvar_t snd_worldchannel3volume = {CVAR_SAVE, "snd_worldchannel3volume", "1", "volume multiplier of the 3rd entity channel of the world entity (DEPRECATED)"};
+cvar_t snd_worldchannel4volume = {CVAR_SAVE, "snd_worldchannel4volume", "1", "volume multiplier of the 4th entity channel of the world entity (DEPRECATED)"};
+cvar_t snd_worldchannel5volume = {CVAR_SAVE, "snd_worldchannel5volume", "1", "volume multiplier of the 5th entity channel of the world entity (DEPRECATED)"};
+cvar_t snd_worldchannel6volume = {CVAR_SAVE, "snd_worldchannel6volume", "1", "volume multiplier of the 6th entity channel of the world entity (DEPRECATED)"};
+cvar_t snd_worldchannel7volume = {CVAR_SAVE, "snd_worldchannel7volume", "1", "volume multiplier of the 7th entity channel of the world entity (DEPRECATED)"};
+cvar_t snd_csqcchannel0volume = {CVAR_SAVE, "snd_csqcchannel0volume", "1", "volume multiplier of the auto-allocate entity channel CSQC entities (DEPRECATED)"};
+cvar_t snd_csqcchannel1volume = {CVAR_SAVE, "snd_csqcchannel1volume", "1", "volume multiplier of the 1st entity channel of CSQC entities (DEPRECATED)"};
+cvar_t snd_csqcchannel2volume = {CVAR_SAVE, "snd_csqcchannel2volume", "1", "volume multiplier of the 2nd entity channel of CSQC entities (DEPRECATED)"};
+cvar_t snd_csqcchannel3volume = {CVAR_SAVE, "snd_csqcchannel3volume", "1", "volume multiplier of the 3rd entity channel of CSQC entities (DEPRECATED)"};
+cvar_t snd_csqcchannel4volume = {CVAR_SAVE, "snd_csqcchannel4volume", "1", "volume multiplier of the 4th entity channel of CSQC entities (DEPRECATED)"};
+cvar_t snd_csqcchannel5volume = {CVAR_SAVE, "snd_csqcchannel5volume", "1", "volume multiplier of the 5th entity channel of CSQC entities (DEPRECATED)"};
+cvar_t snd_csqcchannel6volume = {CVAR_SAVE, "snd_csqcchannel6volume", "1", "volume multiplier of the 6th entity channel of CSQC entities (DEPRECATED)"};
+cvar_t snd_csqcchannel7volume = {CVAR_SAVE, "snd_csqcchannel7volume", "1", "volume multiplier of the 7th entity channel of CSQC entities (DEPRECATED)"};
+cvar_t snd_channel0volume = {CVAR_SAVE, "snd_channel0volume", "1", "volume multiplier of the auto-allocate entity channel"};
+cvar_t snd_channel1volume = {CVAR_SAVE, "snd_channel1volume", "1", "volume multiplier of the 1st entity channel"};
+cvar_t snd_channel2volume = {CVAR_SAVE, "snd_channel2volume", "1", "volume multiplier of the 2nd entity channel"};
+cvar_t snd_channel3volume = {CVAR_SAVE, "snd_channel3volume", "1", "volume multiplier of the 3rd entity channel"};
+cvar_t snd_channel4volume = {CVAR_SAVE, "snd_channel4volume", "1", "volume multiplier of the 4th entity channel"};
+cvar_t snd_channel5volume = {CVAR_SAVE, "snd_channel5volume", "1", "volume multiplier of the 5th entity channel"};
+cvar_t snd_channel6volume = {CVAR_SAVE, "snd_channel6volume", "1", "volume multiplier of the 6th entity channel"};
+cvar_t snd_channel7volume = {CVAR_SAVE, "snd_channel7volume", "1", "volume multiplier of the 7th entity channel"};
 
 // Local cvars
-static cvar_t nosound = {CF_CLIENT, "nosound", "0", "disables sound"};
-static cvar_t snd_precache = {CF_CLIENT, "snd_precache", "1", "loads sounds before they are used"};
-static cvar_t ambient_level = {CF_CLIENT, "ambient_level", "0.3", "volume of environment noises (water and wind)"};
-static cvar_t ambient_fade = {CF_CLIENT, "ambient_fade", "100", "rate of volume fading when moving from one environment to another"};
-static cvar_t snd_noextraupdate = {CF_CLIENT, "snd_noextraupdate", "0", "disables extra sound mixer calls that are meant to reduce the chance of sound breakup at very low framerates"};
-static cvar_t snd_show = {CF_CLIENT, "snd_show", "0", "shows some statistics about sound mixing"};
+static cvar_t nosound = {0, "nosound", "0", "disables sound"};
+static cvar_t snd_precache = {0, "snd_precache", "1", "loads sounds before they are used"};
+static cvar_t ambient_level = {0, "ambient_level", "0.3", "volume of environment noises (water and wind)"};
+static cvar_t ambient_fade = {0, "ambient_fade", "100", "rate of volume fading when moving from one environment to another"};
+static cvar_t snd_noextraupdate = {0, "snd_noextraupdate", "0", "disables extra sound mixer calls that are meant to reduce the chance of sound breakup at very low framerates"};
+static cvar_t snd_show = {0, "snd_show", "0", "shows some statistics about sound mixing"};
 
-// Default sound format is 48KHz, 32bit float, stereo
+// Default sound format is 48KHz, 16-bit, stereo
 // (48KHz because a lot of onboard sound cards sucks at any other speed)
-static cvar_t snd_speed = {CF_CLIENT | CF_ARCHIVE, "snd_speed", "48000", "sound output frequency, in hertz"};
-static cvar_t snd_width = {CF_CLIENT | CF_ARCHIVE, "snd_width", "4", "sound output precision, in bytes - 1 = 8bit, 2 = 16bit, 4 = 32bit float"};
-static cvar_t snd_channels = {CF_CLIENT | CF_ARCHIVE, "snd_channels", "2", "number of channels for the sound output (2 for stereo; up to 8 supported for 3D sound)"};
+static cvar_t snd_speed = {CVAR_SAVE, "snd_speed", "48000", "sound output frequency, in hertz"};
+static cvar_t snd_width = {CVAR_SAVE, "snd_width", "2", "sound output precision, in bytes (1 and 2 supported)"};
+static cvar_t snd_channels = {CVAR_SAVE, "snd_channels", "2", "number of channels for the sound output (2 for stereo; up to 8 supported for 3D sound)"};
 
-static cvar_t snd_startloopingsounds = {CF_CLIENT, "snd_startloopingsounds", "1", "whether to start sounds that would loop (you want this to be 1); existing sounds are not affected"};
-static cvar_t snd_startnonloopingsounds = {CF_CLIENT, "snd_startnonloopingsounds", "1", "whether to start sounds that would not loop (you want this to be 1); existing sounds are not affected"};
+static cvar_t snd_startloopingsounds = {0, "snd_startloopingsounds", "1", "whether to start sounds that would loop (you want this to be 1); existing sounds are not affected"};
+static cvar_t snd_startnonloopingsounds = {0, "snd_startnonloopingsounds", "1", "whether to start sounds that would not loop (you want this to be 1); existing sounds are not affected"};
 
 // randomization
-static cvar_t snd_identicalsoundrandomization_time = {CF_CLIENT, "snd_identicalsoundrandomization_time", "0.1", "how much seconds to randomly skip (positive) or delay (negative) sounds when multiple identical sounds are started on the same frame"};
-static cvar_t snd_identicalsoundrandomization_tics = {CF_CLIENT, "snd_identicalsoundrandomization_tics", "0", "if nonzero, how many tics to limit sound randomization as defined by snd_identicalsoundrandomization_time"};
+static cvar_t snd_identicalsoundrandomization_time = {0, "snd_identicalsoundrandomization_time", "0.1", "how much seconds to randomly skip (positive) or delay (negative) sounds when multiple identical sounds are started on the same frame"};
+static cvar_t snd_identicalsoundrandomization_tics = {0, "snd_identicalsoundrandomization_tics", "0", "if nonzero, how many tics to limit sound randomization as defined by snd_identicalsoundrandomization_time"};
 
 // Ambient sounds
 static sfx_t* ambient_sfxs [2] = { NULL, NULL };
@@ -264,19 +261,19 @@ static const char* ambient_names [2] = { "sound/ambience/water1.wav", "sound/amb
 // Functions
 // ====================================================================
 
-void S_FreeSfx (sfx_t *sfx, qbool force);
+void S_FreeSfx (sfx_t *sfx, qboolean force);
 
-static void S_Play_Common (cmd_state_t *cmd, float fvol, float attenuation)
+static void S_Play_Common (float fvol, float attenuation)
 {
 	int i, ch_ind;
 	char name [MAX_QPATH];
 	sfx_t *sfx;
 
 	i = 1;
-	while (i < Cmd_Argc (cmd))
+	while (i < Cmd_Argc ())
 	{
 		// Get the name, and appends ".wav" as an extension if there's none
-		strlcpy (name, Cmd_Argv(cmd, i), sizeof (name));
+		strlcpy (name, Cmd_Argv (i), sizeof (name));
 		if (!strrchr (name, '.'))
 			strlcat (name, ".wav", sizeof (name));
 		i++;
@@ -284,7 +281,7 @@ static void S_Play_Common (cmd_state_t *cmd, float fvol, float attenuation)
 		// If we need to get the volume from the command line
 		if (fvol == -1.0f)
 		{
-			fvol = atof (Cmd_Argv(cmd, i));
+			fvol = atof (Cmd_Argv (i));
 			i++;
 		}
 
@@ -302,22 +299,22 @@ static void S_Play_Common (cmd_state_t *cmd, float fvol, float attenuation)
 	}
 }
 
-static void S_Play_f(cmd_state_t *cmd)
+static void S_Play_f(void)
 {
-	S_Play_Common(cmd, 1.0f, 1.0f);
+	S_Play_Common (1.0f, 1.0f);
 }
 
-static void S_Play2_f(cmd_state_t *cmd)
+static void S_Play2_f(void)
 {
-	S_Play_Common(cmd, 1.0f, 0.0f);
+	S_Play_Common (1.0f, 0.0f);
 }
 
-static void S_PlayVol_f(cmd_state_t *cmd)
+static void S_PlayVol_f(void)
 {
-	S_Play_Common(cmd, -1.0f, 0.0f);
+	S_Play_Common (-1.0f, 0.0f);
 }
 
-static void S_SoundList_f(cmd_state_t *cmd)
+static void S_SoundList_f (void)
 {
 	unsigned int i;
 	sfx_t *sfx;
@@ -330,7 +327,7 @@ static void S_SoundList_f(cmd_state_t *cmd)
 		{
 			unsigned int size;
 
-			size = (unsigned int)sfx->memsize;
+			size = sfx->memsize;
 			Con_Printf ("%c%c%c(%5iHz %2db %6s) %8i : %s\n",
 						(sfx->loopstart < sfx->total_length) ? 'L' : ' ',
 						(sfx->flags & SFXFLAG_STREAMED) ? 'S' : ' ',
@@ -349,7 +346,7 @@ static void S_SoundList_f(cmd_state_t *cmd)
 }
 
 
-static void S_SoundInfo_f(cmd_state_t *cmd)
+static void S_SoundInfo_f(void)
 {
 	if (snd_renderbuffer == NULL)
 	{
@@ -364,14 +361,6 @@ static void S_SoundInfo_f(cmd_state_t *cmd)
 	Con_Printf("%5u total_channels\n", total_channels);
 }
 
-static void S_PauseSound_f(cmd_state_t *cmd)
-{
-	if( Cmd_Argc(cmd) != 2 ) {
-		Con_Print("pausesound <pause>\n");
-		return;
-	}
-	S_PauseGameSounds(atoi( Cmd_Argv(cmd, 1 ) ) != 0);
-}
 
 int S_GetSoundRate(void)
 {
@@ -383,9 +372,75 @@ int S_GetSoundChannels(void)
 	return snd_renderbuffer ? snd_renderbuffer->format.channels : 0;
 }
 
-int S_GetSoundWidth(void)
+
+static qboolean S_ChooseCheaperFormat (snd_format_t* format, qboolean fixed_speed, qboolean fixed_width, qboolean fixed_channels)
 {
-	return snd_renderbuffer ? snd_renderbuffer->format.width : 0;
+	static const snd_format_t thresholds [] =
+	{
+		// speed			width			channels
+		{ SND_MIN_SPEED,	SND_MIN_WIDTH,	SND_MIN_CHANNELS },
+		{ 11025,			1,				2 },
+		{ 22050,			2,				2 },
+		{ 44100,			2,				2 },
+		{ 48000,			2,				6 },
+		{ 96000,			2,				6 },
+		{ SND_MAX_SPEED,	SND_MAX_WIDTH,	SND_MAX_CHANNELS },
+	};
+	const unsigned int nb_thresholds = sizeof(thresholds) / sizeof(thresholds[0]);
+	unsigned int speed_level, width_level, channels_level;
+
+	// If we have reached the minimum values, there's nothing more we can do
+	if ((format->speed == thresholds[0].speed || fixed_speed) &&
+		(format->width == thresholds[0].width || fixed_width) &&
+		(format->channels == thresholds[0].channels || fixed_channels))
+		return false;
+
+	// Check the min and max values
+	#define CHECK_BOUNDARIES(param)								\
+	if (format->param < thresholds[0].param)					\
+	{															\
+		format->param = thresholds[0].param;					\
+		return true;											\
+	}															\
+	if (format->param > thresholds[nb_thresholds - 1].param)	\
+	{															\
+		format->param = thresholds[nb_thresholds - 1].param;	\
+		return true;											\
+	}
+	CHECK_BOUNDARIES(speed);
+	CHECK_BOUNDARIES(width);
+	CHECK_BOUNDARIES(channels);
+	#undef CHECK_BOUNDARIES
+
+	// Find the level of each parameter
+	#define FIND_LEVEL(param)									\
+	param##_level = 0;											\
+	while (param##_level < nb_thresholds - 1)					\
+	{															\
+		if (format->param <= thresholds[param##_level].param)	\
+			break;												\
+																\
+		param##_level++;										\
+	}
+	FIND_LEVEL(speed);
+	FIND_LEVEL(width);
+	FIND_LEVEL(channels);
+	#undef FIND_LEVEL
+
+	// Decrease the parameter with the highest level to the previous level
+	if (channels_level >= speed_level && channels_level >= width_level && !fixed_channels)
+	{
+		format->channels = thresholds[channels_level - 1].channels;
+		return true;
+	}
+	if (speed_level >= width_level && !fixed_speed)
+	{
+		format->speed = thresholds[speed_level - 1].speed;
+		return true;
+	}
+
+	format->width = thresholds[width_level - 1].width;
+	return true;
 }
 
 
@@ -474,6 +529,7 @@ static void S_SetChannelLayout (void)
 
 void S_Startup (void)
 {
+	qboolean fixed_speed, fixed_width, fixed_channels;
 	snd_format_t chosen_fmt;
 	static snd_format_t prev_render_format = {0, 0, 0};
 	char* env;
@@ -484,6 +540,10 @@ void S_Startup (void)
 
 	if (!snd_initialized.integer)
 		return;
+
+	fixed_speed = false;
+	fixed_width = false;
+	fixed_channels = false;
 
 	// Get the starting sound format from the cvars
 	chosen_fmt.speed = snd_speed.integer;
@@ -502,6 +562,7 @@ void S_Startup (void)
 #if _MSC_VER >= 1400
 		free(env);
 #endif
+		fixed_channels = true;
 	}
 #if _MSC_VER >= 1400
 	_dupenv_s(&env, &envlen, "QUAKE_SOUND_SPEED");
@@ -514,6 +575,7 @@ void S_Startup (void)
 #if _MSC_VER >= 1400
 		free(env);
 #endif
+		fixed_speed = true;
 	}
 #if _MSC_VER >= 1400
 	_dupenv_s(&env, &envlen, "QUAKE_SOUND_SAMPLEBITS");
@@ -526,42 +588,49 @@ void S_Startup (void)
 #if _MSC_VER >= 1400
 		free(env);
 #endif
+		fixed_width = true;
 	}
 
 	// Parse the command line to see if the player wants a particular sound format
 // COMMANDLINEOPTION: Sound: -sndquad sets sound output to 4 channel surround
-	if (Sys_CheckParm ("-sndquad") != 0)
+	if (COM_CheckParm ("-sndquad") != 0)
 	{
 		chosen_fmt.channels = 4;
+		fixed_channels = true;
 	}
 // COMMANDLINEOPTION: Sound: -sndstereo sets sound output to stereo
-	else if (Sys_CheckParm ("-sndstereo") != 0)
+	else if (COM_CheckParm ("-sndstereo") != 0)
 	{
 		chosen_fmt.channels = 2;
+		fixed_channels = true;
 	}
 // COMMANDLINEOPTION: Sound: -sndmono sets sound output to mono
-	else if (Sys_CheckParm ("-sndmono") != 0)
+	else if (COM_CheckParm ("-sndmono") != 0)
 	{
 		chosen_fmt.channels = 1;
+		fixed_channels = true;
 	}
 // COMMANDLINEOPTION: Sound: -sndspeed <hz> chooses sound output rate (supported values are 48000, 44100, 32000, 24000, 22050, 16000, 11025 (quake), 8000)
-	i = Sys_CheckParm ("-sndspeed");
-	if (0 < i && i < sys.argc - 1)
+	i = COM_CheckParm ("-sndspeed");
+	if (0 < i && i < com_argc - 1)
 	{
-		chosen_fmt.speed = atoi (sys.argv[i + 1]);
+		chosen_fmt.speed = atoi (com_argv[i + 1]);
+		fixed_speed = true;
 	}
-// COMMANDLINEOPTION: Sound: -sndbits <bits> chooses 8 bit or 16 bit or 32bit float sound output
-	i = Sys_CheckParm ("-sndbits");
-	if (0 < i && i < sys.argc - 1)
+// COMMANDLINEOPTION: Sound: -sndbits <bits> chooses 8 bit or 16 bit sound output
+	i = COM_CheckParm ("-sndbits");
+	if (0 < i && i < com_argc - 1)
 	{
-		chosen_fmt.width = atoi (sys.argv[i + 1]) / 8;
+		chosen_fmt.width = atoi (com_argv[i + 1]) / 8;
+		fixed_width = true;
 	}
 
 #if 0
-	// LadyHavoc: now you can with the resampler...
+	// LordHavoc: now you can with the resampler...
 	// You can't change sound speed after start time (not yet supported)
 	if (prev_render_format.speed != 0)
 	{
+		fixed_speed = true;
 		if (chosen_fmt.speed != prev_render_format.speed)
 		{
 			Con_Printf("S_Startup: sound speed has changed! This is NOT supported yet. Falling back to previous speed (%u Hz)\n",
@@ -575,43 +644,72 @@ void S_Startup (void)
 	if (chosen_fmt.speed < SND_MIN_SPEED)
 	{
 		chosen_fmt.speed = SND_MIN_SPEED;
+		fixed_speed = false;
 	}
 	else if (chosen_fmt.speed > SND_MAX_SPEED)
 	{
 		chosen_fmt.speed = SND_MAX_SPEED;
+		fixed_speed = false;
 	}
 
 	if (chosen_fmt.width < SND_MIN_WIDTH)
 	{
 		chosen_fmt.width = SND_MIN_WIDTH;
-	}
-	else if (chosen_fmt.width == 3)
-	{
-		chosen_fmt.width = 4;
+		fixed_width = false;
 	}
 	else if (chosen_fmt.width > SND_MAX_WIDTH)
 	{
 		chosen_fmt.width = SND_MAX_WIDTH;
+		fixed_width = false;
 	}
 
 	if (chosen_fmt.channels < SND_MIN_CHANNELS)
 	{
 		chosen_fmt.channels = SND_MIN_CHANNELS;
+		fixed_channels = false;
 	}
 	else if (chosen_fmt.channels > SND_MAX_CHANNELS)
 	{
 		chosen_fmt.channels = SND_MAX_CHANNELS;
+		fixed_channels = false;
 	}
 
 	// create the sound buffer used for sumitting the samples to the plaform-dependent module
 	if (!simsound)
 	{
-		Con_Printf("S_Startup: initializing sound output format: %dHz, %d bit, %d channels...\n",
-					chosen_fmt.speed,
-					chosen_fmt.width,
-					chosen_fmt.channels);
+		snd_format_t suggest_fmt;
+		qboolean accepted;
 
-		if (!SndSys_Init(&chosen_fmt))
+		accepted = false;
+		do
+		{
+			Con_Printf("S_Startup: initializing sound output format: %dHz, %d bit, %d channels...\n",
+						chosen_fmt.speed, chosen_fmt.width * 8,
+						chosen_fmt.channels);
+
+			memset(&suggest_fmt, 0, sizeof(suggest_fmt));
+			accepted = SndSys_Init(&chosen_fmt, &suggest_fmt);
+
+			if (!accepted)
+			{
+				Con_Printf("S_Startup: sound output initialization FAILED\n");
+
+				// If the module is suggesting another one
+				if (suggest_fmt.speed != 0)
+				{
+					memcpy(&chosen_fmt, &suggest_fmt, sizeof(chosen_fmt));
+					Con_Printf ("           Driver has suggested %dHz, %d bit, %d channels. Retrying...\n",
+								suggest_fmt.speed, suggest_fmt.width * 8,
+								suggest_fmt.channels);
+				}
+				// Else, try to find a less resource-demanding format
+				else if (!S_ChooseCheaperFormat (&chosen_fmt, fixed_speed, fixed_width, fixed_channels))
+					break;
+			}
+		} while (!accepted);
+
+		// If we haven't found a suitable format
+		if (!accepted)
 		{
 			Con_Print("S_Startup: SndSys_Init failed.\n");
 			sound_spatialized = false;
@@ -639,7 +737,7 @@ void S_Startup (void)
 	current_channellayout_used = SND_CHANNELLAYOUT_AUTO;
 	S_SetChannelLayout();
 
-	snd_starttime = host.realtime;
+	snd_starttime = realtime;
 
 	// If the sound module has already run, add an extra time to make sure
 	// the sound time doesn't decrease, to not confuse playing SFXs
@@ -658,9 +756,7 @@ void S_Startup (void)
 		extrasoundtime = 0;
 	snd_renderbuffer->startframe = soundtime;
 	snd_renderbuffer->endframe = soundtime;
-#ifdef CONFIG_VIDEO_CAPTURE
 	recording_sound = false;
-#endif
 }
 
 void S_Shutdown(void)
@@ -682,7 +778,7 @@ void S_Shutdown(void)
 	sound_spatialized = false;
 }
 
-static void S_Restart_f(cmd_state_t *cmd)
+static void S_Restart_f(void)
 {
 	// NOTE: we can't free all sounds if we are running a map (this frees sfx_t that are still referenced by precaches)
 	// So, refuse to do this if we are connected.
@@ -775,29 +871,28 @@ void S_Init(void)
 	Cvar_RegisterVariable(&snd_identicalsoundrandomization_tics);
 
 // COMMANDLINEOPTION: Sound: -nosound disables sound (including CD audio)
-	if (Sys_CheckParm("-nosound"))
+	if (COM_CheckParm("-nosound"))
 	{
 		// dummy out Play and Play2 because mods stuffcmd that
-		Cmd_AddCommand(CF_CLIENT, "play", Host_NoOperation_f, "does nothing because -nosound was specified");
-		Cmd_AddCommand(CF_CLIENT, "play2", Host_NoOperation_f, "does nothing because -nosound was specified");
+		Cmd_AddCommand("play", Host_NoOperation_f, "does nothing because -nosound was specified");
+		Cmd_AddCommand("play2", Host_NoOperation_f, "does nothing because -nosound was specified");
 		return;
 	}
 
 	snd_mempool = Mem_AllocPool("sound", 0, NULL);
 
 // COMMANDLINEOPTION: Sound: -simsound runs sound mixing but with no output
-	if (Sys_CheckParm("-simsound"))
+	if (COM_CheckParm("-simsound"))
 		simsound = true;
 
-	Cmd_AddCommand(CF_CLIENT, "play", S_Play_f, "play a sound at your current location (not heard by anyone else)");
-	Cmd_AddCommand(CF_CLIENT, "play2", S_Play2_f, "play a sound globally throughout the level (not heard by anyone else)");
-	Cmd_AddCommand(CF_CLIENT, "playvol", S_PlayVol_f, "play a sound at the specified volume level at your current location (not heard by anyone else)");
-	Cmd_AddCommand(CF_CLIENT, "stopsound", S_StopAllSounds_f, "silence");
-	Cmd_AddCommand(CF_CLIENT, "pausesound", S_PauseSound_f, "temporary silence");
-	Cmd_AddCommand(CF_CLIENT, "soundlist", S_SoundList_f, "list loaded sounds");
-	Cmd_AddCommand(CF_CLIENT, "soundinfo", S_SoundInfo_f, "print sound system information (such as channels and speed)");
-	Cmd_AddCommand(CF_CLIENT, "snd_restart", S_Restart_f, "restart sound system");
-	Cmd_AddCommand(CF_CLIENT, "snd_unloadallsounds", S_UnloadAllSounds_f, "unload all sound files");
+	Cmd_AddCommand("play", S_Play_f, "play a sound at your current location (not heard by anyone else)");
+	Cmd_AddCommand("play2", S_Play2_f, "play a sound globally throughout the level (not heard by anyone else)");
+	Cmd_AddCommand("playvol", S_PlayVol_f, "play a sound at the specified volume level at your current location (not heard by anyone else)");
+	Cmd_AddCommand("stopsound", S_StopAllSounds, "silence");
+	Cmd_AddCommand("soundlist", S_SoundList_f, "list loaded sounds");
+	Cmd_AddCommand("soundinfo", S_SoundInfo_f, "print sound system information (such as channels and speed)");
+	Cmd_AddCommand("snd_restart", S_Restart_f, "restart sound system");
+	Cmd_AddCommand("snd_unloadallsounds", S_UnloadAllSounds_f, "unload all sound files");
 
 	Cvar_RegisterVariable(&nosound);
 	Cvar_RegisterVariable(&snd_precache);
@@ -821,9 +916,6 @@ void S_Init(void)
 	memset(channels, 0, MAX_CHANNELS * sizeof(channel_t));
 
 	OGG_OpenLibrary ();
-#ifdef USEXMP
-	XMP_OpenLibrary ();
-#endif
 }
 
 
@@ -837,9 +929,6 @@ Shutdown and free all resources
 void S_Terminate (void)
 {
 	S_Shutdown ();
-#ifdef USEXMP
-	XMP_CloseLibrary ();
-#endif
 	OGG_CloseLibrary ();
 
 	// Free all SFXs
@@ -856,7 +945,7 @@ void S_Terminate (void)
 S_UnloadAllSounds_f
 ==================
 */
-void S_UnloadAllSounds_f(cmd_state_t *cmd)
+void S_UnloadAllSounds_f (void)
 {
 	int i;
 
@@ -935,7 +1024,7 @@ sfx_t *S_FindName (const char *name)
 S_FreeSfx
 ==================
 */
-void S_FreeSfx (sfx_t *sfx, qbool force)
+void S_FreeSfx (sfx_t *sfx, qboolean force)
 {
 	unsigned int i;
 
@@ -1040,7 +1129,7 @@ void S_PurgeUnused(void)
 S_PrecacheSound
 ==================
 */
-sfx_t *S_PrecacheSound (const char *name, qbool complain, qbool levelsound)
+sfx_t *S_PrecacheSound (const char *name, qboolean complain, qboolean levelsound)
 {
 	sfx_t *sfx;
 
@@ -1097,7 +1186,7 @@ float S_SoundLength(const char *name)
 S_IsSoundPrecached
 ==================
 */
-qbool S_IsSoundPrecached (const sfx_t *sfx)
+qboolean S_IsSoundPrecached (const sfx_t *sfx)
 {
 	return (sfx != NULL && sfx->fetcher != NULL) || (sfx == &changevolume_sfx);
 }
@@ -1204,7 +1293,7 @@ Spatializes a channel
 =================
 */
 extern cvar_t cl_gameplayfix_soundsmovewithentities;
-static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
+static void SND_Spatialize_WithSfx(channel_t *ch, qboolean isstatic, sfx_t *sfx)
 {
 	int i;
 	double f;
@@ -1325,7 +1414,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 			case 5:  mastervol *= snd_channel5volume.value; break;
 			case 6:  mastervol *= snd_channel6volume.value; break;
 			case 7:  mastervol *= snd_channel7volume.value; break;
-			default: mastervol *= Cvar_VariableValueOr(&cvars_all, va(vabuf, sizeof(vabuf), "snd_channel%dvolume", CHAN_ENGINE2CVAR(ch->entchannel)), 1.0, ~0); break;
+			default: mastervol *= Cvar_VariableValueOr(va(vabuf, sizeof(vabuf), "snd_channel%dvolume", CHAN_ENGINE2CVAR(ch->entchannel)), 1.0); break;
 		}
 	}
 
@@ -1368,7 +1457,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 	ch->mixspeed = mixspeed;
 
 	// anything coming from the view entity will always be full volume
-	// LadyHavoc: make sounds with ATTN_NONE have no spatialization
+	// LordHavoc: make sounds with ATTN_NONE have no spatialization
 	if (ch->entnum == cl.viewentity || ch->entnum == CL_VM_GetViewEntity() || ch->distfade == 0)
 	{
 		ch->prologic_invert = 1;
@@ -1400,11 +1489,11 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 		intensity = mastervol * f;
 		if (intensity > 0)
 		{
-			qbool occluded = false;
+			qboolean occluded = false;
 			if (snd_spatialization_occlusion.integer)
 			{
 				if(snd_spatialization_occlusion.integer & 1)
-					if(listener_pvs && cl.worldmodel)
+					if(listener_pvs)
 					{
 						int cluster = cl.worldmodel->brush.PointInLeaf(cl.worldmodel, ch->origin)->clusterindex;
 						if(cluster >= 0 && cluster < 8 * listener_pvsbytes && !CHECKPVSBIT(listener_pvs, cluster))
@@ -1413,7 +1502,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 
 				if(snd_spatialization_occlusion.integer & 2)
 					if(!occluded)
-						if(cl.worldmodel && cl.worldmodel->brush.TraceLineOfSight && !cl.worldmodel->brush.TraceLineOfSight(cl.worldmodel, listener_origin, ch->origin, ch->origin, ch->origin))
+						if(cl.worldmodel && cl.worldmodel->brush.TraceLineOfSight && !cl.worldmodel->brush.TraceLineOfSight(cl.worldmodel, listener_origin, ch->origin))
 							occluded = true;
 			}
 			if(occluded)
@@ -1516,7 +1605,7 @@ static void SND_Spatialize_WithSfx(channel_t *ch, qbool isstatic, sfx_t *sfx)
 				ch->volume[i] = 0;
 	}
 }
-static void SND_Spatialize(channel_t *ch, qbool isstatic)
+static void SND_Spatialize(channel_t *ch, qboolean isstatic)
 {
 	sfx_t *sfx = ch->sfx;
 	SND_Spatialize_WithSfx(ch, isstatic, sfx);
@@ -1527,7 +1616,7 @@ static void SND_Spatialize(channel_t *ch, qbool isstatic)
 // Start a sound effect
 // =======================================================================
 
-static void S_PlaySfxOnChannel (sfx_t *sfx, channel_t *target_chan, unsigned int flags, vec3_t origin, float fvol, float attenuation, qbool isstatic, int entnum, int entchannel, int startpos, float fspeed)
+static void S_PlaySfxOnChannel (sfx_t *sfx, channel_t *target_chan, unsigned int flags, vec3_t origin, float fvol, float attenuation, qboolean isstatic, int entnum, int entchannel, int startpos, float fspeed)
 {
 	if (!sfx)
 	{
@@ -1661,7 +1750,7 @@ int S_StartSound (int entnum, int entchannel, sfx_t *sfx, vec3_t origin, float f
 	return S_StartSound_StartPosition_Flags(entnum, entchannel, sfx, origin, fvol, attenuation, 0, CHANNELFLAG_NONE, 1.0f);
 }
 
-void S_StopChannel (unsigned int channel_ind, qbool lockmutex, qbool freesfx)
+void S_StopChannel (unsigned int channel_ind, qboolean lockmutex, qboolean freesfx)
 {
 	channel_t *ch;
 	sfx_t *sfx;
@@ -1692,7 +1781,7 @@ void S_StopChannel (unsigned int channel_ind, qbool lockmutex, qbool freesfx)
 }
 
 
-qbool S_SetChannelFlag (unsigned int ch_ind, unsigned int flag, qbool value)
+qboolean S_SetChannelFlag (unsigned int ch_ind, unsigned int flag, qboolean value)
 {
 	if (ch_ind >= total_channels)
 		return false;
@@ -1723,7 +1812,7 @@ void S_StopSound(int entnum, int entchannel)
 		}
 }
 
-void S_StopAllSounds(void)
+void S_StopAllSounds (void)
 {
 	unsigned int i;
 
@@ -1731,8 +1820,10 @@ void S_StopAllSounds(void)
 	if (snd_renderbuffer == NULL)
 		return;
 
+#ifdef CONFIG_CD
 	// stop CD audio because it may be using a faketrack
 	CDAudio_Stop();
+#endif
 
 	if (simsound || SndSys_LockRenderBuffer ())
 	{
@@ -1756,13 +1847,7 @@ void S_StopAllSounds(void)
 	}
 }
 
-void S_StopAllSounds_f(cmd_state_t *cmd)
-{
-	S_StopAllSounds();
-}
-
-
-void S_PauseGameSounds (qbool toggle)
+void S_PauseGameSounds (qboolean toggle)
 {
 	unsigned int i;
 
@@ -1924,25 +2009,19 @@ static void S_PaintAndSubmit (void)
 		usesoundtimehack = 1;
 		newsoundtime = (unsigned int)((double)cl.mtime[0] * (double)snd_renderbuffer->format.speed);
 	}
-#ifdef CONFIG_VIDEO_CAPTURE
 	else if (cls.capturevideo.soundrate && !cls.capturevideo.realtime) // SUPER NASTY HACK to record non-realtime sound
 	{
 		usesoundtimehack = 2;
 		newsoundtime = (unsigned int)((double)cls.capturevideo.frame * (double)snd_renderbuffer->format.speed / (double)cls.capturevideo.framerate);
 	}
-#endif
 	else if (simsound)
 	{
 		usesoundtimehack = 3;
-		newsoundtime = (unsigned int)((host.realtime - snd_starttime) * (double)snd_renderbuffer->format.speed);
+		newsoundtime = (unsigned int)((realtime - snd_starttime) * (double)snd_renderbuffer->format.speed);
 	}
 	else
 	{
-#ifdef CONFIG_VIDEO_CAPTURE
 		snd_usethreadedmixing = snd_threaded && !cls.capturevideo.soundrate;
-#else
-		snd_usethreadedmixing = snd_threaded;
-#endif
 		usesoundtimehack = 0;
 		newsoundtime = SndSys_GetSoundTime();
 	}
@@ -1976,7 +2055,6 @@ static void S_PaintAndSubmit (void)
 	newsoundtime += extrasoundtime;
 	if (newsoundtime < soundtime)
 	{
-#ifdef CONFIG_VIDEO_CAPTURE
 		if ((cls.capturevideo.soundrate != 0) != recording_sound)
 		{
 			unsigned int additionaltime;
@@ -1995,16 +2073,11 @@ static void S_PaintAndSubmit (void)
 						extrasoundtime);
 		}
 		else if (!soundtimehack)
-#else
-		if (!soundtimehack)
-#endif
 			Con_Printf("S_PaintAndSubmit: WARNING: newsoundtime < soundtime (%u < %u)\n",
 					   newsoundtime, soundtime);
 	}
 	soundtime = newsoundtime;
-#ifdef CONFIG_VIDEO_CAPTURE
 	recording_sound = (cls.capturevideo.soundrate != 0);
-#endif
 
 	// Lock submitbuffer
 	if (!simsound && !SndSys_LockRenderBuffer())
@@ -2240,7 +2313,7 @@ void S_ExtraUpdate (void)
 	S_PaintAndSubmit();
 }
 
-qbool S_LocalSound (const char *sound)
+qboolean S_LocalSound (const char *sound)
 {
 	sfx_t	*sfx;
 	int		ch_ind;

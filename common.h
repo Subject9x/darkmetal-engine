@@ -26,8 +26,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifdef WIN32
 # define strcasecmp _stricmp
 # define strncasecmp _strnicmp
-#else
-#include "strings.h"
 #endif
 
 // Create our own define for Mac OS X
@@ -35,20 +33,21 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # define MACOSX
 #endif
 
+#ifdef SUNOS
+#include <sys/file.h>		///< Needed for FNDELAY
+#endif
 
 //============================================================================
 
-#define ContainerOf(ptr, type, member) ((type *)((void *)&(ptr) - offsetof(type, member)))
-
 typedef struct sizebuf_s
 {
-	qbool	allowoverflow;	///< if false, do a Sys_Error
-	qbool	overflowed;		///< set to true if the buffer size failed
+	qboolean	allowoverflow;	///< if false, do a Sys_Error
+	qboolean	overflowed;		///< set to true if the buffer size failed
 	unsigned char		*data;
 	int			maxsize;
 	int			cursize;
 	int			readcount;
-	qbool	badread;		// set if a read goes beyond end of message
+	qboolean	badread;		// set if a read goes beyond end of message
 } sizebuf_t;
 
 void SZ_Clear (sizebuf_t *buf);
@@ -195,16 +194,21 @@ float MSG_ReadAngle (sizebuf_t *sb, protocolversion_t protocol);
 //============================================================================
 
 typedef float (*COM_WordWidthFunc_t) (void *passthrough, const char *w, size_t *length, float maxWidth); // length is updated to the longest fitting string into maxWidth; if maxWidth < 0, all characters are used and length is used as is
-typedef int (*COM_LineProcessorFunc) (void *passthrough, const char *line, size_t length, float width, qbool isContination);
+typedef int (*COM_LineProcessorFunc) (void *passthrough, const char *line, size_t length, float width, qboolean isContination);
 int COM_Wordwrap(const char *string, size_t length, float continuationSize, float maxWidth, COM_WordWidthFunc_t wordWidth, void *passthroughCW, COM_LineProcessorFunc processLine, void *passthroughPL);
 
 extern char com_token[MAX_INPUTLINE];
 
-int COM_ParseToken_Simple(const char **datapointer, qbool returnnewline, qbool parsebackslash, qbool parsecomments);
-int COM_ParseToken_QuakeC(const char **datapointer, qbool returnnewline);
-int COM_ParseToken_VM_Tokenize(const char **datapointer, qbool returnnewline);
+int COM_ParseToken_Simple(const char **datapointer, qboolean returnnewline, qboolean parsebackslash, qboolean parsecomments);
+int COM_ParseToken_QuakeC(const char **datapointer, qboolean returnnewline);
+int COM_ParseToken_VM_Tokenize(const char **datapointer, qboolean returnnewline);
 int COM_ParseToken_Console(const char **datapointer);
 
+extern int com_argc;
+extern const char **com_argv;
+extern int com_selffd;
+
+int COM_CheckParm (const char *parm);
 void COM_Init (void);
 void COM_Shutdown (void);
 void COM_InitGameType (void);
@@ -231,7 +235,7 @@ extern int dpsnprintf (char *buffer, size_t buffersize, const char *format, ...)
 extern int dpvsnprintf (char *buffer, size_t buffersize, const char *format, va_list args);
 
 // A bunch of functions are forbidden for security reasons (and also to please MSVS 2005, for some of them)
-// LadyHavoc: added #undef lines here to avoid warnings in Linux
+// LordHavoc: added #undef lines here to avoid warnings in Linux
 #undef strcat
 #define strcat DO_NOT_USE_STRCAT__USE_STRLCAT_OR_MEMCPY
 #undef strncat
@@ -289,12 +293,10 @@ typedef enum gamemode_e
 	GAME_STEELSTORM, // added by motorsep
 	GAME_STEELSTORM2, // added by motorsep
 	GAME_SSAMMO, // added by motorsep
-	GAME_STEELSTORMREVENANTS, // added by motorsep 07/19/2015
 	GAME_TOMESOFMEPHISTOPHELES, // added by motorsep
 	GAME_STRAPBOMB, // added by motorsep for Urre
 	GAME_MOONHELM,
 	GAME_VORETOURNAMENT,
-	GAME_DOOMBRINGER, // added by Cloudwalk for kristus
 	GAME_COUNT
 }
 gamemode_t;
@@ -321,8 +323,8 @@ int COM_StringBeginsWith(const char *s, const char *match);
 
 int COM_ReadAndTokenizeLine(const char **text, char **argv, int maxargc, char *tokenbuf, int tokenbufsize, const char *commentprefix);
 
-size_t COM_StringLengthNoColors(const char *s, size_t size_s, qbool *valid);
-qbool COM_StringDecolorize(const char *in, size_t size_in, char *out, size_t size_out, qbool escape_carets);
+size_t COM_StringLengthNoColors(const char *s, size_t size_s, qboolean *valid);
+qboolean COM_StringDecolorize(const char *in, size_t size_in, char *out, size_t size_out, qboolean escape_carets);
 void COM_ToLowerString (const char *in, char *out, size_t size_out);
 void COM_ToUpperString (const char *in, char *out, size_t size_out);
 
@@ -335,11 +337,11 @@ typedef struct stringlist_s
 } stringlist_t;
 
 int matchpattern(const char *in, const char *pattern, int caseinsensitive);
-int matchpattern_with_separator(const char *in, const char *pattern, int caseinsensitive, const char *separators, qbool wildcard_least_one);
+int matchpattern_with_separator(const char *in, const char *pattern, int caseinsensitive, const char *separators, qboolean wildcard_least_one);
 void stringlistinit(stringlist_t *list);
 void stringlistfreecontents(stringlist_t *list);
 void stringlistappend(stringlist_t *list, const char *text);
-void stringlistsort(stringlist_t *list, qbool uniq);
+void stringlistsort(stringlist_t *list, qboolean uniq);
 void listdirectory(stringlist_t *list, const char *basepath, const char *path);
 
 char *InfoString_GetValue(const char *buffer, const char *key, char *value, size_t valuelength);
@@ -382,8 +384,6 @@ char **XPM_DecodeString(const char *in);
 size_t base64_encode(unsigned char *buf, size_t buflen, size_t outbuflen);
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-
-float Com_CalcRoll (const vec3_t angles, const vec3_t velocity, const vec_t angleval, const vec_t velocityval);
 
 #endif
 

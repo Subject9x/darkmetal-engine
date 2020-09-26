@@ -7,7 +7,7 @@
 
 #include "quakedef.h"
 
-// LadyHavoc: some portable directory listing code I wrote for lmp2pcx, now used in darkplaces to load id1/*.pak and such...
+// LordHavoc: some portable directory listing code I wrote for lmp2pcx, now used in darkplaces to load id1/*.pak and such...
 
 int matchpattern(const char *in, const char *pattern, int caseinsensitive)
 {
@@ -16,7 +16,7 @@ int matchpattern(const char *in, const char *pattern, int caseinsensitive)
 
 // wildcard_least_one: if true * matches 1 or more characters
 //                     if false * matches 0 or more characters
-int matchpattern_with_separator(const char *in, const char *pattern, int caseinsensitive, const char *separators, qbool wildcard_least_one)
+int matchpattern_with_separator(const char *in, const char *pattern, int caseinsensitive, const char *separators, qboolean wildcard_least_one)
 {
 	int c1, c2;
 	while (*pattern)
@@ -122,7 +122,7 @@ static int stringlistsort_cmp(const void *a, const void *b)
 	return strcasecmp(*(const char **)a, *(const char **)b);
 }
 
-void stringlistsort(stringlist_t *list, qbool uniq)
+void stringlistsort(stringlist_t *list, qboolean uniq)
 {
 	int i, j;
 	if(list->numstrings < 1)
@@ -164,7 +164,8 @@ static void adddirentry(stringlist_t *list, const char *path, const char *name)
 #ifdef WIN32
 void listdirectory(stringlist_t *list, const char *basepath, const char *path)
 {
-	char pattern[4096];
+	int i;
+	char pattern[4096], *c;
 	WIN32_FIND_DATA n_file;
 	HANDLE hFile;
 	strlcpy (pattern, basepath, sizeof(pattern));
@@ -178,6 +179,12 @@ void listdirectory(stringlist_t *list, const char *basepath, const char *path)
 		adddirentry(list, path, n_file.cFileName);
 	} while (FindNextFile(hFile, &n_file) != 0);
 	FindClose(hFile);
+
+	// convert names to lowercase because windows does not care, but pattern matching code often does
+	for (i = 0;i < list->numstrings;i++)
+		for (c = list->strings[i];*c;c++)
+			if (*c >= 'A' && *c <= 'Z')
+				*c += 'a' - 'A';
 }
 #else
 void listdirectory(stringlist_t *list, const char *basepath, const char *path)
@@ -185,36 +192,10 @@ void listdirectory(stringlist_t *list, const char *basepath, const char *path)
 	char fullpath[MAX_OSPATH];
 	DIR *dir;
 	struct dirent *ent;
-	dpsnprintf(fullpath, sizeof(fullpath), "%s%s", basepath, path);
-#ifdef __ANDROID__
-	// SDL currently does not support listing assets, so we have to emulate
-	// it. We're using relative paths for assets, so that will do.
-	if (basepath[0] != '/')
-	{
-		char listpath[MAX_OSPATH];
-		qfile_t *listfile;
-		dpsnprintf(listpath, sizeof(listpath), "%sls.txt", fullpath);
-		char *buf = (char *) FS_SysLoadFile(listpath, tempmempool, true, NULL);
-		if (!buf)
-			return;
-		char *p = buf;
-		for (;;)
-		{
-			char *q = strchr(p, '\n');
-			if (q == NULL)
-				break;
-			*q = 0;
-			adddirentry(list, path, p);
-			p = q + 1;
-		}
-		Mem_Free(buf);
-		return;
-	}
-#endif
+	dpsnprintf(fullpath, sizeof(fullpath), "%s%s", basepath, *path ? path : "./");
 	dir = opendir(fullpath);
 	if (!dir)
 		return;
-
 	while ((ent = readdir(dir)))
 		adddirentry(list, path, ent->d_name);
 	closedir(dir);

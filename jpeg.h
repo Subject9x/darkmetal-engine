@@ -25,15 +25,15 @@
 #define JPEG_H
 
 
-qbool JPEG_OpenLibrary (void);
+qboolean JPEG_OpenLibrary (void);
 void JPEG_CloseLibrary (void);
 unsigned char* JPEG_LoadImage_BGRA (const unsigned char *f, int filesize, int *miplevel);
-qbool JPEG_SaveImage_preflipped (const char *filename, int width, int height, unsigned char *data);
+qboolean JPEG_SaveImage_preflipped (const char *filename, int width, int height, unsigned char *data);
 
 /*! \returns 0 if failed, or the size actually used.
  */
 size_t JPEG_SaveImage_to_Buffer (char *jpegbuf, size_t jpegsize, int width, int height, unsigned char *data);
-qbool Image_Compress(const char *imagename, size_t maxsize, void **buf, size_t *size);
+qboolean Image_Compress(const char *imagename, size_t maxsize, void **buf, size_t *size);
 
 
 #endif

@@ -27,8 +27,8 @@
 #include "jpeg.h"
 #include "image_png.h"
 
-cvar_t sv_writepicture_quality = {CF_SERVER | CF_ARCHIVE, "sv_writepicture_quality", "10", "WritePicture quality offset (higher means better quality, but slower)"};
-cvar_t r_texture_jpeg_fastpicmip = {CF_CLIENT | CF_ARCHIVE, "r_texture_jpeg_fastpicmip", "1", "perform gl_picmip during decompression for JPEG files (faster)"};
+cvar_t sv_writepicture_quality = {CVAR_SAVE, "sv_writepicture_quality", "10", "WritePicture quality offset (higher means better quality, but slower)"};
+cvar_t r_texture_jpeg_fastpicmip = {CVAR_SAVE, "r_texture_jpeg_fastpicmip", "1", "perform gl_picmip during decompression for JPEG files (faster)"};
 
 // jboolean is unsigned char instead of int on Win32
 #ifdef WIN32
@@ -454,12 +454,12 @@ static dllfunction_t jpegfuncs[] =
 
 // Handle for JPEG DLL
 dllhandle_t jpeg_dll = NULL;
-qbool jpeg_tried_loading = 0;
+qboolean jpeg_tried_loading = 0;
 #endif
 
 static unsigned char jpeg_eoi_marker [2] = {0xFF, JPEG_EOI};
 static jmp_buf error_in_jpeg;
-static qbool jpeg_toolarge;
+static qboolean jpeg_toolarge;
 
 // Our own output manager for JPEG compression
 typedef struct
@@ -488,7 +488,7 @@ JPEG_OpenLibrary
 Try to load the JPEG DLL
 ====================
 */
-qbool JPEG_OpenLibrary (void)
+qboolean JPEG_OpenLibrary (void)
 {
 #ifdef LINK_TO_LIBJPEG
 	return true;
@@ -559,7 +559,7 @@ static jboolean JPEG_FillInputBuffer (j_decompress_ptr cinfo)
     cinfo->src->next_input_byte = jpeg_eoi_marker;
     cinfo->src->bytes_in_buffer = 2;
 
-	return true;
+	return TRUE;
 }
 
 static void JPEG_SkipInputData (j_decompress_ptr cinfo, long num_bytes)
@@ -624,7 +624,7 @@ unsigned char* JPEG_LoadImage_BGRA (const unsigned char *f, int filesize, int *m
 	cinfo.err = qjpeg_std_error (&jerr);
 	cinfo.err->error_exit = JPEG_ErrorExit;
 	JPEG_MemSrc (&cinfo, f, filesize);
-	qjpeg_read_header (&cinfo, true);
+	qjpeg_read_header (&cinfo, TRUE);
 	cinfo.scale_num = 1;
 	cinfo.scale_denom = (1 << submip);
 	qjpeg_start_decompress (&cinfo);
@@ -814,7 +814,7 @@ JPEG_SaveImage_preflipped
 Save a preflipped JPEG image to a file
 ====================
 */
-qbool JPEG_SaveImage_preflipped (const char *filename, int width, int height, unsigned char *data)
+qboolean JPEG_SaveImage_preflipped (const char *filename, int width, int height, unsigned char *data)
 {
 	struct jpeg_compress_struct cinfo;
 	struct jpeg_error_mgr jerr;
@@ -848,7 +848,7 @@ qbool JPEG_SaveImage_preflipped (const char *filename, int width, int height, un
 	cinfo.in_color_space = JCS_RGB;
 	cinfo.input_components = 3;
 	qjpeg_set_defaults (&cinfo);
-	qjpeg_set_quality (&cinfo, (int)(scr_screenshot_jpeg_quality.value * 100), true);
+	qjpeg_set_quality (&cinfo, (int)(scr_screenshot_jpeg_quality.value * 100), TRUE);
 	qjpeg_simple_progression (&cinfo);
 
 	// turn off subsampling (to make text look better)
@@ -970,8 +970,8 @@ size_t JPEG_SaveImage_to_Buffer (char *jpegbuf, size_t jpegsize, int width, int 
 	}
 #endif
 
-	//quality_guess = (int)((100 * jpegsize - 41000) / (width*height) + 2); // fits random data
-	quality_guess   = (int)((256 * jpegsize - 81920) / (width*height) - 8); // fits Nexuiz's/Xonotic's map pictures
+	//quality_guess = (100 * jpegsize - 41000) / (width*height) + 2; // fits random data
+	quality_guess   = (256 * jpegsize - 81920) / (width*height) - 8; // fits Nexuiz's/Xonotic's map pictures
 
 	quality_guess = bound(0, quality_guess, 100);
 	quality = bound(0, quality_guess + sv_writepicture_quality.integer, 100); // assume it can do 10 failed attempts
@@ -1043,7 +1043,7 @@ static CompressedImageCacheItem *CompressedImageCache_Find(const char *imagename
 	return NULL;
 }
 
-qbool Image_Compress(const char *imagename, size_t maxsize, void **buf, size_t *size)
+qboolean Image_Compress(const char *imagename, size_t maxsize, void **buf, size_t *size)
 {
 	unsigned char *imagedata, *newimagedata;
 	int maxPixelCount;
@@ -1065,7 +1065,6 @@ qbool Image_Compress(const char *imagename, size_t maxsize, void **buf, size_t *
 	{
 		*size = i->compressed_size;
 		*buf = i->compressed;
-        return (*buf != NULL);
 	}
 
 	// load the image

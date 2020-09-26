@@ -64,8 +64,6 @@ typedef enum r_stat_e
 	r_stat_bloom,
 	r_stat_bloom_copypixels,
 	r_stat_bloom_drawpixels,
-	r_stat_rendertargets_used,
-	r_stat_rendertargets_pixels,
 	r_stat_indexbufferuploadcount,
 	r_stat_indexbufferuploadsize,
 	r_stat_vertexbufferuploadcount,
@@ -80,6 +78,9 @@ typedef enum r_stat_e
 	r_stat_bufferdatasize_index16,
 	r_stat_bufferdatasize_index32,
 	r_stat_bufferdatasize_uniform,
+	r_stat_animcache_vertexmesh_count,
+	r_stat_animcache_vertexmesh_vertices,
+	r_stat_animcache_vertexmesh_maxvertices,
 	r_stat_animcache_skeletal_count,
 	r_stat_animcache_skeletal_bones,
 	r_stat_animcache_skeletal_maxbones,
@@ -158,6 +159,10 @@ typedef enum r_stat_e
 	r_stat_batch_dynamic_surfaces_because_tcmod_turbulent,
 	r_stat_batch_dynamic_vertices_because_tcmod_turbulent,
 	r_stat_batch_dynamic_triangles_because_tcmod_turbulent,
+	r_stat_batch_dynamic_batches_because_interleavedarrays,
+	r_stat_batch_dynamic_surfaces_because_interleavedarrays,
+	r_stat_batch_dynamic_vertices_because_interleavedarrays,
+	r_stat_batch_dynamic_triangles_because_interleavedarrays,
 	r_stat_batch_dynamic_batches_because_nogaps,
 	r_stat_batch_dynamic_surfaces_because_nogaps,
 	r_stat_batch_dynamic_vertices_because_nogaps,
@@ -208,7 +213,7 @@ typedef struct tridecal_s
 	// for visibility culling
 	int				surfaceindex;
 	// old decals are killed to obey cl_decals_max
-	unsigned int	decalsequence;
+	int				decalsequence;
 }
 tridecal_t;
 
@@ -234,7 +239,7 @@ typedef struct effect_s
 	vec3_t origin;
 	double starttime;
 	float framerate;
-	dp_model_t *model;
+	int modelindex;
 	int startframe;
 	int endframe;
 	// these are for interpolation
@@ -264,6 +269,8 @@ rtlight_particle_t;
 
 typedef struct rtlight_s
 {
+	// shadow volumes are done entirely in model space, so there are no matrices for dealing with them...  they just use the origin
+
 	// note that the world to light matrices are inversely scaled (divided) by lightradius
 
 	// core properties
@@ -279,7 +286,7 @@ typedef struct rtlight_s
 	char cubemapname[64];
 	/// light style to monitor for brightness
 	int style;
-	/// whether light should render shadows (see castshadows for whether it actually does this frame)
+	/// whether light should render shadows
 	int shadow;
 	/// intensity of corona to render
 	vec_t corona;
@@ -295,13 +302,15 @@ typedef struct rtlight_s
 	int flags;
 
 	// generated properties
-	/// used only for casting shadows
+	/// used only for shadow volumes
 	vec3_t shadoworigin;
 	/// culling
 	vec3_t cullmins;
 	vec3_t cullmaxs;
-	/// when r_shadow_culllights_trace is set, this is refreshed by each successful trace.
-	double trace_timer;
+	// culling
+	//vec_t cullradius;
+	// squared cullradius
+	//vec_t cullradius2;
 
 	// rendering properties, updated each time a light is rendered
 	// this is rtlight->color * d_lightstylevalue
@@ -313,9 +322,7 @@ typedef struct rtlight_s
 	/// this is R_GetCubemap(rtlight->cubemapname)
 	rtexture_t *currentcubemap;
 	/// set by R_Shadow_PrepareLight to decide whether R_Shadow_DrawLight should draw it
-	qbool draw;
-	/// set by R_Shadow_PrepareLight to indicate whether R_Shadow_DrawShadowMaps should do anything
-	qbool castshadows;
+	qboolean draw;
 	/// these fields are set by R_Shadow_PrepareLight for later drawing
 	int cached_numlightentities;
 	int cached_numlightentities_noselfshadow;
@@ -343,13 +350,11 @@ typedef struct rtlight_s
 	int isstatic;
 	/// true if this is a compiled world light, cleared if the light changes
 	int compiled;
-	/// the size that this light should have (assuming no scene LOD kicking in to reduce it)
-	int shadowmapsidesize;
-	/// position of this light in the shadowmap atlas
-	int shadowmapatlasposition[2];
-	/// size of one side of this light in the shadowmap atlas (for omnidirectional shadowmaps this is the min corner of a 2x3 arrangement, or a 4x3 arrangement in the case of noselfshadow entities being present)
-	int shadowmapatlassidesize;
-	/// optimized and culled mesh to render for world entity shadows
+	/// the shadowing mode used to compile this light
+	int shadowmode;
+	/// premade shadow volumes to render for world entity
+	shadowmesh_t *static_meshchain_shadow_zpass;
+	shadowmesh_t *static_meshchain_shadow_zfail;
 	shadowmesh_t *static_meshchain_shadow_shadowmap;
 	/// used for visibility testing (more exact than bbox)
 	int static_numleafs;
@@ -382,11 +387,8 @@ typedef struct rtlight_s
 	rtlight_particle_t *particlecache_particles;
 
 	/// bouncegrid light info
-	float bouncegrid_photoncolor[3];
-	float bouncegrid_photons;
-	int bouncegrid_hits;
-	int bouncegrid_traces;
-	float bouncegrid_effectiveradius;
+	float photoncolor[3];
+	float photons;
 }
 rtlight_t;
 
@@ -475,7 +477,7 @@ typedef struct frameblend_s
 }
 frameblend_t;
 
-// LadyHavoc: this struct is intended for the renderer but some fields are
+// LordHavoc: this struct is intended for the renderer but some fields are
 // used by the client.
 //
 // The renderer should not rely on any changes to this struct to be persistent
@@ -549,6 +551,10 @@ typedef struct entity_render_s
 	float          *animcache_tvector3f;
 	r_meshbuffer_t *animcache_tvector3f_vertexbuffer;
 	int             animcache_tvector3f_bufferoffset;
+	// interleaved arrays for rendering and dynamic vertex buffers for them
+	r_vertexmesh_t *animcache_vertexmesh;
+	r_meshbuffer_t *animcache_vertexmesh_vertexbuffer;
+	int             animcache_vertexmesh_bufferoffset;
 	// gpu-skinning shader needs transforms in a certain format, we have to
 	// upload this to a uniform buffer for the shader to use, and also keep a
 	// backup copy in system memory for the dynamic batch fallback code
@@ -558,40 +564,10 @@ typedef struct entity_render_s
 	int animcache_skeletaltransform3x4offset;
 	int animcache_skeletaltransform3x4size;
 
-	// CL_UpdateEntityShading reads these fields
-	// used only if RENDER_CUSTOMIZEDMODELLIGHT is set
-	vec3_t custommodellight_ambient;
-	vec3_t custommodellight_diffuse;
-	vec3_t custommodellight_lightdir;
-	// CSQC entities get their shading from the root of their attachment chain
-	float custommodellight_origin[3];
-
-	// derived lighting parameters (CL_UpdateEntityShading)
-
-	// used by MATERIALFLAG_FULLBRIGHT which is MATERIALFLAG_MODELLIGHT with
-	// this as ambient color, along with MATERIALFLAG_NORTLIGHT
-	float render_fullbright[3];
-	// color tint for the base pass glow textures if any
-	float render_glowmod[3];
-	// MATERIALFLAG_MODELLIGHT uses these parameters
-	float render_modellight_ambient[3];
-	float render_modellight_diffuse[3];
-	float render_modellight_lightdir_world[3];
-	float render_modellight_lightdir_local[3];
-	float render_modellight_specular[3];
-	// lightmap rendering (not MATERIALFLAG_MODELLIGHT)
-	float render_lightmap_ambient[3];
-	float render_lightmap_diffuse[3];
-	float render_lightmap_specular[3];
-	// rtlights use these colors for the materials on this entity
-	float render_rtlight_diffuse[3];
-	float render_rtlight_specular[3];
-	// ignore lightmap and use fixed lighting settings on this entity (e.g. FULLBRIGHT)
-	qbool render_modellight_forced;
-	// do not process per pixel lights on this entity at all (like MATERIALFLAG_NORTLIGHT)
-	qbool render_rtlight_disabled;
-	// use the 3D lightmap from q3bsp on this entity
-	qbool render_lightgrid;
+	// current lighting from map (updated ONLY by client code, not renderer)
+	vec3_t modellight_ambient;
+	vec3_t modellight_diffuse; // q3bsp
+	vec3_t modellight_lightdir; // q3bsp
 
 	// storage of decals on this entity
 	// (note: if allowdecals is set, be sure to call R_DecalSystem_Reset on removal!)
@@ -618,7 +594,7 @@ typedef struct entity_persistent_s
 	vec_t lerpdeltatime; // lerp
 	float muzzleflash; // muzzleflash intensity, fades over time
 	float trail_time; // residual error accumulation for particle trail spawning (to keep spacing across frames)
-	qbool trail_allowed; // set to false by teleports, true by update code, prevents bad lerps
+	qboolean trail_allowed; // set to false by teleports, true by update code, prevents bad lerps
 }
 entity_persistent_t;
 
@@ -662,15 +638,15 @@ typedef struct usercmd_s
 	int msec; // for predicted moves
 	int buttons;
 	int impulse;
-	unsigned int sequence;
-	qbool applied; // if false we're still accumulating a move
-	qbool predicted; // if true the sequence should be sent as 0
+	int sequence;
+	qboolean applied; // if false we're still accumulating a move
+	qboolean predicted; // if true the sequence should be sent as 0
 
 	// derived properties
 	double frametime;
-	qbool canjump;
-	qbool jump;
-	qbool crouch;
+	qboolean canjump;
+	qboolean jump;
+	qboolean crouch;
 } usercmd_t;
 
 typedef struct lightstyle_s
@@ -738,7 +714,6 @@ typedef enum qw_downloadtype_e
 }
 qw_downloadtype_t;
 
-#ifdef CONFIG_VIDEO_CAPTURE
 typedef enum capturevideoformat_e
 {
 	CAPTUREVIDEOFORMAT_AVI_I420,
@@ -752,9 +727,9 @@ typedef struct capturevideostate_s
 	double framerate;
 	int framestep;
 	int framestepframe;
-	qbool active;
-	qbool realtime;
-	qbool error;
+	qboolean active;
+	qboolean realtime;
+	qboolean error;
 	int soundrate;
 	int soundchannels;
 	int frame;
@@ -790,7 +765,6 @@ typedef struct capturevideostate_s
 	void *formatspecific;
 }
 capturevideostate_t;
-#endif
 
 #define CL_MAX_DOWNLOADACKS 4
 
@@ -830,16 +804,16 @@ typedef struct client_static_s
 
 // demo recording info must be here, because record is started before
 // entering a map (and clearing client_state_t)
-	qbool demorecording;
+	qboolean demorecording;
 	fs_offset_t demo_lastcsprogssize;
 	int demo_lastcsprogscrc;
-	qbool demoplayback;
-	qbool demostarting; // set if currently starting a demo, to stop -demo from quitting when switching to another demo
-	qbool timedemo;
+	qboolean demoplayback;
+	qboolean demostarting; // set if currently starting a demo, to stop -demo from quitting when switching to another demo
+	qboolean timedemo;
 	// -1 = use normal cd track
 	int forcetrack;
 	qfile_t *demofile;
-	// realtime at second frame of timedemo (LadyHavoc: changed to double)
+	// realtime at second frame of timedemo (LordHavoc: changed to double)
 	double td_starttime;
 	int td_frames; // total frames parsed
 	double td_onesecondnexttime;
@@ -849,18 +823,17 @@ typedef struct client_static_s
 	double td_onesecondmaxfps;
 	double td_onesecondavgfps;
 	int td_onesecondavgcount;
-	// LadyHavoc: pausedemo
-	qbool demopaused;
+	// LordHavoc: pausedemo
+	qboolean demopaused;
 
 	// sound mixer statistics for showsound display
 	cl_soundstats_t soundstats;
 
-	qbool connect_trying;
+	qboolean connect_trying;
 	int connect_remainingtries;
 	double connect_nextsendtime;
 	lhnetsocket_t *connect_mysocket;
 	lhnetaddress_t connect_address;
-	lhnetaddress_t rcon_address;
 	// protocol version of the server we're connected to
 	// (kept outside client_state_t because it's used between levels)
 	protocolversion_t protocol;
@@ -883,15 +856,16 @@ typedef struct client_static_s
 	cl_downloadack_t dp_downloadack[CL_MAX_DOWNLOADACKS];
 
 	// input sequence numbers are not reset on level change, only connect
-	unsigned int servermovesequence;
+	int movesequence;
+	int servermovesequence;
 
 	// quakeworld stuff below
 
 	// value of "qport" cvar at time of connection
 	int qw_qport;
 	// copied from cls.netcon->qw. variables every time they change, or set by demos (which have no cls.netcon)
-	unsigned int qw_incoming_sequence;
-	unsigned int qw_outgoing_sequence;
+	int qw_incoming_sequence;
+	int qw_outgoing_sequence;
 
 	// current file download buffer (only saved when file is completed)
 	char qw_downloadname[MAX_QPATH];
@@ -905,7 +879,7 @@ typedef struct client_static_s
 	double qw_downloadspeedtime;
 	int qw_downloadspeedcount;
 	int qw_downloadspeedrate;
-	qbool qw_download_deflate;
+	qboolean qw_download_deflate;
 
 	// current file upload buffer (for uploading screenshots to server)
 	unsigned char *qw_uploaddata;
@@ -920,10 +894,8 @@ typedef struct client_static_s
 	// extra user info for the "connect" command
 	char connect_userinfo[MAX_USERINFO_STRING];
 
-#ifdef CONFIG_VIDEO_CAPTURE
 	// video capture stuff
 	capturevideostate_t capturevideo;
-#endif
 
 	// crypto channel
 	crypto_t crypto;
@@ -949,12 +921,25 @@ client_static_t;
 
 extern client_static_t	cls;
 
+typedef struct client_movementqueue_s
+{
+	double time;
+	float frametime;
+	int sequence;
+	float viewangles[3];
+	float move[3];
+	qboolean jump;
+	qboolean crouch;
+	qboolean canjump;
+}
+client_movementqueue_t;
+
 //[515]: csqc
 typedef struct
 {
-	qbool drawworld;
-	qbool drawenginesbar;
-	qbool drawcrosshair;
+	qboolean drawworld;
+	qboolean drawenginesbar;
+	qboolean drawcrosshair;
 }csqc_vidvars_t;
 
 typedef enum
@@ -981,7 +966,7 @@ typedef struct particletype_s
 {
 	pblend_t blendmode;
 	porientation_t orientation;
-	qbool lighting;
+	qboolean lighting;
 }
 particletype_t;
 
@@ -990,6 +975,29 @@ typedef enum ptype_e
 	pt_dead, pt_alphastatic, pt_static, pt_spark, pt_beam, pt_rain, pt_raindecal, pt_snow, pt_bubble, pt_blood, pt_smoke, pt_decal, pt_entityparticle, pt_total
 }
 ptype_t;
+
+typedef struct decal_s
+{
+	// fields used by rendering:  (44 bytes)
+	unsigned short	typeindex;
+	unsigned short	texnum;
+	int				decalsequence;
+	vec3_t			org;
+	vec3_t			normal;
+	float			size;
+	float			alpha; // 0-255
+	unsigned char	color[3];
+	unsigned char	unused1;
+	int				clusterindex; // cheap culling by pvs
+
+	// fields not used by rendering: (36 bytes in 32bit, 40 bytes in 64bit)
+	float			time2; // used for decal fade
+	unsigned int	owner; // decal stuck to this entity
+	dp_model_t			*ownermodel; // model the decal is stuck to (used to make sure the entity is still alive)
+	vec3_t			relativeorigin; // decal at this location in entity's coordinate space
+	vec3_t			relativenormal; // decal oriented this way relative to entity's coordinate space
+}
+decal_t;
 
 typedef struct particle_s
 {
@@ -1053,7 +1061,7 @@ cl_locnode_t;
 
 typedef struct showlmp_s
 {
-	qbool	isactive;
+	qboolean	isactive;
 	float		x;
 	float		y;
 	char		label[32];
@@ -1122,19 +1130,19 @@ typedef struct client_state_s
 	// this is used primarily by teleporters, and when spectating players
 	// special checking of the old fixangle[1] is used to differentiate
 	// between teleporting and spectating
-	qbool fixangle[2];
+	qboolean fixangle[2];
 
 	// client movement simulation
 	// these fields are only updated by CL_ClientMovement (called by CL_SendMove after parsing each network packet)
 	// set by CL_ClientMovement_Replay functions
-	qbool movement_predicted;
+	qboolean movement_predicted;
 	// if true the CL_ClientMovement_Replay function will update origin, etc
-	qbool movement_replay;
+	qboolean movement_replay;
 	// simulated data (this is valid even if cl.movement is false)
 	vec3_t movement_origin;
 	vec3_t movement_velocity;
 	// whether the replay should allow a jump at the first sequence
-	qbool movement_replay_canjump;
+	qboolean movement_replay_canjump;
 
 	// previous gun angles (for leaning effects)
 	vec3_t gunangles_prev;
@@ -1150,26 +1158,27 @@ typedef struct client_state_s
 // pitch drifting vars
 	float idealpitch;
 	float pitchvel;
-	qbool nodrift;
+	qboolean nodrift;
 	float driftmove;
 	double laststop;
 
 //[515]: added for csqc purposes
 	float sensitivityscale;
 	csqc_vidvars_t csqc_vidvars;	//[515]: these parms must be set to true by default
-	qbool csqc_wantsmousemove;
+	qboolean csqc_wantsmousemove;
+	qboolean csqc_paused; // vortex: int because could be flags
 	struct model_s *csqc_model_precache[MAX_MODELS];
 
 	// local amount for smoothing stepups
 	//float crouch;
 
 	// sent by server
-	qbool paused;
-	qbool onground;
-	qbool inwater;
+	qboolean paused;
+	qboolean onground;
+	qboolean inwater;
 
 	// used by bob
-	qbool oldonground;
+	qboolean oldonground;
 	double lastongroundtime;
 	double hitgroundtime;
 	float bob2_smooth;
@@ -1246,7 +1255,7 @@ typedef struct client_state_s
 	sfx_t *sfx_ric3;
 	sfx_t *sfx_r_exp3;
 	// indicates that the file "sound/misc/talk2.wav" was found (for use by team chat messages)
-	qbool foundteamchatsound;
+	qboolean foundtalk2wav;
 
 // refresh related state
 
@@ -1279,7 +1288,7 @@ typedef struct client_state_s
 #define LATESTFRAMENUMS 32
 	int latestframenumsposition;
 	int latestframenums[LATESTFRAMENUMS];
-	unsigned int latestsendnums[LATESTFRAMENUMS];
+	int latestsendnums[LATESTFRAMENUMS];
 	entityframe_database_t *entitydatabase;
 	entityframe4_database_t *entitydatabase4;
 	entityframeqw_database_t *entitydatabaseqw;
@@ -1295,7 +1304,7 @@ typedef struct client_state_s
 	vec3_t playercrouchmaxs;
 
 	// old decals are killed based on this
-	unsigned int decalsequence;
+	int decalsequence;
 
 	int max_entities;
 	int max_csqcrenderentities;
@@ -1306,6 +1315,7 @@ typedef struct client_state_s
 	int max_lightstyle;
 	int max_brushmodel_entities;
 	int max_particles;
+	int max_decals;
 	int max_showlmps;
 
 	entity_t *entities;
@@ -1318,6 +1328,7 @@ typedef struct client_state_s
 	lightstyle_t *lightstyle;
 	int *brushmodel_entities;
 	particle_t *particles;
+	decal_t *decals;
 	showlmp_t *showlmps;
 
 	int num_entities;
@@ -1342,10 +1353,10 @@ typedef struct client_state_s
 	int loadsound_current;
 	int downloadsound_current;
 	int loadsound_total;
-	qbool downloadcsqc;
-	qbool loadcsqc;
-	qbool loadbegun;
-	qbool loadfinished;
+	qboolean downloadcsqc;
+	qboolean loadcsqc;
+	qboolean loadbegun;
+	qboolean loadfinished;
 
 	// quakeworld stuff
 
@@ -1363,7 +1374,7 @@ typedef struct client_state_s
 
 	// unused: indicates whether the player is spectating
 	// use cl.scores[cl.playerentity-1].qw_spectator instead
-	//qbool qw_spectator;
+	//qboolean qw_spectator;
 
 	// last time an input packet was sent
 	double lastpackettime;
@@ -1419,20 +1430,20 @@ typedef struct client_state_s
 
 	float qw_weaponkick;
 
-	unsigned int qw_validsequence;
+	int qw_validsequence;
 
-	unsigned int qw_deltasequence[QW_UPDATE_BACKUP];
+	int qw_deltasequence[QW_UPDATE_BACKUP];
 
 	// csqc stuff:
 	// server entity number corresponding to a clientside entity
 	unsigned short csqc_server2csqcentitynumber[MAX_EDICTS];
-	qbool csqc_loaded;
+	qboolean csqc_loaded;
 	vec3_t csqc_vieworigin;
 	vec3_t csqc_viewangles;
 	vec3_t csqc_vieworiginfromengine;
 	vec3_t csqc_viewanglesfromengine;
 	matrix4x4_t csqc_viewmodelmatrixfromengine;
-	qbool csqc_usecsqclistener;
+	qboolean csqc_usecsqclistener;
 	matrix4x4_t csqc_listenermatrix;
 	char csqc_printtextbuf[MAX_INPUTLINE];
 
@@ -1522,7 +1533,7 @@ extern cvar_t cl_locs_enable;
 
 extern client_state_t cl;
 
-extern void CL_AllocLightFlash (entity_render_t *ent, matrix4x4_t *matrix, float radius, float red, float green, float blue, float decay, float lifetime, char *cubemapname, int style, int shadowenable, vec_t corona, vec_t coronasizescale, vec_t ambientscale, vec_t diffusescale, vec_t specularscale, int flags);
+extern void CL_AllocLightFlash (entity_render_t *ent, matrix4x4_t *matrix, float radius, float red, float green, float blue, float decay, float lifetime, int cubemapnum, int style, int shadowenable, vec_t corona, vec_t coronasizescale, vec_t ambientscale, vec_t diffusescale, vec_t specularscale, int flags);
 
 cl_locnode_t *CL_Locs_FindNearest(const vec3_t point);
 void CL_Locs_FindLocationName(char *buffer, size_t buffersize, vec3_t point);
@@ -1533,15 +1544,13 @@ void CL_Locs_FindLocationName(char *buffer, size_t buffersize, vec3_t point);
 // cl_main
 //
 
-double CL_Frame(double time);
-
 void CL_Shutdown (void);
 void CL_Init (void);
 
 void CL_EstablishConnection(const char *host, int firstarg);
 
 void CL_Disconnect (void);
-void CL_Disconnect_f(cmd_state_t *cmd);
+void CL_Disconnect_f (void);
 
 void CL_UpdateRenderEntity(entity_render_t *ent);
 void CL_SetEntityColormapColors(entity_render_t *ent, int colormap);
@@ -1576,12 +1585,12 @@ void CL_ClientMovement_Replay(void);
 void CL_ClearTempEntities (void);
 entity_render_t *CL_NewTempEntity (double shadertime);
 
-void CL_Effect(vec3_t org, dp_model_t *model, int startframe, int framecount, float framerate);
+void CL_Effect(vec3_t org, int modelindex, int startframe, int framecount, float framerate);
 
 void CL_ClearState (void);
 void CL_ExpandEntities(int num);
 void CL_ExpandCSQCRenderEntities(int num);
-void CL_SetInfo(const char *key, const char *value, qbool send, qbool allowstarkey, qbool allowmodel, qbool quiet);
+void CL_SetInfo(const char *key, const char *value, qboolean send, qboolean allowstarkey, qboolean allowmodel, qboolean quiet);
 
 
 void CL_UpdateWorld (void);
@@ -1595,20 +1604,6 @@ const char *Key_KeynumToString (int keynum, char *buf, size_t buflength);
 int Key_StringToKeynum (const char *str);
 
 //
-// cl_cmd.c
-//
-/// adds the string as a clc_stringcmd to the client message.
-/// (used when there is no reason to generate a local command to do it)
-void CL_ForwardToServer (const char *s);
-
-/// adds the current command line as a clc_stringcmd to the client message.
-/// things like godmode, noclip, etc, are commands directed to the server,
-/// so when they are typed in at the console, they will need to be forwarded.
-void CL_ForwardToServer_f (cmd_state_t *cmd);
-void CL_InitCommands(void);
-
-
-//
 // cl_demo.c
 //
 void CL_StopPlayback(void);
@@ -1619,12 +1614,10 @@ void CL_CutDemo(unsigned char **buf, fs_offset_t *filesize);
 void CL_PasteDemo(unsigned char **buf, fs_offset_t *filesize);
 
 void CL_NextDemo(void);
-void CL_Stop_f(cmd_state_t *cmd);
-void CL_Record_f(cmd_state_t *cmd);
-void CL_PlayDemo_f(cmd_state_t *cmd);
-void CL_TimeDemo_f(cmd_state_t *cmd);
-
-void CL_Demo_Init(void);
+void CL_Stop_f(void);
+void CL_Record_f(void);
+void CL_PlayDemo_f(void);
+void CL_TimeDemo_f(void);
 
 //
 // cl_parse.c
@@ -1636,15 +1629,16 @@ void CL_Parse_DumpPacket(void);
 void CL_Parse_ErrorCleanUp(void);
 void QW_CL_StartUpload(unsigned char *data, int size);
 extern cvar_t qport;
-void CL_KeepaliveMessage(qbool readmessages); // call this during loading of large content
+void CL_KeepaliveMessage(qboolean readmessages); // call this during loading of large content
 
 //
 // view
 //
-void V_StartPitchDrift_f(cmd_state_t *cmd);
+void V_StartPitchDrift (void);
 void V_StopPitchDrift (void);
 
 void V_Init (void);
+float V_CalcRoll (const vec3_t angles, const vec3_t velocity);
 void V_UpdateBlends (void);
 void V_ParseDamage (void);
 
@@ -1679,7 +1673,7 @@ extern cvar_t cl_decals_fadetime;
 void CL_Particles_Clear(void);
 void CL_Particles_Init(void);
 void CL_Particles_Shutdown(void);
-particle_t *CL_NewParticle(const vec3_t sortorigin, unsigned short ptypeindex, int pcolor1, int pcolor2, int ptex, float psize, float psizeincrease, float palpha, float palphafade, float pgravity, float pbounce, float px, float py, float pz, float pvx, float pvy, float pvz, float pairfriction, float pliquidfriction, float originjitter, float velocityjitter, qbool pqualityreduction, float lifetime, float stretch, pblend_t blendmode, porientation_t orientation, int staincolor1, int staincolor2, int staintex, float stainalpha, float stainsize, float angle, float spin, float tint[4]);
+particle_t *CL_NewParticle(const vec3_t sortorigin, unsigned short ptypeindex, int pcolor1, int pcolor2, int ptex, float psize, float psizeincrease, float palpha, float palphafade, float pgravity, float pbounce, float px, float py, float pz, float pvx, float pvy, float pvz, float pairfriction, float pliquidfriction, float originjitter, float velocityjitter, qboolean pqualityreduction, float lifetime, float stretch, pblend_t blendmode, porientation_t orientation, int staincolor1, int staincolor2, int staintex, float stainalpha, float stainsize, float angle, float spin, float tint[4]);
 
 typedef enum effectnameindex_s
 {
@@ -1726,8 +1720,8 @@ effectnameindex_t;
 int CL_ParticleEffectIndexForName(const char *name);
 const char *CL_ParticleEffectNameForIndex(int i);
 void CL_ParticleEffect(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, entity_t *ent, int palettecolor);
-void CL_ParticleTrail(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, entity_t *ent, int palettecolor, qbool spawndlight, qbool spawnparticles, float tintmins[4], float tintmaxs[4], float fade);
-void CL_ParticleBox(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, entity_t *ent, int palettecolor, qbool spawndlight, qbool spawnparticles, float tintmins[4], float tintmaxs[4], float fade);
+void CL_ParticleTrail(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, entity_t *ent, int palettecolor, qboolean spawndlight, qboolean spawnparticles, float tintmins[4], float tintmaxs[4], float fade);
+void CL_ParticleBox(int effectindex, float pcount, const vec3_t originmins, const vec3_t originmaxs, const vec3_t velocitymins, const vec3_t velocitymaxs, entity_t *ent, int palettecolor, qboolean spawndlight, qboolean spawnparticles, float tintmins[4], float tintmaxs[4], float fade);
 void CL_ParseParticleEffect (void);
 void CL_ParticleCube (const vec3_t mins, const vec3_t maxs, const vec3_t dir, int count, int colorbase, vec_t gravity, vec_t randomvel);
 void CL_ParticleRain (const vec3_t mins, const vec3_t maxs, const vec3_t dir, int count, int colorbase, int type);
@@ -1736,9 +1730,13 @@ void CL_ParticleExplosion (const vec3_t org);
 void CL_ParticleExplosion2 (const vec3_t org, int colorStart, int colorLength);
 void R_NewExplosion(const vec3_t org);
 
+void Debug_PolygonBegin(const char *picname, int flags);
+void Debug_PolygonVertex(float x, float y, float z, float s, float t, float r, float g, float b, float a);
+void Debug_PolygonEnd(void);
+
 #include "cl_screen.h"
 
-extern qbool sb_showscores;
+extern qboolean sb_showscores;
 
 float RSurf_FogVertex(const vec3_t p);
 float RSurf_FogPoint(const vec3_t p);
@@ -1789,19 +1787,13 @@ typedef struct r_refdef_view_s
 	vec3_t up;
 	int numfrustumplanes;
 	mplane_t frustum[6];
-	qbool useclipplane;
-	qbool usecustompvs; // uses r_refdef.viewcache.pvsbits as-is rather than computing it
+	qboolean useclipplane;
+	qboolean usecustompvs; // uses r_refdef.viewcache.pvsbits as-is rather than computing it
 	mplane_t clipplane;
 	float frustum_x, frustum_y;
 	vec3_t frustumcorner[4];
 	// if turned off it renders an ortho view
 	int useperspective;
-	// allows visibility culling based on the view origin (e.g. pvs and R_CanSeeBox)
-	// this is turned off by:
-	// r_trippy
-	// !r_refdef.view.useperspective
-	// (sometimes) r_refdef.view.useclipplane
-	int usevieworiginculling;
 	float ortho_x, ortho_y;
 
 	// screen area to render in
@@ -1820,16 +1812,16 @@ typedef struct r_refdef_view_s
 	float colorscale;
 
 	// whether to call R_ClearScreen before rendering stuff
-	qbool clear;
+	qboolean clear;
 	// if true, don't clear or do any post process effects (bloom, etc)
-	qbool isoverlay;
+	qboolean isoverlay;
 	// if true, this is the MAIN view (which is, after CSQC, copied into the scene for use e.g. by r_speeds 1, showtex, prydon cursor)
-	qbool ismain;
+	qboolean ismain;
 
 	// whether to draw r_showtris and such, this is only true for the main
 	// view render, all secondary renders (mirrors, portals, cameras,
 	// distortion effects, etc) omit such debugging information
-	qbool showdebug;
+	qboolean showdebug;
 
 	// these define which values to use in GL_CullFace calls to request frontface or backface culling
 	int cullface_front;
@@ -1861,7 +1853,7 @@ typedef struct r_refdef_viewcache_s
 	unsigned char *world_leafvisible;
 	unsigned char *world_surfacevisible;
 	// if true, the view is currently in a leaf without pvs data
-	qbool world_novis;
+	qboolean world_novis;
 }
 r_refdef_viewcache_t;
 
@@ -1869,7 +1861,7 @@ r_refdef_viewcache_t;
 // maybe also refactor some of the functions to support different setting sources (ie. fogenabled, etc.) for different scenes
 typedef struct r_refdef_scene_s {
 	// whether to call S_ExtraUpdate during render to reduce sound chop
-	qbool extraupdate;
+	qboolean extraupdate;
 
 	// (client gameworld) time for rendering time based effects
 	double time;
@@ -1889,7 +1881,7 @@ typedef struct r_refdef_scene_s {
 	entity_render_t *tempentities;
 	int numtempentities;
 	int maxtempentities;
-	qbool expandtempentities;
+	qboolean expandtempentities;
 
 	// renderable dynamic lights
 	rtlight_t *lights[MAX_DLIGHTS];
@@ -1902,17 +1894,12 @@ typedef struct r_refdef_scene_s {
 	// controls intensity lightmap layers
 	unsigned short lightstylevalue[MAX_LIGHTSTYLES];	// 8.8 fraction of base light value
 
-	// adds brightness to the whole scene, separate from lightmapintensity
-	// see CL_UpdateEntityShading
-	float ambientintensity;
-	// brightness of lightmap and modellight lighting on materials
-	// see CL_UpdateEntityShading
-	float lightmapintensity;
+	float ambient;
 
-	qbool rtworld;
-	qbool rtworldshadows;
-	qbool rtdlight;
-	qbool rtdlightshadows;
+	qboolean rtworld;
+	qboolean rtworldshadows;
+	qboolean rtdlight;
+	qboolean rtdlightshadows;
 } r_refdef_scene_t;
 
 typedef struct r_refdef_s
@@ -1942,7 +1929,7 @@ typedef struct r_refdef_s
 
 	float fogplane[4];
 	float fogplaneviewdist;
-	qbool fogplaneviewabove;
+	qboolean fogplaneviewabove;
 	float fogheightfade;
 	float fogcolor[3];
 	float fogrange;
@@ -1960,8 +1947,8 @@ typedef struct r_refdef_s
 	float fog_end;
 	float fog_height;
 	float fog_fadedepth;
-	qbool fogenabled;
-	qbool oldgl_fogenable;
+	qboolean fogenabled;
+	qboolean oldgl_fogenable;
 
 	// new flexible texture height fog (overrides normal fog)
 	char fog_height_texturename[64]; // note: must be 64 for the sscanf code
@@ -1975,11 +1962,16 @@ typedef struct r_refdef_s
 	int draw2dstage; // 0 = no, 1 = yes, other value = needs setting up again
 
 	// true during envmap command capture
-	qbool envmap;
+	qboolean envmap;
 
+	// brightness of world lightmaps and related lighting
+	// (often reduced when world rtlights are enabled)
+	float lightmapintensity;
 	// whether to draw world lights realtime, dlights realtime, and their shadows
 	float polygonfactor;
 	float polygonoffset;
+	float shadowpolygonfactor;
+	float shadowpolygonoffset;
 
 	// how long R_RenderView took on the previous frame
 	double lastdrawscreentime;
@@ -2012,9 +2004,9 @@ typedef struct cl_clientmovement_state_s
 	vec3_t mins;
 	vec3_t maxs;
 	// currently on the ground
-	qbool onground;
+	qboolean onground;
 	// currently crouching
-	qbool crouched;
+	qboolean crouched;
 	// what kind of water (SUPERCONTENTS_LAVA for instance)
 	int watertype;
 	// how deep
@@ -2032,41 +2024,22 @@ void CL_ClientMovement_PlayerMove_Frame(cl_clientmovement_state_t *s);
 // warpzone prediction hack (CSQC builtin)
 void CL_RotateMoves(const matrix4x4_t *m);
 
-typedef enum meshname_e {
-	MESH_SCENE, // CSQC R_PolygonBegin, potentially also engine particles and debug stuff
-	MESH_UI,
-	NUM_MESHENTITIES,
-} meshname_t;
-extern entity_t cl_meshentities[NUM_MESHENTITIES];
-extern dp_model_t cl_meshentitymodels[NUM_MESHENTITIES];
-extern const char *cl_meshentitynames[NUM_MESHENTITIES];
-#define CL_Mesh_Scene() (&cl_meshentitymodels[MESH_SCENE])
-#define CL_Mesh_UI() (&cl_meshentitymodels[MESH_UI])
-void CL_MeshEntities_Scene_Clear(void);
-void CL_MeshEntities_Scene_AddRenderEntity(void);
-void CL_MeshEntities_Scene_FinalizeRenderEntity(void);
-void CL_UpdateEntityShading(void);
-
 void CL_NewFrameReceived(int num);
 void CL_ParseEntityLump(char *entitystring);
 void CL_FindNonSolidLocation(const vec3_t in, vec3_t out, vec_t radius);
 void CL_RelinkLightFlashes(void);
-void CL_Beam_AddPolygons(const beam_t *b);
 void Sbar_ShowFPS(void);
 void Sbar_ShowFPS_Update(void);
 void Host_SaveConfig(void);
-void Host_LoadConfig_f(cmd_state_t *cmd);
+void Host_LoadConfig_f(void);
 void CL_UpdateMoveVars(void);
 void SCR_CaptureVideo_SoundFrame(const portable_sampleframe_t *paintbuffer, size_t length);
 void V_DriftPitch(void);
 void V_FadeViewFlashs(void);
 void V_CalcViewBlend(void);
-void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewangles, qbool teleported, qbool clonground, qbool clcmdjump, float clstatsviewheight, qbool cldead, qbool clintermission, const vec3_t clvelocity);
+void V_CalcRefdefUsing (const matrix4x4_t *entrendermatrix, const vec3_t clviewangles, qboolean teleported, qboolean clonground, qboolean clcmdjump, float clstatsviewheight, qboolean cldead, qboolean clintermission, const vec3_t clvelocity);
 void V_CalcRefdef(void);
-void V_MakeViewIsometric(void);
-void V_MakeViewIsometric(void);
-void V_StartPitchDrift(void);
-void CL_Locs_Reload_f(cmd_state_t *cmd);
+void CL_Locs_Reload_f(void);
 
 #endif
 

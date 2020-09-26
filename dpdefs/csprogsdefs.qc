@@ -194,7 +194,7 @@ const float VF_DRAWCROSSHAIR	= 21;	//(float)
 const float VF_CL_VIEWANGLES	= 33;	//(vector)
 const float VF_CL_VIEWANGLES_X	= 34;	//(float)
 const float VF_CL_VIEWANGLES_Y	= 35;	//(float)
-const float VF_CL_VIEWANGLES_Z	= 36;	//(float)
+const float VF_CL_VIEWANGLES_Z	= 36;	//(float) 
 
 const float VF_PERSPECTIVE      = 200;
 
@@ -291,7 +291,7 @@ const float TE_EXPLOSION2					= 12;
 	const float TE_EXPLOSIONQUAD 				= 70;
 	const float TE_SPIKEQUAD					= 58;
 	const float TE_SUPERSPIKEQUAD				= 59;
-
+	
 // PFlags for Dynamic Lights
 const float PFLAGS_NOSHADOW					= 1;
 const float PFLAGS_CORONA					= 2;
@@ -337,7 +337,7 @@ void(entity e, vector min, vector max) setsize = #4;
 
 void() break_to_debugger = #6;
 float() random = #7;
-void(entity e, float chan, string samp, float volume, float atten, ...) sound = #8;
+void(entity e, float chan, string samp) sound = #8;
 vector(vector v) normalize = #9;
 void(string e) error = #10;
 void(string e) objerror = #11;
@@ -421,7 +421,6 @@ float( float b, ... ) max = #95;
 float(float minimum, float val, float maximum) bound = #96;
 float(float f, float f) pow = #97;
 entity(entity start, .float fld, float match) findfloat = #98;
-entity(entity start, .entity fld, entity match) findentity = #98;
 float(string s) checkextension = #99;
 // FrikaC and Telejano range #100-#199
 
@@ -448,7 +447,6 @@ string(float ccase, float calpha, float cnum, string s, ...) strconv = #224;
 string(float chars, string s, ...) strpad = #225;
 string(string info, string key, string value, ...) infoadd = #226;
 string(string info, string key) infoget = #227;
-float(string s1, string s2) strcmp = #228;
 float(string s1, string s2, float len) strncmp = #228;
 float(string s1, string s2) strcasecmp = #229;
 float(string s1, string s2, float len) strncasecmp = #230;
@@ -470,7 +468,7 @@ void() R_EndPolygon = #308;
 vector (vector v) cs_unproject = #310;
 vector (vector v) cs_project = #311;
 
-void(float width, vector pos1, vector pos2, vector rgb, float alpha, float flag) drawline = #315;
+void(float width, vector pos1, vector pos2, float flag) drawline = #315;
 float(string name) iscachedpic = #316;
 string(string name, ...) precache_pic = #317;
 string(string name) precache_cubemap = #317;
@@ -522,7 +520,7 @@ float() ReadAngle = #365;
 string() ReadString = #366;
 float() ReadFloat = #367;
 
-// LadyHavoc's range #400-#499
+// LordHavoc's range #400-#499
 void(entity from, entity to) copyentity = #400;
 
 entity(.string fld, string match) findchain = #402;
@@ -597,7 +595,7 @@ float(float t) atan = #473;
 float(float c, float s) atan2 = #474;
 float(float a) tan = #475;
 float(string s) strippedstringlen = #476;
-float(string s) strlennocol = #476; // This is the correct name for the function, but not removing the strippedstringlen mapping.
+float(string s) strlennocol = #476; // This is the correct name for the function, but not removing the decolorizedstring mapping.
 string(string s) decolorizedstring = #477;
 string(string s) strdecolorize = #477; // This is the correct name for the function, but not removing the decolorizedstring mapping.
 string(float uselocaltime, string format, ...) strftime = #478;
@@ -658,11 +656,11 @@ float PARTICLE_BEAM = 3;
 float particle_type; // one of PT_
 float particle_blendmode; // one of PBLEND_ values
 float particle_orientation; // one of PARTICLE_ values
-vector particle_color1;
+vector particle_color1; 
 vector particle_color2;
 float particle_tex; // number of chunk in particlefont
 float particle_size;
-float particle_sizeincrease;
+float particle_sizeincrease; 
 float particle_alpha;
 float particle_alphafade;
 float particle_time;
@@ -694,10 +692,10 @@ float(vector org, vector vel) spawnparticle = #527; // returns 0 when failed, 1 
 float(vector org, vector vel, float theme) quickparticle = #527; // not reading globals, just theme, returns 0 when failed, 1 when spawned
 float(vector org, vector vel, float delay, float collisiondelay) delayedparticle = #528;
 float(vector org, vector vel, float delay, float collisiondelay, float theme) quickdelayedparticle = #528;
-// description: this builtin provides an easy and flexible way to spawn particles,
-// it is not created as replace for DP_SV_POINTPARTICLES but as an addition to it.
+// description: this builtin provides an easy and flexible way to spawn particles, 
+// it is not created as replace for DP_SV_POINTPARTICLES but as an addition to it. 
 // With this extension you can create a specific particles like rain particles, or entity particles
-// notes:
+// notes: 
 // 1) 0 is default particle template, it could be changed
 // 2) color vectors could have value 0-255 of each component
 // restrictions: max themes could be between 4 and 2048
@@ -807,7 +805,7 @@ vector(float entitynum, float fldnum) getentityvec = #504;
 //darkplaces implementation: Blub\0
 //console commands:
 //  loadfont fontname fontmaps size1 size2 ...
-//   A font can simply be gfx/tgafile (freetype fonts doent need extension),
+//   A font can simply be gfx/tgafile (freetype fonts doent need extension), 
 //   or alternatively you can specify multiple fonts and faces
 //   Like this: gfx/vera-sans:2,gfx/fallback:1
 //   to load face 2 of the font gfx/vera-sans and use face 1
@@ -836,7 +834,7 @@ float FONT_USER6 = 14;     // 'user6', userdefined fonts
 float FONT_USER7 = 15;     // 'user7' slot, userdefined fonts
 //builtin definitions:
 float findfont(string s) = #356; // find font by fontname and return it's index
-float loadfont(string fontname, string fontmaps, string sizes, float slot, float fix_scale, float fix_voffset) = #357;
+float loadfont(string fontname, string fontmaps, string sizes, float slot, float fix_scale, float fix_voffset) = #357; 
 // loads font immediately so stringwidth() function can be used just after builtin call
 // returns a font slotnum (which is used to set drawfont to)
 // first 3 parms are identical to "loadfont" console command ones
@@ -867,7 +865,7 @@ float stringwidth_menu(string text, float allowColorCodes, vector size) = #468; 
 //   r_font_postprocess_shadow_y X  : font outline shadow y shift amount, applied during outlining
 //   r_font_postprocess_shadow_z X  : font outline shadow z shift amount, applied during blurring
 //description: engine support for truetype/freetype fonts
-//so .AFM+.PFB/.OTF/.TTF files could be stuffed as fontmaps in loadfont()
+//so .AFM+.PFB/.OTF/.TTF files could be stuffed as fontmaps in loadfont() 
 //(console command version will support them as well)
 
 //DP_CSQC_BINDMAPS
@@ -898,7 +896,7 @@ float(string url, float id, string content_type, string delim, float buf, float 
 //constant definitions:
 const float VF_MAINVIEW         = 400;
 //use setproperty(VF_MAINVIEW, 1); before calling R_RenderView for the render
-//that shall become the "main" view, which is e.g. used by PRYDON_CLIENTCURSOR
+//that shall become the "main" view, which is e.g. used by PRYDON_CLIENTCURSOR 
 //this flag is set for the first scene, and not cleared by R_ClearScene
 //this flag is automatically cleared by R_RenderView
 //so when not using this extension, the first view rendered is the main view
@@ -944,31 +942,29 @@ vector	drawgetimagesize(string pic) = #318;
 #define SPA_TEXCOORDS0 4
 #define SPA_LIGHTMAP0_TEXCOORDS 5
 #define SPA_LIGHTMAP_COLOR 6
-// float (entity e, float s)						getsurfacenumpoints = #434;
-// vector (entity e, float s, float n)					getsurfacepoint = #435;
-// vector (entity e, float s)						getsurfacenormal = #436;
-// string (entity e, float s)						getsurfacetexture = #437;
-// float (entity e, vector p)						getsurfacenearpoint = #438;
-// vector (entity e, float s, vector p)					getsurfaceclippedpoint = #439;
-// vector(entity e, float s, float n, float a) getsurfacepointattribute = #486;
+float (entity e, float s)						getsurfacenumpoints = #434;
+vector (entity e, float s, float n)					getsurfacepoint = #435;
+vector (entity e, float s)						getsurfacenormal = #436;
+string (entity e, float s)						getsurfacetexture = #437;
+float (entity e, vector p)						getsurfacenearpoint = #438;
+vector (entity e, float s, vector p)					getsurfaceclippedpoint = #439;
+vector(entity e, float s, float n, float a) getsurfacepointattribute = #486;
 float(entity e, float s) getsurfacenumtriangles = #628;
 vector(entity e, float s, float n) getsurfacetriangle = #629;
 
 //DP_QC_ASINACOSATANATAN2TAN
 //idea: Urre
-//darkplaces implementation: LadyHavoc
+//darkplaces implementation: LordHavoc
 //constant definitions:
 float DEG2RAD = 0.0174532925199432957692369076848861271344287188854172545609719144;
 float RAD2DEG = 57.2957795130823208767981548141051703324054724665643215491602438612;
 float PI      = 3.1415926535897932384626433832795028841971693993751058209749445923;
 //builtin definitions:
-/* -Wdouble-declaration
 float(float s) asin = #471; // returns angle in radians for a given sin() value, the result is in the range -PI*0.5 to PI*0.5
 float(float c) acos = #472; // returns angle in radians for a given cos() value, the result is in the range 0 to PI
 float(float t) atan = #473; // returns angle in radians for a given tan() value, the result is in the range -PI*0.5 to PI*0.5
 float(float c, float s) atan2 = #474; // returns angle in radians for a given cos() and sin() value pair, the result is in the range -PI to PI (this is identical to vectoyaw except it returns radians rather than degrees)
 float(float a) tan = #475; // returns tangent value (which is simply sin(a)/cos(a)) for the given angle in radians, the result is in the range -infinity to +infinity
-*/
 //description:
 //useful math functions for analyzing vectors, note that these all use angles in radians (just like the cos/sin functions) not degrees unlike makevectors/vectoyaw/vectoangles, so be sure to do the appropriate conversions (multiply by DEG2RAD or RAD2DEG as needed).
 //note: atan2 can take unnormalized vectors (just like vectoyaw), and the function was included only for completeness (more often you want vectoyaw or vectoangles), atan2(v_x,v_y) * RAD2DEG gives the same result as vectoyaw(v)
@@ -1022,8 +1018,8 @@ float GETTIME_CDTRACK = 4;
 //see DP_END_GETSOUNDTIME for similar functionality but for entity sound channels
 
 //DP_QC_TOKENIZEBYSEPARATOR
-//idea: Electro, SavageX, LadyHavoc
-//darkplaces implementation: LadyHavoc
+//idea: Electro, SavageX, LordHavoc
+//darkplaces implementation: LordHavoc
 //builtin definitions:
 float(string s, string separator1, ...) tokenizebyseparator = #479;
 //description:
@@ -1083,8 +1079,8 @@ float PRECACHE_PIC_MIPMAP = 8; // mipmap the texture for possibly better downsca
 //notes: these constants are given as optional second argument to precache_pic()
 
 //DP_QC_TRACE_MOVETYPE_WORLDONLY
-//idea: LadyHavoc
-//darkplaces implementation: LadyHavoc
+//idea: LordHavoc
+//darkplaces implementation: LordHavoc
 //constant definitions:
 float MOVE_WORLDONLY = 3;
 //description:
@@ -1112,8 +1108,8 @@ float(string sample) soundlength = #534; // returns length of sound sample in se
 float(entity num) num_for_edict = #512;
 
 //DP_TRACE_HITCONTENTSMASK_SURFACEINFO
-//idea: LadyHavoc
-//darkplaces implementation: LadyHavoc
+//idea: LordHavoc
+//darkplaces implementation: LordHavoc
 //globals:
 .float dphitcontentsmask; // if non-zero on the entity passed to traceline/tracebox/tracetoss this will override the normal collidable contents rules and instead hit these contents values (for example AI can use tracelines that hit DONOTENTER if it wants to, by simply changing this field on the entity passed to traceline), this affects normal movement as well as trace calls
 float trace_dpstartcontents; // DPCONTENTS_ value at start position of trace
@@ -1215,8 +1211,8 @@ float log(float f) = #532;
 //logarithm
 
 //FTE_CSQC_SKELETONOBJECTS
-//idea: Spike, LadyHavoc
-//darkplaces implementation: LadyHavoc
+//idea: Spike, LordHavoc
+//darkplaces implementation: LordHavoc
 //builtin definitions:
 // all skeleton numbers are 1-based (0 being no skeleton)
 // all bone numbers are 1-based (0 being invalid)
@@ -1437,15 +1433,6 @@ void(entity e, string s) parseentitydata = #608;
 //darkplaces implementation: divVerent
 //function definitions:
 void coverage() = #642;  // Reports a coverage event. The engine counts for each of the calls to this builtin whether it has been called.
-
-//DP_QC_FS_SEARCH_PACKFILE
-//idea: Mario
-//darkplaces implementation: Mario
-//builtin definitions:
-float(string pattern, float caseinsensitive, float quiet, string packfile) search_packfile_begin = #444;
-//description:
-//extension to search_begin (DP_QC_FS_SEARCH), performs a filename search with the specified pattern (for example "maps/*.bsp") and stores the results in a search slot (minimum of 128 supported by any engine with this extension), the other functions take this returned search slot number, be sure to search_free when done (they are also freed on progs reload).
-//only searches for files within the specified packfile, which is expected to match the results of whichpack().
 
 // assorted builtins
 const float		STAT_MOVEVARS_TICRATE           = 240;

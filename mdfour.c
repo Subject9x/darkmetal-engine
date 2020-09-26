@@ -24,7 +24,7 @@
 		59 Temple Place - Suite 330
 		Boston, MA  02111-1307, USA
 
-	$Id$
+	$Id: mdfour.c 10534 2010-10-15 13:47:19Z divverent $
 */
 
 #include "quakedef.h"
@@ -36,6 +36,8 @@
 
    It assumes that a int is at least 32 bits long
 */
+
+static struct mdfour *m;
 
 #define F(X,Y,Z) (((X)&(Y)) | ((~(X))&(Z)))
 #define G(X,Y,Z) (((X)&(Y)) | ((X)&(Z)) | ((Y)&(Z)))
@@ -51,7 +53,7 @@
 #define ROUND3(a,b,c,d,k,s) a = lshift(a + H(b,c,d) + X[k] + 0x6ED9EBA1,s)
 
 /* this applies md4 to 64 byte chunks */
-static void mdfour64(struct mdfour_s *md, uint32 *M)
+static void mdfour64(uint32 *M)
 {
 	int j;
 	uint32 AA, BB, CC, DD;
@@ -61,7 +63,7 @@ static void mdfour64(struct mdfour_s *md, uint32 *M)
 	for (j=0;j<16;j++)
 		X[j] = M[j];
 
-	A = md->A; B = md->B; C = md->C; D = md->D;
+	A = m->A; B = m->B; C = m->C; D = m->D;
 	AA = A; BB = B; CC = C; DD = D;
 
         ROUND1(A,B,C,D,  0,  3);  ROUND1(D,A,B,C,  1,  7);
@@ -101,7 +103,7 @@ static void mdfour64(struct mdfour_s *md, uint32 *M)
 	for (j=0;j<16;j++)
 		X[j] = 0;
 
-	md->A = A; md->B = B; md->C = C; md->D = D;
+	m->A = A; m->B = B; m->C = C; m->D = D;
 }
 
 static void copy64(uint32 *M, const unsigned char *in)
@@ -121,7 +123,7 @@ static void copy4(unsigned char *out,uint32 x)
 	out[3] = (x>>24)&0xFF;
 }
 
-void mdfour_begin(struct mdfour_s *md)
+void mdfour_begin(struct mdfour *md)
 {
 	md->A = 0x67452301;
 	md->B = 0xefcdab89;
@@ -131,15 +133,15 @@ void mdfour_begin(struct mdfour_s *md)
 }
 
 
-static void mdfour_tail(struct mdfour_s *md, const unsigned char *in, int n)
+static void mdfour_tail(const unsigned char *in, int n)
 {
 	unsigned char buf[128];
 	uint32 M[16];
 	uint32 b;
 
-	md->totalN += n;
+	m->totalN += n;
 
-	b = md->totalN * 8;
+	b = m->totalN * 8;
 
 	memset(buf, 0, 128);
 	if (n) memcpy(buf, in, n);
@@ -148,49 +150,53 @@ static void mdfour_tail(struct mdfour_s *md, const unsigned char *in, int n)
 	if (n <= 55) {
 		copy4(buf+56, b);
 		copy64(M, buf);
-		mdfour64(md, M);
+		mdfour64(M);
 	} else {
 		copy4(buf+120, b);
 		copy64(M, buf);
-		mdfour64(md, M);
+		mdfour64(M);
 		copy64(M, buf+64);
-		mdfour64(md, M);
+		mdfour64(M);
 	}
 }
 
-void mdfour_update(struct mdfour_s *md, const unsigned char *in, int n)
+void mdfour_update(struct mdfour *md, const unsigned char *in, int n)
 {
 	uint32 M[16];
 
-// start of edit by Ashley Rose Hale (LadyHavoc)
+// start of edit by Forest 'LordHavoc' Hale
 // commented out to prevent crashing when length is 0
 //	if (n == 0) mdfour_tail(in, n);
-// end of edit by Ashley Rose Hale (LadyHavoc)
+// end of edit by Forest 'LordHavoc' Hale
+
+	m = md;
 
 	while (n >= 64) {
 		copy64(M, in);
-		mdfour64(md, M);
+		mdfour64(M);
 		in += 64;
 		n -= 64;
-		md->totalN += 64;
+		m->totalN += 64;
 	}
 
-	mdfour_tail(md, in, n);
+	mdfour_tail(in, n);
 }
 
 
-void mdfour_result(struct mdfour_s *md, unsigned char *out)
+void mdfour_result(struct mdfour *md, unsigned char *out)
 {
-	copy4(out, md->A);
-	copy4(out+4, md->B);
-	copy4(out+8, md->C);
-	copy4(out+12, md->D);
+	m = md;
+
+	copy4(out, m->A);
+	copy4(out+4, m->B);
+	copy4(out+8, m->C);
+	copy4(out+12, m->D);
 }
 
 
 void mdfour(unsigned char *out, const unsigned char *in, int n)
 {
-	struct mdfour_s md;
+	struct mdfour md;
 	mdfour_begin(&md);
 	mdfour_update(&md, in, n);
 	mdfour_result(&md, out);

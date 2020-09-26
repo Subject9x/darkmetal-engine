@@ -1,15 +1,9 @@
-To build DarkPlaces for iOS, you need to extract this zip into the source folder:
-http://ghdigital.com/~havoc/SDLiOS20110208.zip
-
-This is built from the in-development version of SDL 1.3, to make an updated include folder and libSDL*.a files, you need to get the SDL 1.3 source (from hg or a nightly build or whatever), then simply open Xcode-iPhoneOS/SDL/SDLiPhoneOS.xcodeproj and build libSDL for both simulator and device and then the SDL Application xcode template.
-
-Then copy the include folder and two libSDL*.a files from the Xcode-iPhoneOS/SDL/build/Debug-template (or Release-template) into the darkplaces source folder, and it will build with your updated files.
-
 ## DarkMETAL engine
+A revised* fork of the Xonotic/Darkplaces engine.
 
-powers the `battleMETAL` TCM developed by myself.
+Powers the `battleMETAL` TCM developed by myself.
 
-### Planned Features (not many)
+## Planned Features (not many)
 * change `id1` dir base name to `base`
 * change exe icons to match battleMETAL.
 * remove list of assets being loaded during level load.
@@ -19,3 +13,16 @@ powers the `battleMETAL` TCM developed by myself.
 * maybe clean up how client/serverinfo string access works.
 * expose internal server cache list to QuakeC.
 * and more as I go.
+
+
+### Revised?
+Originally I thought that the 'latest' darkplaces in git was probably 'ok' to start with as a base, seeing as how I developed the battleMETAL TCM entirely on the 2014-STABLE version of Darkplaces. I was wrong, in the 6 years since that build, the MAKEFILE pipeline and some core engine code have been modified in such a way as to create fatal friction in the Windows build process. C11 is currently in a fit over <threads.h> and 2020 Darkplaces has now entered that fray. Additionally, as of 2020, Darkplaces has gone completely over to SDL/OpenGL rendering only, which is a specific decision and one I don't fully agree with. The MAKEFILE removed options for building client exes too. Overall, Its a road I don't and can't really take for my time I have.
+
+
+To build DarkPlaces for iOS, you need to extract this zip into the source folder:
+http://ghdigital.com/~havoc/SDLiOS20110208.zip
+
+This is built from the in-development version of SDL 1.3, to make an updated include folder and libSDL*.a files, you need to get the SDL 1.3 source (from hg or a nightly build or whatever), then simply open Xcode-iPhoneOS/SDL/SDLiPhoneOS.xcodeproj and build libSDL for both simulator and device and then the SDL Application xcode template.
+
+Then copy the include folder and two libSDL*.a files from the Xcode-iPhoneOS/SDL/build/Debug-template (or Release-template) into the darkplaces source folder, and it will build with your updated files.
+

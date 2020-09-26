@@ -26,9 +26,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //
 extern int con_totallines;
 extern int con_backscroll;
-extern qbool con_initialized;
+extern qboolean con_initialized;
 
-void Con_Rcon_Redirect_Init(lhnetsocket_t *sock, lhnetaddress_t *dest, qbool proquakeprotocol);
+void Con_Rcon_Redirect_Init(lhnetsocket_t *sock, lhnetaddress_t *dest, qboolean proquakeprotocol);
 void Con_Rcon_Redirect_End(void);
 void Con_Rcon_Redirect_Abort(void);
 
@@ -56,20 +56,22 @@ void Con_DPrint(const char *msg);
 
 /// A Con_Printf that only shows up if the "developer" cvar is set
 void Con_DPrintf(const char *fmt, ...) DP_FUNC_PRINTF(1);
-void Con_Clear_f(cmd_state_t *cmd);
+void Con_Clear_f (void);
 void Con_DrawNotify (void);
 
 /// Clear all notify lines.
 void Con_ClearNotify (void);
-void Con_ToggleConsole_f(cmd_state_t *cmd);
+void Con_ToggleConsole_f (void);
 
-qbool GetMapList (const char *s, char *completedname, int completednamebufferlength);
+int Nicks_CompleteChatLine(char *buffer, size_t size, unsigned int pos);
+
+qboolean GetMapList (const char *s, char *completedname, int completednamebufferlength);
 
 /// wrapper function to attempt to either complete the command line
 /// or to list possible matches grouped by type
 /// (i.e. will display possible variables, aliases, commands
 /// that match what they've typed so far)
-int Con_CompleteCommandLine(cmd_state_t *cmd, qbool is_console);
+void Con_CompleteCommandLine(void);
 
 /// Generic libs/util/console.c function to display a list
 /// formatted in columns on the console
@@ -86,9 +88,6 @@ void Log_DestBuffer_Flush (void); ///< call this once per frame to send out repl
 
 void Log_Printf(const char *logfilename, const char *fmt, ...) DP_FUNC_PRINTF(2);
 //@}
-
-#define CON_WARN "^3"
-#define CON_ERROR "^1"
 
 // CON_MASK_PRINT is the default (Con_Print/Con_Printf)
 // CON_MASK_DEVELOPER is used by Con_DPrint/Con_DPrintf
@@ -112,7 +111,7 @@ con_lineinfo_t;
 
 typedef struct conbuffer_s
 {
-	qbool active;
+	qboolean active;
 	int textsize;
 	char *text;
 	int maxlines;

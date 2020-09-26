@@ -55,7 +55,7 @@ extern vec3_t vec3_origin;
 #define max(A,B) ((A) > (B) ? (A) : (B))
 #endif
 
-/// LadyHavoc: this function never returns exactly MIN or exactly MAX, because
+/// LordHavoc: this function never returns exactly MIN or exactly MAX, because
 /// of a QuakeC bug in id1 where the line
 /// self.nextthink = self.nexthink + random() * 0.5;
 /// can result in 0 (self.nextthink is 0 at this point in the code to begin
@@ -181,16 +181,15 @@ int PointInfrontOfTriangle(const float *p, const float *a, const float *b, const
 }
 #endif
 
-#define lhcheeserand(seed) ((seed) = ((seed) * 987211u) ^ ((seed) >> 13u) ^ 914867)
-#define lhcheeserandom(seed,MIN,MAX) ((double)(lhcheeserand(seed) + 0.5) / ((double)4096.0*1024.0*1024.0) * ((MAX)-(MIN)) + (MIN))
-#define VectorCheeseRandom(seed,v) do{(v)[0] = lhcheeserandom(seed,-1, 1);(v)[1] = lhcheeserandom(seed,-1, 1);(v)[2] = lhcheeserandom(seed,-1, 1);}while(DotProduct(v, v) > 1)
-#define VectorLehmerRandom(seed,v) do{(v)[0] = Math_crandomf(seed);(v)[1] = Math_crandomf(seed);(v)[2] = Math_crandomf(seed);}while(DotProduct(v, v) > 1)
+#define lhcheeserand() (seed = (seed * 987211u) ^ (seed >> 13u) ^ 914867)
+#define lhcheeserandom(MIN,MAX) ((double)(lhcheeserand() + 0.5) / ((double)4096.0*1024.0*1024.0) * ((MAX)-(MIN)) + (MIN))
+#define VectorCheeseRandom(v) do{(v)[0] = lhcheeserandom(-1, 1);(v)[1] = lhcheeserandom(-1, 1);(v)[2] = lhcheeserandom(-1, 1);}while(DotProduct(v, v) > 1)
 
 /*
-// LadyHavoc: quaternion math, untested, don't know if these are correct,
+// LordHavoc: quaternion math, untested, don't know if these are correct,
 // need to add conversion to/from matrices
-// LadyHavoc: later note: the matrix faq is useful: http://skal.planet-d.net/demo/matrixfaq.htm
-// LadyHavoc: these are probably very wrong and I'm not sure I care, not used by anything
+// LordHavoc: later note: the matrix faq is useful: http://skal.planet-d.net/demo/matrixfaq.htm
+// LordHavoc: these are probably very wrong and I'm not sure I care, not used by anything
 
 // returns length of quaternion
 #define qlen(a) ((float) sqrt((a)[0]*(a)[0]+(a)[1]*(a)[1]+(a)[2]*(a)[2]+(a)[3]*(a)[3]))
@@ -251,16 +250,14 @@ void R_ConcatRotations (const float in1[3*3], const float in2[3*3], float out[3*
 void R_ConcatTransforms (const float in1[3*4], const float in2[3*4], float out[3*4]);
 
 void AngleVectors (const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up);
-/// LadyHavoc: proper matrix version of AngleVectors
+/// LordHavoc: proper matrix version of AngleVectors
 void AngleVectorsFLU (const vec3_t angles, vec3_t forward, vec3_t left, vec3_t up);
-/// divVerent: improper matrix version of AngleVectors
-void AngleVectorsDuke3DFLU (const vec3_t angles, vec3_t forward, vec3_t left, vec3_t up, double maxShearAngle);
-/// LadyHavoc: builds a [3][4] matrix
+/// LordHavoc: builds a [3][4] matrix
 void AngleMatrix (const vec3_t angles, const vec3_t translate, vec_t matrix[][4]);
-/// LadyHavoc: calculates pitch/yaw/roll angles from forward and up vectors
-void AnglesFromVectors (vec3_t angles, const vec3_t forward, const vec3_t up, qbool flippitch);
+/// LordHavoc: calculates pitch/yaw/roll angles from forward and up vectors
+void AnglesFromVectors (vec3_t angles, const vec3_t forward, const vec3_t up, qboolean flippitch);
 
-/// LadyHavoc: like AngleVectors, but taking a forward vector instead of angles, useful!
+/// LordHavoc: like AngleVectors, but taking a forward vector instead of angles, useful!
 void VectorVectors(const vec3_t forward, vec3_t right, vec3_t up);
 void VectorVectorsDouble(const double *forward, double *right, double *up);
 
@@ -275,7 +272,7 @@ void BoxPlaneCornerDistances_Separate(const vec3_t emins, const vec3_t emaxs, co
 #define PlaneDist(point,plane)  ((plane)->type < 3 ? (point)[(plane)->type] : DotProduct((point), (plane)->normal))
 #define PlaneDiff(point,plane) (((plane)->type < 3 ? (point)[(plane)->type] : DotProduct((point), (plane)->normal)) - (plane)->dist)
 
-/// LadyHavoc: minimal plane structure
+/// LordHavoc: minimal plane structure
 typedef struct tinyplane_s
 {
 	float normal[3], dist;
@@ -301,22 +298,6 @@ int Math_atov(const char *s, prvm_vec3_t out);
 void BoxFromPoints(vec3_t mins, vec3_t maxs, int numpoints, vec_t *point3f);
 
 int LoopingFrameNumberFromDouble(double t, int loopframes);
-
-// implementation of 128bit Lehmer Random Number Generator with 2^126 period
-// https://en.wikipedia.org/Lehmer_random_number_generator
-typedef struct randomseed_s
-{
-	unsigned int s[4];
-}
-randomseed_t;
-
-void Math_RandomSeed_Reset(randomseed_t *r);
-void Math_RandomSeed_FromInts(randomseed_t *r, unsigned int s0, unsigned int s1, unsigned int s2, unsigned int s3);
-unsigned long long Math_rand64(randomseed_t *r);
-float Math_randomf(randomseed_t *r);
-float Math_crandomf(randomseed_t *r);
-float Math_randomrangef(randomseed_t *r, float minf, float maxf);
-int Math_randomrangei(randomseed_t *r, int mini, int maxi);
 
 void Mathlib_Init(void);
 

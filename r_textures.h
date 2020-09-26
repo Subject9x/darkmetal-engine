@@ -33,15 +33,12 @@
 // indicates the texture will be used as a render target (D3D hint)
 #define TEXF_RENDERTARGET 0x0010000
 // used for checking if textures mismatch
-#define TEXF_IMPORTANTBITS (TEXF_ALPHA | TEXF_MIPMAP | TEXF_RGBMULTIPLYBYALPHA | TEXF_CLAMP | TEXF_FORCENEAREST | TEXF_FORCELINEAR | TEXF_PICMIP | TEXF_COMPARE | TEXF_LOWPRECISION | TEXF_RENDERTARGET)
+#define TEXF_IMPORTANTBITS (TEXF_ALPHA | TEXF_MIPMAP | TEXF_RGBMULTIPLYBYALPHA | TEXF_CLAMP | TEXF_FORCENEAREST | TEXF_FORCELINEAR | TEXF_PICMIP | TEXF_COMPRESS | TEXF_COMPARE | TEXF_LOWPRECISION | TEXF_RENDERTARGET)
 // set as a flag to force the texture to be reloaded
 #define TEXF_FORCE_RELOAD 0x80000000
 
 typedef enum textype_e
 {
-	// placeholder for unused textures in r_rendertarget_t
-	TEXTYPE_UNUSED,
-
 	// 8bit paletted
 	TEXTYPE_PALETTE,
 	// 32bit RGBA
@@ -100,15 +97,44 @@ typedef enum textype_e
 }
 textype_t;
 
+/*
+#ifdef WIN32
+#define SUPPORTD3D
+#define SUPPORTDIRECTX
+#ifdef SUPPORTD3D
+#include <d3d9.h>
+#endif
+#endif
+*/
+
 // contents of this structure are mostly private to gl_textures.c
 typedef struct rtexture_s
 {
 	// this is exposed (rather than private) for speed reasons only
 	int texnum; // GL texture slot number
 	int renderbuffernum; // GL renderbuffer slot number
-	qbool dirty; // indicates that R_RealGetTexture should be called
-	qbool glisdepthstencil; // indicates that FBO attachment has to be GL_DEPTH_STENCIL_ATTACHMENT
+	qboolean dirty; // indicates that R_RealGetTexture should be called
+	qboolean glisdepthstencil; // indicates that FBO attachment has to be GL_DEPTH_STENCIL_ATTACHMENT
 	int gltexturetypeenum; // used by R_Mesh_TexBind
+	// d3d stuff the backend needs
+	void *d3dtexture;
+	void *d3dsurface;
+#ifdef SUPPORTD3D
+	qboolean d3disrendertargetsurface;
+	qboolean d3disdepthstencilsurface;
+	int d3dformat;
+	int d3dusage;
+	int d3dpool;
+	int d3daddressu;
+	int d3daddressv;
+	int d3daddressw;
+	int d3dmagfilter;
+	int d3dminfilter;
+	int d3dmipfilter;
+	int d3dmaxmiplevelfilter;
+	int d3dmipmaplodbias;
+	int d3dmaxmiplevel;
+#endif
 }
 rtexture_t;
 
@@ -147,12 +173,12 @@ extern cvar_t r_texture_dds_save;
 rtexture_t *R_LoadTexture2D(rtexturepool_t *rtexturepool, const char *identifier, int width, int height, const unsigned char *data, textype_t textype, int flags, int miplevel, const unsigned int *palette);
 rtexture_t *R_LoadTexture3D(rtexturepool_t *rtexturepool, const char *identifier, int width, int height, int depth, const unsigned char *data, textype_t textype, int flags, int miplevel, const unsigned int *palette);
 rtexture_t *R_LoadTextureCubeMap(rtexturepool_t *rtexturepool, const char *identifier, int width, const unsigned char *data, textype_t textype, int flags, int miplevel, const unsigned int *palette);
-rtexture_t *R_LoadTextureShadowMap2D(rtexturepool_t *rtexturepool, const char *identifier, int width, int height, textype_t textype, qbool filter);
+rtexture_t *R_LoadTextureShadowMap2D(rtexturepool_t *rtexturepool, const char *identifier, int width, int height, textype_t textype, qboolean filter);
 rtexture_t *R_LoadTextureRenderBuffer(rtexturepool_t *rtexturepool, const char *identifier, int width, int height, textype_t textype);
-rtexture_t *R_LoadTextureDDSFile(rtexturepool_t *rtexturepool, const char *filename, qbool srgb, int flags, qbool *hasalphaflag, float *avgcolor, int miplevel, qbool optionaltexture);
+rtexture_t *R_LoadTextureDDSFile(rtexturepool_t *rtexturepool, const char *filename, qboolean srgb, int flags, qboolean *hasalphaflag, float *avgcolor, int miplevel, qboolean optionaltexture);
 
 // saves a texture to a DDS file
-int R_SaveTextureDDSFile(rtexture_t *rt, const char *filename, qbool skipuncompressed, qbool hasalpha);
+int R_SaveTextureDDSFile(rtexture_t *rt, const char *filename, qboolean skipuncompressed, qboolean hasalpha);
 
 // free a texture
 void R_FreeTexture(rtexture_t *rt);
@@ -193,7 +219,7 @@ void R_ClearTexture (rtexture_t *rt);
 // returns the desired picmip level for given TEXF_ flags
 int R_PicmipForFlags(int flags);
 
-void R_TextureStats_Print(qbool printeach, qbool printpool, qbool printtotal);
+void R_TextureStats_Print(qboolean printeach, qboolean printpool, qboolean printtotal);
 
 #endif
 

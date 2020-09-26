@@ -18,7 +18,7 @@ typedef struct capturevideostate_avi_formatspecific_s
 	fs_offset_t videofile_ix_master_video_start_offset;
 	fs_offset_t videofile_ix_movistart;
 	fs_offset_t position;
-	qbool canseek;
+	qboolean canseek;
 	sizebuf_t riffbuffer;
 	unsigned char riffbufferdata[128];
 	sizebuf_t riffindexbuffer;
@@ -147,7 +147,7 @@ static void SCR_CaptureVideo_RIFF_Pop(void)
 		if(sizehint != -1)
 		{
 			int i;
-			Con_Printf(CON_WARN "WARNING: invalid size hint %d when writing video data (actual size: %d)\n", (int) sizehint, x);
+			Con_Printf("WARNING: invalid size hint %d when writing video data (actual size: %d)\n", (int) sizehint, x);
 			for(i = 0; i <= format->riffstacklevel; ++i)
 			{
 				Con_Printf("  RIFF level %d = %s\n", i, format->riffstackfourcc[i]);
@@ -269,7 +269,7 @@ static void SCR_CaptureVideo_RIFF_MakeIxChunk(const char *fcc, const char *dwChu
 	FS_Seek(cls.capturevideo.videofile, 0, SEEK_END); // return value doesn't matter here
 }
 
-static void SCR_CaptureVideo_RIFF_Finish(qbool final)
+static void SCR_CaptureVideo_RIFF_Finish(qboolean final)
 {
 	LOAD_FORMATSPECIFIC_AVI();
 	// close the "movi" list
@@ -473,7 +473,7 @@ static void SCR_CaptureVideo_Avi_SoundFrame(const portable_sampleframe_t *paintb
 		out_ptr[3] = (unsigned char)(n1 >> 8);
 	}
 
-	x = (int)length*4;
+	x = length*4;
 	if(format->canseek)
 	{
 		SCR_CaptureVideo_RIFF_OverflowCheck(8 + x);

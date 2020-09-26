@@ -9,9 +9,16 @@
 // types for unicode strings
 // let them be 32 bit for now
 // normally, whcar_t is 16 or 32 bit, 16 on linux I think, 32 on haiku and maybe windows
+#ifdef _MSC_VER
+typedef __int32 U_int32;
+#else
+#include <stdint.h>
+#include <sys/types.h>
+typedef int32_t U_int32;
+#endif
 
 // Uchar, a wide character
-typedef int32_t Uchar;
+typedef U_int32 Uchar;
 
 // Initialize UTF8, this registers cvars which allows for UTF8 to be disabled
 // completely.
@@ -33,13 +40,13 @@ Uchar  u8_getnchar_utf8_enabled(const char*, const char**, size_t);
 int    u8_fromchar(Uchar, char*, size_t);
 size_t u8_mbstowcs(Uchar *, const char *, size_t);
 size_t u8_wcstombs(char*, const Uchar*, size_t);
-size_t u8_COM_StringLengthNoColors(const char *s, size_t size_s, qbool *valid);
+size_t u8_COM_StringLengthNoColors(const char *s, size_t size_s, qboolean *valid);
 
 // returns a static buffer, use this for inlining
 char  *u8_encodech(Uchar ch, size_t*, char*buf16);
 
-size_t u8_strpad(char *out, size_t outsize, const char *in, qbool leftalign, size_t minwidth, size_t maxwidth);
-size_t u8_strpad_colorcodes(char *out, size_t outsize, const char *in, qbool leftalign, size_t minwidth, size_t maxwidth);
+size_t u8_strpad(char *out, size_t outsize, const char *in, qboolean leftalign, size_t minwidth, size_t maxwidth);
+size_t u8_strpad_colorcodes(char *out, size_t outsize, const char *in, qboolean leftalign, size_t minwidth, size_t maxwidth);
 
 /* Careful: if we disable utf8 but not freetype, we wish to see freetype chars
  * for normal letters. So use E000+x for special chars, but leave the freetype stuff for the

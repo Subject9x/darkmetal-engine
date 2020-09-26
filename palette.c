@@ -1,8 +1,7 @@
 
 #include "quakedef.h"
-#include "image.h"
 
-cvar_t r_colormap_palette = {CF_CLIENT, "r_colormap_palette", "gfx/colormap_palette.lmp", "name of a palette lmp file to override the shirt/pants colors of player models. It consists of 16 shirt colors, 16 scoreboard shirt colors, 16 pants colors and 16 scoreboard pants colors"};
+cvar_t r_colormap_palette = {0, "r_colormap_palette", "gfx/colormap_palette.lmp", "name of a palette lmp file to override the shirt/pants colors of player models. It consists of 16 shirt colors, 16 scoreboard shirt colors, 16 pants colors and 16 scoreboard pants colors"};
 
 unsigned char palette_rgb[256][3];
 unsigned char palette_rgb_pantscolormap[16][3];
@@ -16,16 +15,12 @@ unsigned int palette_bgra_alpha[256];
 unsigned int palette_bgra_nocolormap[256];
 unsigned int palette_bgra_nocolormapnofullbrights[256];
 unsigned int palette_bgra_nofullbrights[256];
-unsigned int palette_bgra_nofullbrights_transparent[256];
 unsigned int palette_bgra_onlyfullbrights[256];
-unsigned int palette_bgra_onlyfullbrights_transparent[256];
 unsigned int palette_bgra_pantsaswhite[256];
 unsigned int palette_bgra_shirtaswhite[256];
 unsigned int palette_bgra_transparent[256];
 unsigned int palette_bgra_embeddedpic[256];
 unsigned char palette_featureflags[256];
-
-unsigned int q2palette_bgra_complete[256];
 
 // John Carmack said the quake palette.lmp can be considered public domain because it is not an important asset to id, so I include it here as a fallback if no external palette file is found.
 unsigned char host_quakepal[768] =
@@ -135,17 +130,11 @@ static void Palette_SetupSpecialPalettes(void)
 		palette_bgra_nofullbrights[i] = palette_bgra_complete[i];
 	for (i = fullbright_start;i < fullbright_end;i++)
 		palette_bgra_nofullbrights[i] = palette_bgra_complete[0];
-	for (i = 0;i < 256;i++)
-		palette_bgra_nofullbrights_transparent[i] = palette_bgra_nofullbrights[i];
-	palette_bgra_nofullbrights_transparent[transparentcolor] = 0;
 
 	for (i = 0;i < 256;i++)
 		palette_bgra_onlyfullbrights[i] = 0;
 	for (i = fullbright_start;i < fullbright_end;i++)
 		palette_bgra_onlyfullbrights[i] = palette_bgra_complete[i];
-	for (i = 0;i < 256;i++)
-		palette_bgra_onlyfullbrights_transparent[i] = palette_bgra_onlyfullbrights[i];
-	palette_bgra_onlyfullbrights_transparent[transparentcolor] = 0;
 
 	for (i = 0;i < 256;i++)
 		palette_bgra_nocolormapnofullbrights[i] = palette_bgra_complete[i];
@@ -192,28 +181,6 @@ static void Palette_SetupSpecialPalettes(void)
 	for (i = 0;i < 256;i++)
 		palette_bgra_font[i] = palette_bgra_complete[i];
 	palette_bgra_font[0] = 0;
-}
-
-static void Palette_LoadQ2Colormap(void)
-{
-	fs_offset_t filesize;
-	unsigned char * q2colormapfile = FS_LoadFile("pics/colormap.pcx", tempmempool, true, &filesize);
-	if (q2colormapfile && filesize >= 768)
-	{
-		unsigned char q2palette_rgb[256][3];
-		unsigned char *out = (unsigned char *) q2palette_bgra_complete; // palette is accessed as 32bit for speed reasons, but is created as 8bit bytes
-		int i;
-		LoadPCX_PaletteOnly(q2colormapfile, filesize, q2palette_rgb[0]);
-		// this stops at color 255 because it is a pink transparent color that we don't actually want to preserve color on.
-		for (i = 0;i < 255;i++)
-		{
-			out[i*4+2] = q2palette_rgb[i][0];
-			out[i*4+1] = q2palette_rgb[i][1];
-			out[i*4+0] = q2palette_rgb[i][2];
-			out[i*4+3] = 255;
-		}
-		Mem_Free(q2colormapfile);
-	}
 }
 
 void BuildGammaTable8(float prescale, float gamma, float scale, float base, float contrastboost, unsigned char *out, int rampsize)
@@ -281,17 +248,17 @@ static void Palette_Load(void)
 	scale = 1;
 	base = 0;
 // COMMANDLINEOPTION: Client: -texgamma <number> sets the quake palette gamma, allowing you to make quake textures brighter/darker, not recommended
-	i = Sys_CheckParm("-texgamma");
+	i = COM_CheckParm("-texgamma");
 	if (i)
-		gamma = atof(sys.argv[i + 1]);
+		gamma = atof(com_argv[i + 1]);
 // COMMANDLINEOPTION: Client: -texcontrast <number> sets the quake palette contrast, allowing you to make quake textures brighter/darker, not recommended
-	i = Sys_CheckParm("-texcontrast");
+	i = COM_CheckParm("-texcontrast");
 	if (i)
-		scale = atof(sys.argv[i + 1]);
+		scale = atof(com_argv[i + 1]);
 // COMMANDLINEOPTION: Client: -texbrightness <number> sets the quake palette brightness (brightness of black), allowing you to make quake textures brighter/darker, not recommended
-	i = Sys_CheckParm("-texbrightness");
+	i = COM_CheckParm("-texbrightness");
 	if (i)
-		base = atof(sys.argv[i + 1]);
+		base = atof(com_argv[i + 1]);
 	gamma = bound(0.01, gamma, 10.0);
 	scale = bound(0.01, scale, 10.0);
 	base = bound(0, base, 0.95);
@@ -359,8 +326,6 @@ static void Palette_Load(void)
 	}
 
 	Palette_SetupSpecialPalettes();
-
-	Palette_LoadQ2Colormap();
 }
 
 void Palette_Init(void)

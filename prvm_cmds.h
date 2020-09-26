@@ -214,10 +214,13 @@ float	getserverlistindexforkey(string key)
 
 #define VM_STRINGTEMP_LENGTH MAX_INPUTLINE
 
+// init code
+void PR_Cmd_Init(void);
+
 // general functions
 void VM_CheckEmptyString (prvm_prog_t *prog, const char *s);
 void VM_VarString(prvm_prog_t *prog, int first, char *out, int outlength);
-prvm_stringbuffer_t *BufStr_FindCreateReplace (prvm_prog_t *prog, int bufindex, int flags, const char *format);
+prvm_stringbuffer_t *BufStr_FindCreateReplace (prvm_prog_t *prog, int bufindex, int flags, char *format);
 void BufStr_Set(prvm_prog_t *prog, prvm_stringbuffer_t *stringbuffer, int strindex, const char *str);
 void BufStr_Del(prvm_prog_t *prog, prvm_stringbuffer_t *stringbuffer);
 void BufStr_Flush(prvm_prog_t *prog);
@@ -237,8 +240,7 @@ void VM_vectoangles (prvm_prog_t *prog);
 void VM_random (prvm_prog_t *prog);
 void VM_localsound(prvm_prog_t *prog);
 void VM_break (prvm_prog_t *prog);
-void VM_localcmd_client(prvm_prog_t *prog);
-void VM_localcmd_server(prvm_prog_t *prog);
+void VM_localcmd (prvm_prog_t *prog);
 void VM_cvar (prvm_prog_t *prog);
 void VM_cvar_string(prvm_prog_t *prog);
 void VM_cvar_type (prvm_prog_t *prog);

@@ -30,87 +30,87 @@ float ixtable[4096];
 
 float m_bytenormals[NUMVERTEXNORMALS][3] =
 {
-{-0.525731f, 0.000000f, 0.850651f}, {-0.442863f, 0.238856f, 0.864188f},
-{-0.295242f, 0.000000f, 0.955423f}, {-0.309017f, 0.500000f, 0.809017f},
-{-0.162460f, 0.262866f, 0.951056f}, {0.000000f, 0.000000f, 1.000000f},
-{0.000000f, 0.850651f, 0.525731f}, {-0.147621f, 0.716567f, 0.681718f},
-{0.147621f, 0.716567f, 0.681718f}, {0.000000f, 0.525731f, 0.850651f},
-{0.309017f, 0.500000f, 0.809017f}, {0.525731f, 0.000000f, 0.850651f},
-{0.295242f, 0.000000f, 0.955423f}, {0.442863f, 0.238856f, 0.864188f},
-{0.162460f, 0.262866f, 0.951056f}, {-0.681718f, 0.147621f, 0.716567f},
-{-0.809017f, 0.309017f, 0.500000f}, {-0.587785f, 0.425325f, 0.688191f},
-{-0.850651f, 0.525731f, 0.000000f}, {-0.864188f, 0.442863f, 0.238856f},
-{-0.716567f, 0.681718f, 0.147621f}, {-0.688191f, 0.587785f, 0.425325f},
-{-0.500000f, 0.809017f, 0.309017f}, {-0.238856f, 0.864188f, 0.442863f},
-{-0.425325f, 0.688191f, 0.587785f}, {-0.716567f, 0.681718f, -0.147621f},
-{-0.500000f, 0.809017f, -0.309017f}, {-0.525731f, 0.850651f, 0.000000f},
-{0.000000f, 0.850651f, -0.525731f}, {-0.238856f, 0.864188f, -0.442863f},
-{0.000000f, 0.955423f, -0.295242f}, {-0.262866f, 0.951056f, -0.162460f},
-{0.000000f, 1.000000f, 0.000000f}, {0.000000f, 0.955423f, 0.295242f},
-{-0.262866f, 0.951056f, 0.162460f}, {0.238856f, 0.864188f, 0.442863f},
-{0.262866f, 0.951056f, 0.162460f}, {0.500000f, 0.809017f, 0.309017f},
-{0.238856f, 0.864188f, -0.442863f}, {0.262866f, 0.951056f, -0.162460f},
-{0.500000f, 0.809017f, -0.309017f}, {0.850651f, 0.525731f, 0.000000f},
-{0.716567f, 0.681718f, 0.147621f}, {0.716567f, 0.681718f, -0.147621f},
-{0.525731f, 0.850651f, 0.000000f}, {0.425325f, 0.688191f, 0.587785f},
-{0.864188f, 0.442863f, 0.238856f}, {0.688191f, 0.587785f, 0.425325f},
-{0.809017f, 0.309017f, 0.500000f}, {0.681718f, 0.147621f, 0.716567f},
-{0.587785f, 0.425325f, 0.688191f}, {0.955423f, 0.295242f, 0.000000f},
-{1.000000f, 0.000000f, 0.000000f}, {0.951056f, 0.162460f, 0.262866f},
-{0.850651f, -0.525731f, 0.000000f}, {0.955423f, -0.295242f, 0.000000f},
-{0.864188f, -0.442863f, 0.238856f}, {0.951056f, -0.162460f, 0.262866f},
-{0.809017f, -0.309017f, 0.500000f}, {0.681718f, -0.147621f, 0.716567f},
-{0.850651f, 0.000000f, 0.525731f}, {0.864188f, 0.442863f, -0.238856f},
-{0.809017f, 0.309017f, -0.500000f}, {0.951056f, 0.162460f, -0.262866f},
-{0.525731f, 0.000000f, -0.850651f}, {0.681718f, 0.147621f, -0.716567f},
-{0.681718f, -0.147621f, -0.716567f}, {0.850651f, 0.000000f, -0.525731f},
-{0.809017f, -0.309017f, -0.500000f}, {0.864188f, -0.442863f, -0.238856f},
-{0.951056f, -0.162460f, -0.262866f}, {0.147621f, 0.716567f, -0.681718f},
-{0.309017f, 0.500000f, -0.809017f}, {0.425325f, 0.688191f, -0.587785f},
-{0.442863f, 0.238856f, -0.864188f}, {0.587785f, 0.425325f, -0.688191f},
-{0.688191f, 0.587785f, -0.425325f}, {-0.147621f, 0.716567f, -0.681718f},
-{-0.309017f, 0.500000f, -0.809017f}, {0.000000f, 0.525731f, -0.850651f},
-{-0.525731f, 0.000000f, -0.850651f}, {-0.442863f, 0.238856f, -0.864188f},
-{-0.295242f, 0.000000f, -0.955423f}, {-0.162460f, 0.262866f, -0.951056f},
-{0.000000f, 0.000000f, -1.000000f}, {0.295242f, 0.000000f, -0.955423f},
-{0.162460f, 0.262866f, -0.951056f}, {-0.442863f, -0.238856f, -0.864188f},
-{-0.309017f, -0.500000f, -0.809017f}, {-0.162460f, -0.262866f, -0.951056f},
-{0.000000f, -0.850651f, -0.525731f}, {-0.147621f, -0.716567f, -0.681718f},
-{0.147621f, -0.716567f, -0.681718f}, {0.000000f, -0.525731f, -0.850651f},
-{0.309017f, -0.500000f, -0.809017f}, {0.442863f, -0.238856f, -0.864188f},
-{0.162460f, -0.262866f, -0.951056f}, {0.238856f, -0.864188f, -0.442863f},
-{0.500000f, -0.809017f, -0.309017f}, {0.425325f, -0.688191f, -0.587785f},
-{0.716567f, -0.681718f, -0.147621f}, {0.688191f, -0.587785f, -0.425325f},
-{0.587785f, -0.425325f, -0.688191f}, {0.000000f, -0.955423f, -0.295242f},
-{0.000000f, -1.000000f, 0.000000f}, {0.262866f, -0.951056f, -0.162460f},
-{0.000000f, -0.850651f, 0.525731f}, {0.000000f, -0.955423f, 0.295242f},
-{0.238856f, -0.864188f, 0.442863f}, {0.262866f, -0.951056f, 0.162460f},
-{0.500000f, -0.809017f, 0.309017f}, {0.716567f, -0.681718f, 0.147621f},
-{0.525731f, -0.850651f, 0.000000f}, {-0.238856f, -0.864188f, -0.442863f},
-{-0.500000f, -0.809017f, -0.309017f}, {-0.262866f, -0.951056f, -0.162460f},
-{-0.850651f, -0.525731f, 0.000000f}, {-0.716567f, -0.681718f, -0.147621f},
-{-0.716567f, -0.681718f, 0.147621f}, {-0.525731f, -0.850651f, 0.000000f},
-{-0.500000f, -0.809017f, 0.309017f}, {-0.238856f, -0.864188f, 0.442863f},
-{-0.262866f, -0.951056f, 0.162460f}, {-0.864188f, -0.442863f, 0.238856f},
-{-0.809017f, -0.309017f, 0.500000f}, {-0.688191f, -0.587785f, 0.425325f},
-{-0.681718f, -0.147621f, 0.716567f}, {-0.442863f, -0.238856f, 0.864188f},
-{-0.587785f, -0.425325f, 0.688191f}, {-0.309017f, -0.500000f, 0.809017f},
-{-0.147621f, -0.716567f, 0.681718f}, {-0.425325f, -0.688191f, 0.587785f},
-{-0.162460f, -0.262866f, 0.951056f}, {0.442863f, -0.238856f, 0.864188f},
-{0.162460f, -0.262866f, 0.951056f}, {0.309017f, -0.500000f, 0.809017f},
-{0.147621f, -0.716567f, 0.681718f}, {0.000000f, -0.525731f, 0.850651f},
-{0.425325f, -0.688191f, 0.587785f}, {0.587785f, -0.425325f, 0.688191f},
-{0.688191f, -0.587785f, 0.425325f}, {-0.955423f, 0.295242f, 0.000000f},
-{-0.951056f, 0.162460f, 0.262866f}, {-1.000000f, 0.000000f, 0.000000f},
-{-0.850651f, 0.000000f, 0.525731f}, {-0.955423f, -0.295242f, 0.000000f},
-{-0.951056f, -0.162460f, 0.262866f}, {-0.864188f, 0.442863f, -0.238856f},
-{-0.951056f, 0.162460f, -0.262866f}, {-0.809017f, 0.309017f, -0.500000f},
-{-0.864188f, -0.442863f, -0.238856f}, {-0.951056f, -0.162460f, -0.262866f},
-{-0.809017f, -0.309017f, -0.500000f}, {-0.681718f, 0.147621f, -0.716567f},
-{-0.681718f, -0.147621f, -0.716567f}, {-0.850651f, 0.000000f, -0.525731f},
-{-0.688191f, 0.587785f, -0.425325f}, {-0.587785f, 0.425325f, -0.688191f},
-{-0.425325f, 0.688191f, -0.587785f}, {-0.425325f, -0.688191f, -0.587785f},
-{-0.587785f, -0.425325f, -0.688191f}, {-0.688191f, -0.587785f, -0.425325f},
+{-0.525731, 0.000000, 0.850651}, {-0.442863, 0.238856, 0.864188},
+{-0.295242, 0.000000, 0.955423}, {-0.309017, 0.500000, 0.809017},
+{-0.162460, 0.262866, 0.951056}, {0.000000, 0.000000, 1.000000},
+{0.000000, 0.850651, 0.525731}, {-0.147621, 0.716567, 0.681718},
+{0.147621, 0.716567, 0.681718}, {0.000000, 0.525731, 0.850651},
+{0.309017, 0.500000, 0.809017}, {0.525731, 0.000000, 0.850651},
+{0.295242, 0.000000, 0.955423}, {0.442863, 0.238856, 0.864188},
+{0.162460, 0.262866, 0.951056}, {-0.681718, 0.147621, 0.716567},
+{-0.809017, 0.309017, 0.500000}, {-0.587785, 0.425325, 0.688191},
+{-0.850651, 0.525731, 0.000000}, {-0.864188, 0.442863, 0.238856},
+{-0.716567, 0.681718, 0.147621}, {-0.688191, 0.587785, 0.425325},
+{-0.500000, 0.809017, 0.309017}, {-0.238856, 0.864188, 0.442863},
+{-0.425325, 0.688191, 0.587785}, {-0.716567, 0.681718, -0.147621},
+{-0.500000, 0.809017, -0.309017}, {-0.525731, 0.850651, 0.000000},
+{0.000000, 0.850651, -0.525731}, {-0.238856, 0.864188, -0.442863},
+{0.000000, 0.955423, -0.295242}, {-0.262866, 0.951056, -0.162460},
+{0.000000, 1.000000, 0.000000}, {0.000000, 0.955423, 0.295242},
+{-0.262866, 0.951056, 0.162460}, {0.238856, 0.864188, 0.442863},
+{0.262866, 0.951056, 0.162460}, {0.500000, 0.809017, 0.309017},
+{0.238856, 0.864188, -0.442863}, {0.262866, 0.951056, -0.162460},
+{0.500000, 0.809017, -0.309017}, {0.850651, 0.525731, 0.000000},
+{0.716567, 0.681718, 0.147621}, {0.716567, 0.681718, -0.147621},
+{0.525731, 0.850651, 0.000000}, {0.425325, 0.688191, 0.587785},
+{0.864188, 0.442863, 0.238856}, {0.688191, 0.587785, 0.425325},
+{0.809017, 0.309017, 0.500000}, {0.681718, 0.147621, 0.716567},
+{0.587785, 0.425325, 0.688191}, {0.955423, 0.295242, 0.000000},
+{1.000000, 0.000000, 0.000000}, {0.951056, 0.162460, 0.262866},
+{0.850651, -0.525731, 0.000000}, {0.955423, -0.295242, 0.000000},
+{0.864188, -0.442863, 0.238856}, {0.951056, -0.162460, 0.262866},
+{0.809017, -0.309017, 0.500000}, {0.681718, -0.147621, 0.716567},
+{0.850651, 0.000000, 0.525731}, {0.864188, 0.442863, -0.238856},
+{0.809017, 0.309017, -0.500000}, {0.951056, 0.162460, -0.262866},
+{0.525731, 0.000000, -0.850651}, {0.681718, 0.147621, -0.716567},
+{0.681718, -0.147621, -0.716567}, {0.850651, 0.000000, -0.525731},
+{0.809017, -0.309017, -0.500000}, {0.864188, -0.442863, -0.238856},
+{0.951056, -0.162460, -0.262866}, {0.147621, 0.716567, -0.681718},
+{0.309017, 0.500000, -0.809017}, {0.425325, 0.688191, -0.587785},
+{0.442863, 0.238856, -0.864188}, {0.587785, 0.425325, -0.688191},
+{0.688191, 0.587785, -0.425325}, {-0.147621, 0.716567, -0.681718},
+{-0.309017, 0.500000, -0.809017}, {0.000000, 0.525731, -0.850651},
+{-0.525731, 0.000000, -0.850651}, {-0.442863, 0.238856, -0.864188},
+{-0.295242, 0.000000, -0.955423}, {-0.162460, 0.262866, -0.951056},
+{0.000000, 0.000000, -1.000000}, {0.295242, 0.000000, -0.955423},
+{0.162460, 0.262866, -0.951056}, {-0.442863, -0.238856, -0.864188},
+{-0.309017, -0.500000, -0.809017}, {-0.162460, -0.262866, -0.951056},
+{0.000000, -0.850651, -0.525731}, {-0.147621, -0.716567, -0.681718},
+{0.147621, -0.716567, -0.681718}, {0.000000, -0.525731, -0.850651},
+{0.309017, -0.500000, -0.809017}, {0.442863, -0.238856, -0.864188},
+{0.162460, -0.262866, -0.951056}, {0.238856, -0.864188, -0.442863},
+{0.500000, -0.809017, -0.309017}, {0.425325, -0.688191, -0.587785},
+{0.716567, -0.681718, -0.147621}, {0.688191, -0.587785, -0.425325},
+{0.587785, -0.425325, -0.688191}, {0.000000, -0.955423, -0.295242},
+{0.000000, -1.000000, 0.000000}, {0.262866, -0.951056, -0.162460},
+{0.000000, -0.850651, 0.525731}, {0.000000, -0.955423, 0.295242},
+{0.238856, -0.864188, 0.442863}, {0.262866, -0.951056, 0.162460},
+{0.500000, -0.809017, 0.309017}, {0.716567, -0.681718, 0.147621},
+{0.525731, -0.850651, 0.000000}, {-0.238856, -0.864188, -0.442863},
+{-0.500000, -0.809017, -0.309017}, {-0.262866, -0.951056, -0.162460},
+{-0.850651, -0.525731, 0.000000}, {-0.716567, -0.681718, -0.147621},
+{-0.716567, -0.681718, 0.147621}, {-0.525731, -0.850651, 0.000000},
+{-0.500000, -0.809017, 0.309017}, {-0.238856, -0.864188, 0.442863},
+{-0.262866, -0.951056, 0.162460}, {-0.864188, -0.442863, 0.238856},
+{-0.809017, -0.309017, 0.500000}, {-0.688191, -0.587785, 0.425325},
+{-0.681718, -0.147621, 0.716567}, {-0.442863, -0.238856, 0.864188},
+{-0.587785, -0.425325, 0.688191}, {-0.309017, -0.500000, 0.809017},
+{-0.147621, -0.716567, 0.681718}, {-0.425325, -0.688191, 0.587785},
+{-0.162460, -0.262866, 0.951056}, {0.442863, -0.238856, 0.864188},
+{0.162460, -0.262866, 0.951056}, {0.309017, -0.500000, 0.809017},
+{0.147621, -0.716567, 0.681718}, {0.000000, -0.525731, 0.850651},
+{0.425325, -0.688191, 0.587785}, {0.587785, -0.425325, 0.688191},
+{0.688191, -0.587785, 0.425325}, {-0.955423, 0.295242, 0.000000},
+{-0.951056, 0.162460, 0.262866}, {-1.000000, 0.000000, 0.000000},
+{-0.850651, 0.000000, 0.525731}, {-0.955423, -0.295242, 0.000000},
+{-0.951056, -0.162460, 0.262866}, {-0.864188, 0.442863, -0.238856},
+{-0.951056, 0.162460, -0.262866}, {-0.809017, 0.309017, -0.500000},
+{-0.864188, -0.442863, -0.238856}, {-0.951056, -0.162460, -0.262866},
+{-0.809017, -0.309017, -0.500000}, {-0.681718, 0.147621, -0.716567},
+{-0.681718, -0.147621, -0.716567}, {-0.850651, 0.000000, -0.525731},
+{-0.688191, 0.587785, -0.425325}, {-0.587785, 0.425325, -0.688191},
+{-0.425325, 0.688191, -0.587785}, {-0.425325, -0.688191, -0.587785},
+{-0.587785, -0.425325, -0.688191}, {-0.688191, -0.587785, -0.425325},
 };
 
 #if 0
@@ -145,7 +145,7 @@ void ByteToNormal(unsigned char num, vec3_t n)
 // assumes "src" is normalized
 void PerpendicularVector( vec3_t dst, const vec3_t src )
 {
-	// LadyHavoc: optimized to death and beyond
+	// LordHavoc: optimized to death and beyond
 	int pos;
 	float minelem;
 
@@ -195,7 +195,7 @@ void PerpendicularVector( vec3_t dst, const vec3_t src )
 #endif
 
 
-// LadyHavoc: like AngleVectors, but taking a forward vector instead of angles, useful!
+// LordHavoc: like AngleVectors, but taking a forward vector instead of angles, useful!
 void VectorVectors(const vec3_t forward, vec3_t right, vec3_t up)
 {
 	// NOTE: this is consistent to AngleVectors applied to AnglesFromVectors
@@ -549,105 +549,8 @@ void AngleVectorsFLU (const vec3_t angles, vec3_t forward, vec3_t left, vec3_t u
 	}
 }
 
-void AngleVectorsDuke3DFLU (const vec3_t angles, vec3_t forward, vec3_t left, vec3_t up, double maxShearAngle)
-{
-	double angle, sr, sy, cr, cy;
-	double sxx, sxz, szx, szz;
-	double cosMaxShearAngle = cos(maxShearAngle * (M_PI*2 / 360));
-	double tanMaxShearAngle = tan(maxShearAngle * (M_PI*2 / 360));
-
-	angle = angles[YAW] * (M_PI*2 / 360);
-	sy = sin(angle);
-	cy = cos(angle);
-	angle = angles[PITCH] * (M_PI*2 / 360);
-
-	// We will calculate a shear matrix pitch = [[sxx sxz][szx szz]].
-
-	if (fabs(cos(angle)) > cosMaxShearAngle)
-	{
-		// Pure shear. Keep the original sign of the coefficients.
-		sxx = 1;
-		sxz = 0;
-		szx = -tan(angle);
-		szz = 1;
-		// Covering angle per screen coordinate:
-		// d/dt arctan((sxz + t*szz) / (sxx + t*szx)) @ t=0
-		// d_angle = det(S) / (sxx*sxx + szx*szx)
-		//         = 1 / (1 + tan^2 angle)
-		//         = cos^2 angle.
-	}
-	else
-	{
-		// A mix of shear and rotation. Implementation-wise, we're
-		// looking at a capsule, and making the screen surface
-		// tangential to it... and if we get here, we're looking at the
-		// two half-spheres of the capsule (and the cylinder part is
-		// handled above).
-		double x, y, h, t, d, f;
-		h = tanMaxShearAngle;
-		x = cos(angle);
-		y = sin(angle);
-		t = h * fabs(y) + sqrt(1 - (h * x) * (h * x));
-		sxx =  x * t;
-		sxz =  y * t - h * (y > 0 ? 1.0 : -1.0);
-		szx = -y * t;
-		szz =  x * t;
-		// BUT: keep the amount of a sphere we see in pitch direction
-		// invariant.
-		// Covering angle per screen coordinate:
-		// d_angle = det(S) / (sxx*sxx + szx*szx)
-		d = (sxx * szz - sxz * szx) / (sxx * sxx + szx * szx);
-		f = cosMaxShearAngle * cosMaxShearAngle / d;
-		sxz *= f;
-		szz *= f;
-	}
-
-	if (forward)
-	{
-		forward[0] = sxx*cy;
-		forward[1] = sxx*sy;
-		forward[2] = szx;
-	}
-	if (left || up)
-	{
-		if (angles[ROLL])
-		{
-			angle = angles[ROLL] * (M_PI*2 / 360);
-			sr = sin(angle);
-			cr = cos(angle);
-			if (left)
-			{
-				left[0] = sr*sxz*cy+cr*-sy;
-				left[1] = sr*sxz*sy+cr*cy;
-				left[2] = sr*szz;
-			}
-			if (up)
-			{
-				up[0] = cr*sxz*cy+-sr*-sy;
-				up[1] = cr*sxz*sy+-sr*cy;
-				up[2] = cr*szz;
-			}
-		}
-		else
-		{
-			if (left)
-			{
-				left[0] = -sy;
-				left[1] = cy;
-				left[2] = 0;
-			}
-			if (up)
-			{
-				up[0] = sxz*cy;
-				up[1] = sxz*sy;
-				up[2] = szz;
-			}
-		}
-	}
-}
-
-// LadyHavoc: calculates pitch/yaw/roll angles from forward and up vectors
-void AnglesFromVectors (vec3_t angles, const vec3_t forward, const vec3_t up, qbool flippitch)
+// LordHavoc: calculates pitch/yaw/roll angles from forward and up vectors
+void AnglesFromVectors (vec3_t angles, const vec3_t forward, const vec3_t up, qboolean flippitch)
 {
 	if (forward[0] == 0 && forward[1] == 0)
 	{
@@ -759,7 +662,7 @@ void AngleMatrix (const vec3_t angles, const vec3_t translate, vec_t matrix[][4]
 #endif
 
 
-// LadyHavoc: renamed this to Length, and made the normal one a #define
+// LordHavoc: renamed this to Length, and made the normal one a #define
 float VectorNormalizeLength (vec3_t v)
 {
 	float length, ilength;
@@ -836,17 +739,14 @@ float RadiusFromBoundsAndOrigin (const vec3_t mins, const vec3_t maxs, const vec
 	return sqrt(max(m1[0], m2[0]) + max(m1[1], m2[1]) + max(m1[2], m2[2]));
 }
 
-static void Math_RandomSeed_UnitTests(void);
 void Mathlib_Init(void)
 {
 	int a;
 
-	// LadyHavoc: setup 1.0f / N table for quick recipricols of integers
+	// LordHavoc: setup 1.0f / N table for quick recipricols of integers
 	ixtable[0] = 0;
 	for (a = 1;a < 4096;a++)
 		ixtable[a] = 1.0f / a;
-
-	Math_RandomSeed_UnitTests();
 }
 
 #include "matrixlib.h"
@@ -894,7 +794,7 @@ void BoxFromPoints(vec3_t mins, vec3_t maxs, int numpoints, vec_t *point3f)
 	}
 }
 
-// LadyHavoc: this has to be done right or you get severe precision breakdown
+// LordHavoc: this has to be done right or you get severe precision breakdown
 int LoopingFrameNumberFromDouble(double t, int loopframes)
 {
 	if (loopframes)
@@ -903,180 +803,3 @@ int LoopingFrameNumberFromDouble(double t, int loopframes)
 		return (int)t;
 }
 
-static unsigned int mul_Lecuyer[4] = { 0x12e15e35, 0xb500f16e, 0x2e714eb2, 0xb37916a5 };
-
-static void mul128(const unsigned int a[], const unsigned int b[], unsigned int dest[4])
-{
-#if 0 //defined(__GNUC__) && defined(__x86_64__)
-	unsigned __int128 ia = ((__int128)a[0] << 96) | ((__int128)a[1] << 64) | ((__int128)a[2] << 32) | (a[3]);
-	unsigned __int128 ib = ((__int128)b[0] << 96) | ((__int128)b[1] << 64) | ((__int128)b[2] << 32) | (b[3]);
-	unsigned __int128 id = ia * ib;
-	dest[0] = (id >> 96) & 0xffffffff;
-	dest[1] = (id >> 64) & 0xffffffff;
-	dest[2] = (id >> 32) & 0xffffffff;
-	dest[3] = (id) & 0xffffffff;
-#else
-	unsigned long long t[4];
-
-	// this multiply chain is relatively straightforward - a[] is repeatedly
-	// added with shifts based on b[] and the results stored into uint64,
-	// but due to C limitations (no access to carry flag) we have to resolve
-	// carries in a really lame way which wastes a fair number of ops
-	// (repeatedly iterating MSB to LSB, rather than LSB to MSB with carry),
-	// an alternative would be to use 16bit multiplies and resolve carries
-	// only at the end, but that would be twice as many multiplies...
-	//
-	// note: >> 32 is a function call in win32 MSVS2015 debug builds.
-	t[0] = (unsigned long long)a[0] * b[3];
-	t[1] = (unsigned long long)a[1] * b[3];
-	t[2] = (unsigned long long)a[2] * b[3];
-	t[3] = (unsigned long long)a[3] * b[3];
-	t[0] += t[1] >> 32;
-	t[1] &= 0xffffffff;
-	t[1] += t[2] >> 32;
-	t[2] &= 0xffffffff;
-	t[2] += t[3] >> 32;
-
-	t[0] += t[1] >> 32;
-	t[1] &= 0xffffffff;
-	t[1] += t[2] >> 32;
-	t[2] &= 0xffffffff;
-
-	t[0] += t[1] >> 32;
-	t[1] &= 0xffffffff;
-
-	t[0] += (unsigned long long)a[1] * b[2];
-	t[1] += (unsigned long long)a[2] * b[2];
-	t[2] += (unsigned long long)a[3] * b[2];
-	t[0] += t[1] >> 32;
-	t[1] &= 0xffffffff;
-	t[1] += t[2] >> 32;
-
-	t[0] += t[1] >> 32;
-	t[1] &= 0xffffffff;
-
-	t[0] += (unsigned long long)a[2] * b[1];
-	t[1] += (unsigned long long)a[3] * b[1];
-	t[0] += t[1] >> 32;
-
-	t[0] += (unsigned long long)a[3] * b[0];
-
-	dest[0] = t[0] & 0xffffffff;
-	dest[1] = t[1] & 0xffffffff;
-	dest[2] = t[2] & 0xffffffff;
-	dest[3] = t[3] & 0xffffffff;
-#endif
-}
-
-static void testmul128(unsigned int a0, unsigned int a1, unsigned int a2, unsigned int a3, unsigned int b0, unsigned int b1, unsigned int b2, unsigned int b3, unsigned int x0, unsigned int x1, unsigned int x2, unsigned int x3)
-{
-	unsigned int a[4];
-	unsigned int b[4];
-	unsigned int expected[4];
-	unsigned int result[4];
-	a[0] = a0;
-	a[1] = a1;
-	a[2] = a2;
-	a[3] = a3;
-	b[0] = b0;
-	b[1] = b1;
-	b[2] = b2;
-	b[3] = b3;
-	expected[0] = x0;
-	expected[1] = x1;
-	expected[2] = x2;
-	expected[3] = x3;
-	mul128(a, b, result);
-	if (result[0] != expected[0]
-	 || result[1] != expected[1]
-	 || result[2] != expected[2]
-	 || result[3] != expected[3])
-		Con_Printf("testmul128(\na = %08x %08x %08x %08x,\nb = %08x %08x %08x %08x,\nx = %08x %08x %08x %08x) instead computed\nc = %08x %08x %08x %08x\n", a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3], expected[0], expected[1], expected[2], expected[3], result[0], result[1], result[2], result[3]);
-}
-
-void Math_RandomSeed_UnitTests(void)
-{
-	testmul128(
-		0x00000000, 0x00000000, 0x00000000, 0x00000001,
-		0x00000000, 0x00000000, 0x00000000, 0x00000001,
-		0x00000000, 0x00000000, 0x00000000, 0x00000001);
-	testmul128(
-		0x00000000, 0x00000000, 0x00000000, 0x00000001,
-		0x00000000, 0x00000000, 0x00000001, 0x00000000,
-		0x00000000, 0x00000000, 0x00000001, 0x00000000);
-	testmul128(
-		0x00000000, 0x00000000, 0x00000001, 0x00000000,
-		0x00000000, 0x00000000, 0x00000000, 0x00000001,
-		0x00000000, 0x00000000, 0x00000001, 0x00000000);
-	testmul128(
-		0x00000000, 0x00000000, 0x00000000, 0x00000001,
-		0x00000001, 0x00000001, 0x00000001, 0x00000001,
-		0x00000001, 0x00000001, 0x00000001, 0x00000001);
-	testmul128(
-		0x00000000, 0x00000000, 0x00000000, 0x00000002,
-		0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
-		0xffffffff, 0xffffffff, 0xffffffff, 0xfffffffe);
-	testmul128(
-		0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
-		0x00000000, 0x00000000, 0x00000000, 0x00000002,
-		0xffffffff, 0xffffffff, 0xffffffff, 0xfffffffe);
-	testmul128(
-		0x00000000, 0x00000000, 0xffffffff, 0xffffffff,
-		0x00000000, 0x00000000, 0x00000002, 0x00000000,
-		0x00000001, 0xffffffff, 0xfffffffe, 0x00000000);
-	testmul128(
-		0x00000000, 0x00000000, 0x00000002, 0x00000000,
-		0x00000000, 0x00000000, 0xffffffff, 0xffffffff,
-		0x00000001, 0xffffffff, 0xfffffffe, 0x00000000);
-}
-
-void Math_RandomSeed_Reset(randomseed_t *r)
-{
-	r->s[0] = 1;
-	r->s[1] = 0;
-	r->s[2] = 0;
-	r->s[3] = 0;
-}
-
-void Math_RandomSeed_FromInts(randomseed_t *r, unsigned int s0, unsigned int s1, unsigned int s2, unsigned int s3)
-{
-	r->s[0] = s0;
-	r->s[1] = s1;
-	r->s[2] = s2;
-	r->s[3] = s3 | 1; // the Lehmer RNG requires that the seed be odd
-}
-
-unsigned long long Math_rand64(randomseed_t *r)
-{
-	unsigned int o[4];
-	mul128(r->s, mul_Lecuyer, o);
-	r->s[0] = o[0];
-	r->s[1] = o[1];
-	r->s[2] = o[2];
-	r->s[3] = o[3];
-	return ((unsigned long long)o[3] << 32) + o[2];
-}
-
-float Math_randomf(randomseed_t *r)
-{
-	unsigned long long n = Math_rand64(r);
-	return n * (0.25f / 0x80000000 / 0x80000000);
-}
-
-float Math_crandomf(randomseed_t *r)
-{
-	// do this with a signed number and double the result, so we make use of all parts of the cow
-	long long n = (long long)Math_rand64(r);
-	return n * (0.5f / 0x80000000 / 0x80000000);
-}
-
-float Math_randomrangef(randomseed_t *r, float minf, float maxf)
-{
-	return Math_randomf(r) * (maxf - minf) + minf;
-}
-
-int Math_randomrangei(randomseed_t *r, int mini, int maxi)
-{
-	unsigned long long n = Math_rand64(r);
-	return (int)(((n >> 33) * (maxi - mini) + mini) >> 31);
-}
