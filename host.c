@@ -1331,7 +1331,7 @@ static void Host_Init (void)
 #endif
 
 	// check for special benchmark mode
-// COMMANDLINEOPTION: Client: -benchmark <demoname> runs a timedemo and quits, results of any timedemo can be found in gamedir/benchmark.log (for example id1/benchmark.log)
+// COMMANDLINEOPTION: Client: -benchmark <demoname> runs a timedemo and quits, results of any timedemo can be found in gamedir/benchmark.log (for example base/benchmark.log)
 	i = COM_CheckParm("-benchmark");
 	if (i && i + 1 < com_argc)
 	if (!sv.active && !cls.demoplayback && !cls.connect_trying)

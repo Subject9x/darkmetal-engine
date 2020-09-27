@@ -1359,7 +1359,7 @@ void FS_Rescan (void)
 		COM_ChangeGameTypeForGameDirs();
 
 	// add the game-specific paths
-	// gamedirname1 (typically id1)
+	// gamedirname1 (typically base)
 	FS_AddGameHierarchy (gamedirname1);
 	// update the com_modname (used for server info)
 	if (gamedirname2 && gamedirname2[0])
@@ -1881,7 +1881,7 @@ static int FS_ChooseUserDir(userdirmode_t userdirmode, char *userdir, size_t use
 
 #ifdef WIN32
 	// historical behavior...
-	if (userdirmode == USERDIRMODE_NOHOME && strcmp(gamedirname1, "id1"))
+	if (userdirmode == USERDIRMODE_NOHOME && strcmp(gamedirname1, "base"))
 		return 0; // don't bother checking if the basedir folder is writable, it's annoying...  unless it is Quake on Windows where NOHOME is the default preferred and we have to check for an error case
 #endif
 
@@ -1995,7 +1995,7 @@ void FS_Init (void)
 		int userdirstatus[USERDIRMODE_COUNT];
 #ifdef WIN32
 		// historical behavior...
-		if (!strcmp(gamedirname1, "id1"))
+		if (!strcmp(gamedirname1, "base"))
 			preferreduserdirmode = USERDIRMODE_NOHOME;
 #endif
 		// check what limitations the user wants to impose
