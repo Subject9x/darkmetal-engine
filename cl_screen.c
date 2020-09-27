@@ -2420,7 +2420,7 @@ static float SCR_DrawLoadingStack_r(loadingscreenstack_t *s, float y, float size
 			x = (vid_conwidth.integer - DrawQ_TextWidth(s->msg, len, size, size, true, FONT_INFOBAR)) / 2;
 			y -= size;
 			DrawQ_Fill(0, y, vid_conwidth.integer, size, 0, 0, 0, 1, 0);
-			DrawQ_String(x, y, s->msg, len, size, size, 1, 1, 1, 1, 0, NULL, true, FONT_INFOBAR);
+			//DrawQ_String(x, y, s->msg, len, size, size, 1, 1, 1, 1, 0, NULL, true, FONT_INFOBAR);
 			total += size;
 		}
 	}
@@ -2431,7 +2431,7 @@ static float SCR_DrawLoadingStack_r(loadingscreenstack_t *s, float y, float size
 		x = (vid_conwidth.integer - DrawQ_TextWidth(s->msg, len, size, size, true, FONT_INFOBAR)) / 2;
 		y -= size;
 		DrawQ_Fill(0, y, vid_conwidth.integer, size, 0, 0, 0, 1, 0);
-		DrawQ_String(x, y, s->msg, len, size, size, 1, 1, 1, 1, 0, NULL, true, FONT_INFOBAR);
+		//DrawQ_String(x, y, s->msg, len, size, size, 1, 1, 1, 1, 0, NULL, true, FONT_INFOBAR);
 		total += size;
 	}
 #endif
