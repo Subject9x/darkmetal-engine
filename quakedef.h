@@ -47,7 +47,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern const char *buildstring;
 extern char engineversion[128];
 
-#define GAMENAME "id1"
+#define GAMENAME "id1"  //todo -> "base"
 
 #define MAX_NUM_ARGVS	50
 
@@ -186,9 +186,9 @@ extern char engineversion[128];
 #define	MAX_DECALS				1048576 ///< upper limit on cl.decals size
 #define	MAX_ENITIES_INITIAL		256 ///< initial size of cl.entities
 #define	MAX_STATICENTITIES		1024 ///< limit on size of cl.static_entities
-#define	MAX_EFFECTS				256 ///< limit on size of cl.effects
-#define	MAX_BEAMS				256 ///< limit on size of cl.beams
-#define	MAX_TEMPENTITIES		4096 ///< max number of temporary models visible per frame (certain sprite effects, certain types of CSQC entities also use this)
+#define	MAX_EFFECTS				512 ///< limit on size of cl.effects (dp default 256)
+#define	MAX_BEAMS				4096 ///< limit on size of cl.beams (dp default 256)
+#define	MAX_TEMPENTITIES		8192 ///< max number of temporary models visible per frame (certain sprite effects, certain types of CSQC entities also use this) (dp default 4096)
 #define SERVERLIST_TOTALSIZE		2048 ///< max servers in the server list
 #define SERVERLIST_ANDMASKCOUNT		16 ///< max items in server list AND mask
 #define SERVERLIST_ORMASKCOUNT		16 ///< max items in server list OR mask
@@ -411,7 +411,7 @@ extern cvar_t developer_loading;
 
 extern cvar_t sessionid;
 
-#define STARTCONFIGFILENAME "quake.rc"
+#define STARTCONFIGFILENAME "quake.rc"  //todo -> change to 'metal'
 #define CONFIGFILENAME "config.cfg"
 
 /* Preprocessor macros to identify platform
