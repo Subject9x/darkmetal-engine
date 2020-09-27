@@ -281,12 +281,21 @@ OBJ_WGL= builddate.c sys_win.o vid_wgl.o thread_null.o $(OBJ_MENU) $(OBJ_SND_WIN
 LDFLAGS_WINCL=$(LDFLAGS_WINCOMMON) $(LIB_CRYPTO) $(LIB_CRYPTO_RIJNDAEL) -mwindows -lwinmm -luser32 -lgdi32 -ldxguid -ldinput -lcomctl32 -lws2_32 $(LDFLAGS_D3D) $(LIB_Z) $(LIB_JPEG)
 LDFLAGS_WINSV=$(LDFLAGS_WINCOMMON) $(LIB_CRYPTO) $(LIB_CRYPTO_RIJNDAEL) -mconsole -lwinmm -lws2_32 $(LIB_Z) $(LIB_JPEG)
 LDFLAGS_WINSDL=$(LDFLAGS_WINCOMMON) $(LIB_CRYPTO) $(LIB_CRYPTO_RIJNDAEL) $(SDLCONFIG_LIBS) -lwinmm -lws2_32 $(LIB_Z) $(LIB_JPEG)
-EXE_WINCL=darkplaces.exe
-EXE_WINSV=darkplaces-dedicated.exe
-EXE_WINSDL=darkplaces-sdl.exe
-EXE_WINCLNEXUIZ=nexuiz.exe
-EXE_WINSVNEXUIZ=nexuiz-dedicated.exe
-EXE_WINSDLNEXUIZ=nexuiz-sdl.exe
+
+# Complete exe name rebinding
+EXE_WINCL=darkMETAL.exe
+EXE_WINSV=darkMETAL-dedicated.exe
+EXE_WINSDL=darkMETAL-sdl.exe
+EXE_WINCLNEXUIZ=darkMETAL-nexuiz.exe
+EXE_WINSVNEXUIZ=darkMETAL-nexuiz-dedicated.exe
+EXE_WINSDLNEXUIZ=darkMETAL-nexuiz-sdl.exe
+
+# EXE_WINCL=darkplaces.exe
+# EXE_WINSV=darkplaces-dedicated.exe
+# EXE_WINSDL=darkplaces-sdl.exe
+# EXE_WINCLNEXUIZ=nexuiz.exe
+# EXE_WINSVNEXUIZ=nexuiz-dedicated.exe
+# EXE_WINSDLNEXUIZ=nexuiz-sdl.exe
 
 VPATH := ../../../
 
