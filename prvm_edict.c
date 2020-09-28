@@ -1380,12 +1380,13 @@ void PRVM_ED_LoadFromFile (prvm_prog_t *prog, const char *data)
 		parsed++;
 
 		// remove the entity ?
-		if(!prog->load_edict(prog, ent))
+		//DENIED - Subject9x, let modders decided if remove-via-skill-spawnflag should be a behavior.
+		/*if(!prog->load_edict(prog, ent))
 		{
 			PRVM_ED_Free(prog, ent);
 			inhibited++;
 			continue;
-		}
+		}*/
 
 		if (PRVM_serverfunction(SV_OnEntityPreSpawnFunction))
 		{
