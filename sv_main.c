@@ -3665,6 +3665,10 @@ static void SVVM_count_edicts(prvm_prog_t *prog)
 
 static qboolean SVVM_load_edict(prvm_prog_t *prog, prvm_edict_t *ent)
 {
+	/*
+		These never should have been builtins, and only kept for vanilla / mods that wanted to care.
+		This played havoc with battleMETAL Maps for MONTHS.
+	*/
 	// remove things from different skill levels or deathmatch
 	if (gamemode != GAME_TRANSFUSION) //Transfusion does this in QC
 	{

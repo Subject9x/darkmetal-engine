@@ -213,12 +213,19 @@ LDFLAGS_UNIXSDL_PRELOAD=-lz -ljpeg -lpng -logg -ltheora -lvorbis -lvorbisenc -lv
 CFLAGS_UNIX_PRELOAD=-DPREFER_PRELOAD
 
 LDFLAGS_UNIXSDL=$(SDLCONFIG_LIBS)
-EXE_UNIXCL=darkplaces-glx
-EXE_UNIXSV=darkplaces-dedicated
-EXE_UNIXSDL=darkplaces-sdl
+EXE_UNIXCL=darkMETAL-glx
+EXE_UNIXSV=darkMETAL-dedicated
+EXE_UNIXSDL=darkMETAL-sdl
 EXE_UNIXCLNEXUIZ=nexuiz-glx
 EXE_UNIXSVNEXUIZ=nexuiz-dedicated
 EXE_UNIXSDLNEXUIZ=nexuiz-sdl
+
+# EXE_UNIXCL=darkplaces-glx
+# EXE_UNIXSV=darkplaces-dedicated
+# EXE_UNIXSDL=darkplaces-sdl
+# EXE_UNIXCLNEXUIZ=nexuiz-glx
+# EXE_UNIXSVNEXUIZ=nexuiz-dedicated
+# EXE_UNIXSDLNEXUIZ=nexuiz-sdl
 
 CMD_UNIXRM=rm -rf
 CMD_UNIXCP=cp -f
@@ -245,8 +252,11 @@ LDFLAGS_MACOSXSDL=$(LDFLAGS_UNIXCOMMON) -ldl -framework IOKit $(SDLCONFIG_STATIC
 
 OBJ_AGL= builddate.c sys_linux.o vid_agl.o thread_null.o $(OBJ_MENU) $(OBJ_SOUND) $(OBJ_CD) $(OBJ_VIDEO_CAPTURE) $(OBJ_COMMON)
 
-EXE_MACOSXCL=darkplaces-agl
+EXE_MACOSXCL=darkMETAL-agl
 EXE_MACOSXCLNEXUIZ=nexuiz-agl
+
+# EXE_MACOSXCL=darkplaces-agl
+# EXE_MACOSXCLNEXUIZ=nexuiz-agl
 
 
 ##### SunOS specific variables #####
@@ -283,12 +293,12 @@ LDFLAGS_WINSV=$(LDFLAGS_WINCOMMON) $(LIB_CRYPTO) $(LIB_CRYPTO_RIJNDAEL) -mconsol
 LDFLAGS_WINSDL=$(LDFLAGS_WINCOMMON) $(LIB_CRYPTO) $(LIB_CRYPTO_RIJNDAEL) $(SDLCONFIG_LIBS) -lwinmm -lws2_32 $(LIB_Z) $(LIB_JPEG)
 
 # Complete exe name rebinding
-EXE_WINCL=darkMETAL.exe
-EXE_WINSV=darkMETAL-dedicated.exe
-EXE_WINSDL=darkMETAL-sdl.exe
-EXE_WINCLNEXUIZ=darkMETAL-nexuiz.exe
-EXE_WINSVNEXUIZ=darkMETAL-nexuiz-dedicated.exe
-EXE_WINSDLNEXUIZ=darkMETAL-nexuiz-sdl.exe
+EXE_WINCL=battleMETAL.exe
+EXE_WINSV=battleMETAL-dedicated.exe
+EXE_WINSDL=battleMETAL-sdl.exe
+EXE_WINCLNEXUIZ=battleMETAL-nexuiz.exe
+EXE_WINSVNEXUIZ=battleMETAL-nexuiz-dedicated.exe
+EXE_WINSDLNEXUIZ=battleMETAL-nexuiz-sdl.exe
 
 # EXE_WINCL=darkplaces.exe
 # EXE_WINSV=darkplaces-dedicated.exe
