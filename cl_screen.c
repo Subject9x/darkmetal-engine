@@ -713,8 +713,9 @@ static void SCR_SetUpToDrawConsole (void)
 	else
 		framecounter = 0;
 #endif
-
-	if (scr_conforcewhiledisconnected.integer && key_dest == key_game && cls.signon != SIGNONS)
+	if (scr_conforcewhiledisconnected.integer >= 2 && key_dest == key_game && cls.signon != SIGNONS)
+		key_consoleactive |= KEY_CONSOLEACTIVE_FORCED;
+	else if (scr_conforcewhiledisconnected.integer >= 1 && key_dest == key_game && cls.signon != SIGNONS && !sv.active)
 		key_consoleactive |= KEY_CONSOLEACTIVE_FORCED;
 	else
 		key_consoleactive &= ~KEY_CONSOLEACTIVE_FORCED;
@@ -2117,6 +2118,8 @@ void R_ClearScreen(qboolean fogcolor)
 
 int r_stereo_side;
 
+static void SCR_DrawLoadingScreen(qboolean clear);
+
 static void SCR_DrawScreen (void)
 {
 	Draw_Frame();
@@ -2194,8 +2197,25 @@ static void SCR_DrawScreen (void)
 		r_refdef.view.ortho_x = atan(r_refdef.view.frustum_x) * (360.0 / M_PI); // abused as angle by VM_CL_R_SetView
 		r_refdef.view.ortho_y = atan(r_refdef.view.frustum_y) * (360.0 / M_PI); // abused as angle by VM_CL_R_SetView
 
-		if(!CL_VM_UpdateView(r_stereo_side ? 0.0 : max(0.0, cl.time - cl.oldtime)))
+		// if CSQC is loaded, it is required to provide the CSQC_UpdateView function,
+		// and won't render a view if it does not call that.
+		if (cl.csqc_loaded)
+			CL_VM_UpdateView(r_stereo_side ? 0.0 : max(0.0, cl.time - cl.oldtime));
+		else
 			R_RenderView();
+	}
+	else if (key_dest == key_game && key_consoleactive == 0 && (cls.state == ca_connected || cls.connect_trying))
+	{
+		// draw the loading screen for a while if we're still connecting and not forcing the console or menu to show up
+		char temp[64];
+		if (cls.signon > 0)
+			SCR_PushLoadingScreen(false, va(temp, sizeof(temp), "Connect: Signon stage %i of %i", cls.signon, SIGNONS), 1.0);
+		else if (cls.connect_remainingtries > 0)
+			SCR_PushLoadingScreen(false, va(temp, sizeof(temp), "Connect: Trying...  %i", cls.connect_remainingtries), 1.0);
+		else
+			SCR_PushLoadingScreen(false, va(temp, sizeof(temp), "Connect: Waiting %i seconds for reply", 10 + cls.connect_remainingtries), 1.0);
+		SCR_DrawLoadingScreen(true);
+		SCR_PopLoadingScreen(false);
 	}
 
 	if (!r_stereo_sidebyside.integer && !r_stereo_horizontal.integer && !r_stereo_vertical.integer)

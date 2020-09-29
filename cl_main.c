@@ -1944,7 +1944,9 @@ void CL_UpdateWorld(void)
 		CL_UpdateViewModel();
 
 		CL_RelinkLightFlashes();
-		CSQC_RelinkAllEntities(ENTMASK_ENGINE | ENTMASK_ENGINEVIEWMODELS);
+		// when csqc is loaded, it will call this in CSQC_UpdateView
+		if (!cl.csqc_loaded)
+			CSQC_RelinkAllEntities(ENTMASK_ENGINE | ENTMASK_ENGINEVIEWMODELS);
 
 		// decals, particles, and explosions will be updated during rneder
 	}

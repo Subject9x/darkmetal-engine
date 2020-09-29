@@ -347,7 +347,7 @@ qboolean CSQC_AddRenderEdict(prvm_edict_t *ed, int edictnum)
 
 	// LordHavoc: use the CL_GetTagMatrix function on self to ensure consistent behavior (duplicate code would be bad)
 	CL_GetTagMatrix(prog, &entrender->matrix, ed, 0);
-
+	
 	// set up the animation data
 	VM_GenerateFrameGroupBlend(prog, ed->priv.server->framegroupblend, ed);
 	VM_FrameBlendFromFrameGroupBlend(ed->priv.server->frameblend, ed->priv.server->framegroupblend, model, cl.time);
@@ -1143,6 +1143,9 @@ void CL_VM_Init (void)
 
 	// call the prog init
 	prog->ExecuteProgram(prog, PRVM_clientfunction(CSQC_Init), "QC function CSQC_Init is missing");
+
+// Once CSQC_Init was called, we consider csqc code fully initialized.
+	prog->inittime = realtime;
 
 	cl.csqc_loaded = true;
 

@@ -2713,10 +2713,14 @@ void SV_Physics_Toss (prvm_edict_t *ent)
 					ent->priv.server->suspendedinairflag = true;
 				VectorClear (PRVM_serveredictvector(ent, velocity));
 				VectorClear (PRVM_serveredictvector(ent, avelocity));
+				movetime = 0;
 			}
 			else
+			{
 				PRVM_serveredictfloat(ent, flags) = (int)PRVM_serveredictfloat(ent, flags) & ~FL_ONGROUND;
-			movetime = 0;
+				if (!sv_gameplayfix_slidemoveprojectiles.integer)
+					movetime = 0;
+			}
 			break;
 		}
 	}
@@ -3025,9 +3029,12 @@ static void SV_Physics_ClientEntity(prvm_edict_t *ent)
 		break;
 	case MOVETYPE_NOCLIP:
 		SV_RunThink(ent);
-		SV_CheckWater(ent);
-		VectorMA(PRVM_serveredictvector(ent, origin), sv.frametime, PRVM_serveredictvector(ent, velocity), PRVM_serveredictvector(ent, origin));
-		VectorMA(PRVM_serveredictvector(ent, angles), sv.frametime, PRVM_serveredictvector(ent, avelocity), PRVM_serveredictvector(ent, angles));
+		if (host_client->clmovement_inputtimeout <= 0) // don't run physics here if running asynchronously
+		{
+			SV_CheckWater(ent);
+			VectorMA(PRVM_serveredictvector(ent, origin), sv.frametime, PRVM_serveredictvector(ent, velocity), PRVM_serveredictvector(ent, origin));
+			VectorMA(PRVM_serveredictvector(ent, angles), sv.frametime, PRVM_serveredictvector(ent, avelocity), PRVM_serveredictvector(ent, angles));
+		}
 		break;
 	case MOVETYPE_STEP:
 		SV_Physics_Step (ent);

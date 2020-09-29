@@ -44,7 +44,6 @@ cvar_t team = {CVAR_USERINFO | CVAR_SAVE, "team", "none", "QW team (4 character 
 cvar_t skin = {CVAR_USERINFO | CVAR_SAVE, "skin", "", "QW player skin name (example: base)"};
 cvar_t noaim = {CVAR_USERINFO | CVAR_SAVE, "noaim", "1", "QW option to disable vertical autoaim"};
 cvar_t r_fixtrans_auto = {0, "r_fixtrans_auto", "0", "automatically fixtrans textures (when set to 2, it also saves the fixed versions to a fixtrans directory)"};
-qboolean allowcheats = false;
 
 extern qboolean host_shuttingdown;
 extern cvar_t developer_entityparsing;
@@ -211,9 +210,9 @@ Sets client to godmode
 static void Host_God_f (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	if (!allowcheats)
+	if (!sv_cheats.integer)
 	{
-		SV_ClientPrint("No cheats allowed, use sv_cheats 1 and restart level to enable.\n");
+		SV_ClientPrint("No cheats allowed, use sv_cheats 1 to enable.\n");
 		return;
 	}
 
@@ -227,9 +226,9 @@ static void Host_God_f (void)
 static void Host_Notarget_f (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	if (!allowcheats)
+	if (!sv_cheats.integer)
 	{
-		SV_ClientPrint("No cheats allowed, use sv_cheats 1 and restart level to enable.\n");
+		SV_ClientPrint("No cheats allowed, use sv_cheats 1 to enable.\n");
 		return;
 	}
 
@@ -245,9 +244,9 @@ qboolean noclip_anglehack;
 static void Host_Noclip_f (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	if (!allowcheats)
+	if (!sv_cheats.integer)
 	{
-		SV_ClientPrint("No cheats allowed, use sv_cheats 1 and restart level to enable.\n");
+		SV_ClientPrint("No cheats allowed, use sv_cheats 1 to enable.\n");
 		return;
 	}
 
@@ -275,9 +274,9 @@ Sets client to flymode
 static void Host_Fly_f (void)
 {
 	prvm_prog_t *prog = SVVM_prog;
-	if (!allowcheats)
+	if (!sv_cheats.integer)
 	{
-		SV_ClientPrint("No cheats allowed, use sv_cheats 1 and restart level to enable.\n");
+		SV_ClientPrint("No cheats allowed, use sv_cheats 1 to enable.\n");
 		return;
 	}
 
@@ -388,7 +387,6 @@ static void Host_Map_f (void)
 	key_dest = key_game;
 
 	svs.serverflags = 0;			// haven't completed an episode yet
-	allowcheats = sv_cheats.integer != 0;
 	strlcpy(level, Cmd_Argv(1), sizeof(level));
 	SV_SpawnServer(level);
 	if (sv.active && cls.state == ca_disconnected)
@@ -425,7 +423,6 @@ static void Host_Changelevel_f (void)
 	key_dest = key_game;
 
 	SV_SaveSpawnparms ();
-	allowcheats = sv_cheats.integer != 0;
 	strlcpy(level, Cmd_Argv(1), sizeof(level));
 	SV_SpawnServer(level);
 	if (sv.active && cls.state == ca_disconnected)
@@ -461,7 +458,6 @@ static void Host_Restart_f (void)
 #endif
 	key_dest = key_game;
 
-	allowcheats = sv_cheats.integer != 0;
 	strlcpy(mapname, sv.name, sizeof(mapname));
 	SV_SpawnServer(mapname);
 	if (sv.active && cls.state == ca_disconnected)
@@ -853,8 +849,6 @@ static void Host_Loadgame_f (void)
 	// time
 	COM_ParseToken_Simple(&t, false, false, true);
 	time = atof(com_token);
-
-	allowcheats = sv_cheats.integer != 0;
 
 	if(developer_entityparsing.integer)
 		Con_Printf("Host_Loadgame_f: spawning server\n");
@@ -1773,6 +1767,12 @@ static void Host_Pause_f (void)
 	
 	sv.paused ^= 1;
 	SV_BroadcastPrintf("%s %spaused the game\n", host_client->name, sv.paused ? "" : "un");
+	if(cmd_source != src_command)
+		SV_BroadcastPrintf("%s %spaused the game\n", host_client->name, sv.paused ? "" : "un");
+	else if(*(sv_adminnick.string))
+		SV_BroadcastPrintf("%s %spaused the game\n", sv_adminnick.string, sv.paused ? "" : "un");
+	else
+		SV_BroadcastPrintf("%s %spaused the game\n", hostname.string, sv.paused ? "" : "un");
 	// send notification to all clients
 	MSG_WriteByte(&sv.reliable_datagram, svc_setpause);
 	MSG_WriteByte(&sv.reliable_datagram, sv.paused);
@@ -2117,9 +2117,9 @@ static void Host_Give_f (void)
 	const char *t;
 	int v;
 
-	if (!allowcheats)
+	if (!sv_cheats.integer)
 	{
-		SV_ClientPrint("No cheats allowed, use sv_cheats 1 and restart level to enable.\n");
+		SV_ClientPrint("No cheats allowed, use sv_cheats 1 to enable.\n");
 		return;
 	}
 
@@ -2762,7 +2762,6 @@ static void Host_FullInfo_f (void) // credit: taken from QuakeWorld
 {
 	char key[512];
 	char value[512];
-	char *o;
 	const char *s;
 
 	if (Cmd_Argc() != 2)
@@ -2776,27 +2775,33 @@ static void Host_FullInfo_f (void) // credit: taken from QuakeWorld
 		s++;
 	while (*s)
 	{
-		o = key;
-		while (*s && *s != '\\')
-			*o++ = *s++;
-		*o = 0;
-
+		size_t len = strcspn(s,"\\");
+		if(len >= sizeof(key)){
+			len = sizeof(key) -1;
+		}
+		strlcpy(key, s, len + 1);
+		s += len;
 		if (!*s)
 		{
 			Con_Printf ("MISSING VALUE\n");
 			return;
 		}
-
-		o = value;
-		s++;
-		while (*s && *s != '\\')
-			*o++ = *s++;
-		*o = 0;
-
-		if (*s)
-			s++;
-
+		++s;	//skip over backslash
+		
+		len = strcspn(s, "\\");
+		if(len >= sizeof(value)){
+			len = sizeof(value) - 1;
+		}
+		strlcpy(value, s, len + 1);
+		
 		CL_SetInfo(key, value, false, false, false, false);
+		
+		s += len;
+		if(!*s)
+		{
+			break;
+		}
+		++s; //skip over backslash
 	}
 }
 

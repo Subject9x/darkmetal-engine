@@ -697,8 +697,8 @@ static qboolean Font_LoadFile(const char *name, int _face, ft2_settings_t *setti
 		if (qFT_Attach_Stream((FT_Face)font->face, &args))
 			Con_Printf("Failed to add attachment %u to %s\n", (unsigned)i, font->name);
 	}
-
-	memcpy(font->name, name, namelen+1);
+	
+	strlcpy(font->name, name, sizeof(font->name));
 	font->image_font = false;
 	font->has_kerning = !!(((FT_Face)(font->face))->face_flags & FT_FACE_FLAG_KERNING);
 	return true;

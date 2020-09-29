@@ -1248,7 +1248,7 @@ static void CL_ParticleEffect_Fallback(int effectnameindex, float count, const v
 	{
 		vec3_t dir, pos;
 		float len, dec, qd;
-		int smoke, blood, bubbles, r, color;
+		int smoke, blood, bubbles, r, color, count;
 
 		if (spawndlight && r_refdef.scene.numlights < MAX_DLIGHTS)
 		{
@@ -1284,6 +1284,7 @@ static void CL_ParticleEffect_Fallback(int effectnameindex, float count, const v
 
 		VectorSubtract(originmaxs, originmins, dir);
 		len = VectorNormalizeLength(dir);
+		
 		if (ent)
 		{
 			dec = -ent->persistent.trail_time;
@@ -1305,8 +1306,10 @@ static void CL_ParticleEffect_Fallback(int effectnameindex, float count, const v
 		blood = cl_particles.integer && cl_particles_blood.integer;
 		bubbles = cl_particles.integer && cl_particles_bubbles.integer && !cl_particles_quake.integer && (CL_PointSuperContents(pos) & (SUPERCONTENTS_WATER | SUPERCONTENTS_SLIME));
 		qd = 1.0f / cl_particles_quality.value;
+		count = 0;
 
-		while (len >= 0)
+		//todo - magic number added from commit 14730910
+		while (len >= 0 && ++count <= 16384)
 		{
 			dec = 3;
 			if (blood)
@@ -2494,7 +2497,7 @@ static void R_DrawDecal_TransparentCallback(const entity_render_t *ent, const rt
 	vec_t right[3], up[3], size, ca;
 	float alphascale = (1.0f / 65536.0f) * cl_particles_alpha.value;
 
-	RSurf_ActiveWorldEntity();
+	RSurf_ActiveModelEntity(r_refdef.scene.worldentity, false, false, false);
 
 	r_refdef.stats[r_stat_drawndecals] += numsurfaces;
 //	R_Mesh_ResetTextureState();
@@ -2653,7 +2656,7 @@ static void R_DrawParticle_TransparentCallback(const entity_render_t *ent, const
 	float minparticledist_start, minparticledist_end;
 	qboolean dofade;
 
-	RSurf_ActiveWorldEntity();
+	RSurf_ActiveModelEntity(r_refdef.scene.worldentity, false, false, false);
 
 	Vector4Set(colormultiplier, r_refdef.view.colorscale * (1.0 / 256.0f), r_refdef.view.colorscale * (1.0 / 256.0f), r_refdef.view.colorscale * (1.0 / 256.0f), cl_particles_alpha.value * (1.0 / 256.0f));
 
