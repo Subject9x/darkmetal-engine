@@ -1868,7 +1868,11 @@ static void R_Envmap_f (void)
 		Con_Print("envmap <basename> <size>: save out 6 cubic environment map images, usable with loadsky, note that size must one of 128, 256, 512, or 1024 and can't be bigger than your current resolution\n");
 		return;
 	}
-
+	if(cls.state != ca_connected) {
+		Con_Printf("envmap: No map loaded\n");
+		return;
+	}
+	
 	strlcpy (basename, Cmd_Argv(1), sizeof (basename));
 	size = atoi(Cmd_Argv(2));
 	if (size != 128 && size != 256 && size != 512 && size != 1024)

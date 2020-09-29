@@ -1059,7 +1059,7 @@ void VM_findfloat(prvm_prog_t *prog)
 {
 	int		e;
 	int		f;
-	float	s;
+	prvm_vec_t	s;
 	prvm_edict_t	*ed;
 
 	VM_SAFEPARMCOUNT(3,VM_findfloat);
@@ -1152,7 +1152,7 @@ void VM_findchainfloat(prvm_prog_t *prog)
 {
 	int		i;
 	int		f;
-	float	s;
+	prvm_vec_t	s;
 	prvm_edict_t	*ent, *chain;
 	int chainfield;
 
