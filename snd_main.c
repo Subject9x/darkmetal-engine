@@ -889,6 +889,7 @@ void S_Init(void)
 	Cmd_AddCommand("play2", S_Play2_f, "play a sound globally throughout the level (not heard by anyone else)");
 	Cmd_AddCommand("playvol", S_PlayVol_f, "play a sound at the specified volume level at your current location (not heard by anyone else)");
 	Cmd_AddCommand("stopsound", S_StopAllSounds, "silence");
+	//Cmd_AddCommand(CMD_CLIENT, "pausesound", S_PauseSound_f, "temporary silence");	//todo -get working 
 	Cmd_AddCommand("soundlist", S_SoundList_f, "list loaded sounds");
 	Cmd_AddCommand("soundinfo", S_SoundInfo_f, "print sound system information (such as channels and speed)");
 	Cmd_AddCommand("snd_restart", S_Restart_f, "restart sound system");
