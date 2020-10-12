@@ -1257,7 +1257,7 @@ stopdownload                                      terminates a download
 stopsound                                         silence
 stopul                                            aborts current upload (screenshot for example)
 stopvideo                                         stop playing a .dpv video file
-stuffcmds                                         execute commandline parameters (must be present in quake.rc script)
+stuffcmds                                         execute commandline parameters (must be present in metal.rc script)
 sv_areastats                                      prints statistics on entity culling during collision traces
 sv_saveentfile                                    save map entities to .ent file (to allow external editing)
 sv_startdownload                                  begins sending a file to the client (network protocol use only)
