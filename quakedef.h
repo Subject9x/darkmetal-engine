@@ -159,7 +159,7 @@ extern char engineversion[128];
 #define	MAX_WATERPLANES			16 ///< max number of water planes visible (each one causes additional view renders)
 #define	MAX_CUBEMAPS			1024 ///< max number of cubemap textures loaded for light filters
 #define	MAX_EXPLOSIONS			64 ///< max number of explosion shell effects active at once (not particle related)
-#define	MAX_DLIGHTS				256 ///< max number of dynamic lights (rocket flashes, etc) in scene at once
+#define	MAX_DLIGHTS				512 ///< max number of dynamic lights (rocket flashes, etc) in scene at once (dp default 256)
 #define	MAX_CACHED_PICS			1024 ///< max number of 2D pics loaded at once
 #define	CACHEPICHASHSIZE		256 ///< number of hash buckets for accelerating 2D pic name lookups
 #define	MAX_PARTICLEEFFECTNAME	4096 ///< maximum number of unique names of particle effects (for particleeffectnum)
@@ -411,7 +411,7 @@ extern cvar_t developer_loading;
 
 extern cvar_t sessionid;
 
-#define STARTCONFIGFILENAME "quake.rc"  //todo -> change to 'metal'
+#define STARTCONFIGFILENAME "metal.rc"
 #define CONFIGFILENAME "config.cfg"
 
 /* Preprocessor macros to identify platform
