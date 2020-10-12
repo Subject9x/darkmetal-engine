@@ -318,7 +318,7 @@ void Host_SaveConfig_f(void)
 static void Host_AddConfigText(void)
 {
 	// set up the default startmap_sp and startmap_dm aliases (mods can
-	// override these) and then execute the quake.rc startup script
+	// override these) and then execute the metal.rc startup script
 	if (gamemode == GAME_NEHAHRA)
 		Cbuf_InsertText("alias startmap_sp \"map nehstart\"\nalias startmap_dm \"map nehstart\"\nexec " STARTCONFIGFILENAME "\n");
 	else if (gamemode == GAME_TRANSFUSION)
@@ -1313,7 +1313,7 @@ static void Host_Init (void)
 	Host_AddConfigText();
 	Cbuf_Execute();
 
-	// if stuffcmds wasn't run, then quake.rc is probably missing, use default
+	// if stuffcmds wasn't run, then metal.rc is probably missing, use default
 	if (!host_stuffcmdsrun)
 	{
 		Cbuf_AddText("exec default.cfg\nexec " CONFIGFILENAME "\nexec autoexec.cfg\nstuffcmds\n");
