@@ -119,8 +119,8 @@ typedef struct cvar_s
 	const char *string;
 	const char *description;
 	int integer;
-	float value;
-	float vector[3];
+	double value;
+	double vector[3];
 
 	const char *defstring;
 
@@ -130,8 +130,8 @@ typedef struct cvar_s
 	const char *initstring;
 	const char *initdescription;
 	int initinteger;
-	float initvalue;
-	float initvector[3];
+	double initvalue;
+	double initvector[3];
 	const char *initdefstring;
 
 	unsigned int globaldefindex_progid[3];
@@ -160,12 +160,12 @@ void Cvar_RegisterVariable (cvar_t *variable);
 void Cvar_Set (const char *var_name, const char *value);
 
 /// expands value to a string and calls Cvar_Set
-void Cvar_SetValue (const char *var_name, float value);
+void Cvar_SetValue (const char *var_name, double value);
 
 void Cvar_SetQuick (cvar_t *var, const char *value);
-void Cvar_SetValueQuick (cvar_t *var, float value);
+void Cvar_SetValueQuick (cvar_t *var, double value);
 
-float Cvar_VariableValueOr (const char *var_name, float def);
+float Cvar_VariableValueOr (const char *var_name, double def);
 // returns def if not defined
 
 float Cvar_VariableValue (const char *var_name);

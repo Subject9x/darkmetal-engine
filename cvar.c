@@ -105,7 +105,7 @@ static cvar_t *Cvar_FindVarLink (const char *var_name, cvar_t **parent, cvar_t *
 Cvar_VariableValue
 ============
 */
-float Cvar_VariableValueOr (const char *var_name, float def)
+float Cvar_VariableValueOr (const char *var_name, double def)
 {
 	cvar_t *var;
 
@@ -451,22 +451,22 @@ void Cvar_Set (const char *var_name, const char *value)
 Cvar_SetValue
 ============
 */
-void Cvar_SetValueQuick(cvar_t *var, float value)
+void Cvar_SetValueQuick(cvar_t *var, double value)
 {
 	char val[MAX_INPUTLINE];
 
-	if ((float)((int)value) == value)
+	if ((double)((int)value) == value)
 		dpsnprintf(val, sizeof(val), "%i", (int)value);
 	else
 		dpsnprintf(val, sizeof(val), "%f", value);
 	Cvar_SetQuick(var, val);
 }
 
-void Cvar_SetValue(const char *var_name, float value)
+void Cvar_SetValue(const char *var_name, double value)
 {
 	char val[MAX_INPUTLINE];
 
-	if ((float)((int)value) == value)
+	if ((double)((int)value) == value)
 		dpsnprintf(val, sizeof(val), "%i", (int)value);
 	else
 		dpsnprintf(val, sizeof(val), "%f", value);
