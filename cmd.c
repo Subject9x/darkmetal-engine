@@ -1480,7 +1480,7 @@ void Cmd_Init_Commands (void)
 //
 // register our commands
 //
-	Cmd_AddCommand ("stuffcmds",Cmd_StuffCmds_f, "execute commandline parameters (must be present in quake.rc script)");
+	Cmd_AddCommand ("stuffcmds",Cmd_StuffCmds_f, "execute commandline parameters (must be present in metal.rc script)");
 	Cmd_AddCommand ("exec",Cmd_Exec_f, "execute a script file");
 	Cmd_AddCommand ("echo",Cmd_Echo_f, "print a message to the console (useful in scripts)");
 	Cmd_AddCommand ("alias",Cmd_Alias_f, "create a script function (parameters are passed in as $X (being X a number), $* for all parameters, $X- for all parameters starting from $X). Without arguments show the list of all alias");
