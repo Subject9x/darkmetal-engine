@@ -70,7 +70,7 @@ typedef struct prvm_required_field_s
 typedef struct prvm_edict_private_s
 {
 	qboolean free;
-	float freetime; // realtime of last change to "free" (i.e. also set on allocation)
+	double freetime; // realtime of last change to "free" (i.e. also set on allocation)
 	int mark; // used during leaktest (0 = unref, >0 = referenced); special values during server physics:
 #define PRVM_EDICT_MARK_WAIT_FOR_SETORIGIN -1
 #define PRVM_EDICT_MARK_SETORIGIN_CAUGHT -2
@@ -100,7 +100,7 @@ typedef struct prvm_edict_s
 		// or:
 		//	typedef struct server_edict_private_s {
 		//		qboolean free;
-		//		float freetime;
+		//		double freetime;
 		//		vec3_t moved_from;
 		//      vec3_t moved_fromangles;
 		//		... } server_edict_private_t;
