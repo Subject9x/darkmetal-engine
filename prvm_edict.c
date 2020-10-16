@@ -711,6 +711,15 @@ void PRVM_ED_Write (prvm_prog_t *prog, qfile_t *f, prvm_edict_t *ed)
 		return;
 	}
 
+	if (PRVM_serveredictfloat(ed, skipsave) == 1)
+	{
+		if(developer_entityparsing.integer)
+			Con_Printf("PRVM_ED_Write: at entity %d nosave was TRUE, skipping save. \n", PRVM_NUM_FOR_EDICT(ed));
+		FS_Print(f, "}\n");
+		return;
+	}
+
+
 	for (i = 1;i < prog->numfielddefs;i++)
 	{
 		d = &prog->fielddefs[i];
