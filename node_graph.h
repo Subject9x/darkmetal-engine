@@ -3,16 +3,46 @@
   
   
 */
-#ifndef node_graph.h
+#ifndef NODEGRAPH_H
+#define NODEGRAPH_H
 
 #define NODEGRAPH_MAX_SIZE 4096
-#define NODEGRAPH_PREVIOUS[NODEGRAPH_MAX_SIZE * 3]
 
-#define NODEGRAPH_DATA
+/*
+=================
+  Typedefs and structs.
+=================
+*/
+typedef struct nodegraph_node_s
+{
+	short nodes[NODEGRAPH_MAX_SIZE * 3];
+	vec_t edgeLens[NODEGRAPH_MAX_SIZE * 3];
+	short nodeId;
+	short node_total;
+}
+nodegraph_node_t;
 
+typedef struct nodegraph_s
+{
+	nodegraph_node_t nodes[NODEGRAPH_MAX_SIZE];
+	short node_total;
+}
+nodegraph_t;
+
+
+
+/*
+=================
+  functions
+=================
+*/
+void node_system_ini(void);
 void node_generate_graph_data(prvm_prog_t *prog);   //generate the whole graph for export
+void node_system_close(void);
+void node_system_reset(void);
+void node_system_clean_node(
 
-void node_load_file();                              //load a .node file
+void node_load_file(void);                              //load a .node file
 void node_generate_file(void);                      //writes .nodes file
 
 void node_generate_graph_data(prvm_prog_t *prog);                     //generates actual nodegraph
