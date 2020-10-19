@@ -2275,8 +2275,8 @@ static void SCR_DrawScreen (void)
 		SCR_DrawNet ();
 		SCR_DrawTurtle ();
 		SCR_DrawPause ();
-		if (!r_letterbox.value)
-			Sbar_Draw();
+		//if (!r_letterbox.value) addstat refactor - Subject9x
+			//Sbar_Draw();
 		SHOWLMP_drawall();
 		SCR_CheckDrawCenterString();
 	}

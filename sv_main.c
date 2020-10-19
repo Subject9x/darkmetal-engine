@@ -2102,11 +2102,13 @@ void SV_WriteClientdataToMessage (client_t *client, prvm_edict_t *ent, sizebuf_t
 	statsf[STAT_MOVEVARS_AIRCONTROL] = sv_aircontrol.value;
 	statsf[STAT_MOVEVARS_AIRCONTROL_POWER] = sv_aircontrol_power.value;
 	statsf[STAT_MOVEVARS_AIRCONTROL_PENALTY] = sv_aircontrol_penalty.value;
-	statsf[STAT_MOVEVARS_WARSOWBUNNY_AIRFORWARDACCEL] = sv_warsowbunny_airforwardaccel.value;
+	
+  statsf[STAT_MOVEVARS_WARSOWBUNNY_AIRFORWARDACCEL] = sv_warsowbunny_airforwardaccel.value;
 	statsf[STAT_MOVEVARS_WARSOWBUNNY_ACCEL] = sv_warsowbunny_accel.value;
 	statsf[STAT_MOVEVARS_WARSOWBUNNY_TOPSPEED] = sv_warsowbunny_topspeed.value;
 	statsf[STAT_MOVEVARS_WARSOWBUNNY_TURNACCEL] = sv_warsowbunny_turnaccel.value;
 	statsf[STAT_MOVEVARS_WARSOWBUNNY_BACKTOSIDERATIO] = sv_warsowbunny_backtosideratio.value;
+  
 	statsf[STAT_MOVEVARS_AIRSPEEDLIMIT_NONQW] = sv_airspeedlimit_nonqw.value;
 	statsf[STAT_FRAGLIMIT] = fraglimit.value;
 	statsf[STAT_TIMELIMIT] = timelimit.value;
