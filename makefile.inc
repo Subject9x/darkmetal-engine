@@ -131,6 +131,7 @@ OBJ_COMMON= \
 	model_shared.o \
 	model_sprite.o \
 	netconn.o \
+	node_graph.o \
 	palette.o \
 	polygon.o \
 	portals.o \
