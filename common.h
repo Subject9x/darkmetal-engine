@@ -266,6 +266,7 @@ userdirmode_t;
 typedef enum gamemode_e
 {
 	GAME_NORMAL,
+	GAME_BATTLEMETAL,
 	GAME_HIPNOTIC,
 	GAME_ROGUE,
 	GAME_QUOTH,

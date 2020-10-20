@@ -1411,13 +1411,13 @@ void FS_Rescan (void)
 		unlink (va(vabuf, sizeof(vabuf), "%s/qconsole.log", fs_gamedir));
 
 	// look for the pop.lmp file and set registered to true if it is found
-	if (FS_FileExists("gfx/pop.lmp"))
-		Cvar_Set ("registered", "1");
+	//if (FS_FileExists("gfx/pop.lmp"))
+		//darkMETAL only has 1 version, and checking for a registered version this way is almost 25 years old....
+	Cvar_Set ("registered", "1");
+	
 	switch(gamemode)
 	{
 	case GAME_NORMAL:
-	case GAME_HIPNOTIC:
-	case GAME_ROGUE:
 		if (!registered.integer)
 		{
 			if (fs_modified)
@@ -1425,14 +1425,8 @@ void FS_Rescan (void)
 			else
 				Con_Print("Playing shareware version.\n");
 		}
-		else
-			Con_Print("Playing registered version.\n");
-		break;
-	case GAME_STEELSTORM:
-		if (registered.integer)
-			Con_Print("Playing registered version.\n");
-		else
-			Con_Print("Playing shareware version.\n");
+		//else
+			//Con_Print("Playing registered version.\n");
 		break;
 	default:
 		break;
@@ -2034,13 +2028,13 @@ void FS_Init (void)
 	// if userdir equal to basedir, clear it to avoid confusion later
 	if (!strcmp(fs_basedir, fs_userdir))
 		fs_userdir[0] = 0;
-
+	
 	FS_ListGameDirs();
-
+	
 	p = FS_CheckGameDir(gamedirname1);
 	if(!p || p == fs_checkgamedir_missing)
 		Con_Printf("WARNING: base gamedir %s%s/ not found!\n", fs_basedir, gamedirname1);
-
+	
 	if(gamedirname2)
 	{
 		p = FS_CheckGameDir(gamedirname2);

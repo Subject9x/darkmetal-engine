@@ -53,8 +53,8 @@ typedef struct gamemode_info_s
 
 static const gamemode_info_t gamemode_info [GAME_COUNT] =
 {// game								basegame							prog_name					cmdline							gamename							gamenetworkfilername		basegame		modgame			screenshot		userdir					   // commandline option
-//{ GAME_NORMAL,				GAME_NORMAL,					"",								"-quake",						"DarkPlaces-Quake",		"DarkPlaces-Quake",			"id1",			NULL,				"dp",					"darkplaces"			}, // COMMANDLINEOPTION: Game: -quake runs the game Quake (default)
-{ GAME_NORMAL,					GAME_NORMAL,					"",								"-quake",						"darkMETAL",					"darkMETAL",						"base",			NULL,				"dm",					"darkMETAL"			}, // COMMANDLINEOPTION: Game: -quake runs the game Quake (default)
+{ GAME_NORMAL,				GAME_NORMAL,					"",								"-quake",						"DarkPlaces-Quake",		"DarkPlaces-Quake",			"id1",			NULL,				"dp",					"darkplaces"			}, // COMMANDLINEOPTION: Game: -quake runs the game Quake (default)
+{ GAME_BATTLEMETAL,			GAME_NORMAL,					"battleMETAL",		"-battleMETAL",			"darkMETAL",					"darkMETAL",						"metals",			NULL,				"dm",					"darkMETAL"			}, // COMMANDLINEOPTION: Game: -battleMETAL runs the game battleMETAL
 { GAME_HIPNOTIC,				GAME_NORMAL,					"hipnotic",				"-hipnotic",				"Darkplaces-Hipnotic","Darkplaces-Hipnotic",	"id1",			"hipnotic",	"dp",					"darkplaces"			}, // COMMANDLINEOPTION: Game: -hipnotic runs Quake mission pack 1: The Scourge of Armagon
 { GAME_ROGUE,						GAME_NORMAL,					"rogue",					"-rogue",						"Darkplaces-Rogue",		"Darkplaces-Rogue",			"id1",			"rogue",		"dp",					"darkplaces"			}, // COMMANDLINEOPTION: Game: -rogue runs Quake mission pack 2: The Dissolution of Eternity
 { GAME_NEHAHRA,					GAME_NORMAL,					"nehahra",				"-nehahra",					"DarkPlaces-Nehahra",	"DarkPlaces-Nehahra",		"id1",			"nehahra",	"dp",					"darkplaces"			}, // COMMANDLINEOPTION: Game: -nehahra runs The Seal of Nehahra movie and game
@@ -95,9 +95,14 @@ void COM_InitGameType (void)
 	char name [MAX_OSPATH];
 	int i;
 	int index = 0;
-
+	
+#ifndef FORCEGAME
+#define FORCEGAME
+#endif
+	
 #ifdef FORCEGAME
-	COM_ToLowerString(FORCEGAME, name, sizeof (name));
+	//COM_ToLowerString(FORCEGAME, name, sizeof (name));
+	COM_ToLowerString("battleMETAL", name, sizeof (name));
 #else
 	// check executable filename for keywords, but do it SMARTLY - only check the last path element
 	FS_StripExtension(FS_FileWithoutPath(sys.argv[0]), name, sizeof (name));
